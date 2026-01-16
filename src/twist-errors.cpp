@@ -122,6 +122,19 @@ namespace ERROR {
     }
 
 
+    void IncompartableTypeInput(const Token& start, const Token& end, Type found_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Incompartable type" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " " << "Input instruction wait `String` type but found `" << found_type.name << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        exit(0);
+    }
+
+
 
     // GOOD
     void ConstRedefinition(const Token& start, const Token& end, const string& var_name) {

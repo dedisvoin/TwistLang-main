@@ -5,6 +5,8 @@
 #include <string>
 #include <iostream>
 
+#pragma once
+
 typedef int Address;
 
 // global address counter

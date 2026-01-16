@@ -1,37 +1,25 @@
-#include "twist-tokens.cpp"
 #include "twist-tokenwalker.cpp"
+#include "twist-namespace.cpp"
+#include "twist-tokens.cpp"
 #include "twist-errors.cpp"
 #include "twist-values.cpp"
 #include "twist-memory.cpp"
-#include <any>
+
+#include <type_traits>
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <string>
-#include <type_traits>
 #include <vector>
 #include <memory>
-#include <algorithm>
 #include <cmath>
+#include <any>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreturn-type"
 
 using namespace std;
 
-
-
-
-
-struct Namespace {
-    shared_ptr<Memory> memory;
-    string name;
-
-    Namespace(shared_ptr<Memory> memory, string name) : memory(memory), name(name) {};
-};
-
-Value NewNamespace(shared_ptr<Memory> memory, const string& name) {
-    return Value(make_unique<Type>(STANDART_TYPE::NAMESPACE), Namespace(memory, name));
-}
 
 /*
     Base node structure
@@ -324,6 +312,15 @@ struct NodeBinary : public Node {
 
     Value eval() override {
         auto left_val = left->eval();
+
+        if (*left_val.type == STANDART_TYPE::BOOL) {
+            bool l = any_cast<bool>(left_val.data);
+            if ((op == "||" || op == "or") && l)
+                return NewBool(true);
+            else if ((op == "&&" || op == "and") && !l)
+                return NewBool(false);
+        }
+
         auto right_val = right->eval();
 
         if (*left_val.type == STANDART_TYPE::INT && *right_val.type == STANDART_TYPE::INT) {
@@ -443,6 +440,7 @@ struct NodeBinary : public Node {
 
             if (op == "+")
                 return NewString(any_cast<string>(left_val.data) + any_cast<string>(right_val.data));
+            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
         } else if (*left_val.type == STANDART_TYPE::STRING && *right_val.type == STANDART_TYPE::INT) {
             if (op == "*") {
                 string dummy;
@@ -452,6 +450,8 @@ struct NodeBinary : public Node {
                 }
                 return NewString(dummy);
             }
+            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+
         } else if (left_val.type->is_pointer && right_val.type->is_pointer) {
             if (op == "==") 
                 return NewBool(any_cast<int>(left_val.data) == any_cast<int>(right_val.data));
@@ -1377,6 +1377,74 @@ struct NodeIfExpr : public Node {
     void exec() override {}
 };
 
+
+struct NodeInput : public Node {
+    unique_ptr<Node> expr;
+    Token start_token;
+    Token end_token;
+
+    NodeInput(unique_ptr<Node> expr, Token start_token, Token end_token)
+        : expr(std::move(expr)), start_token(start_token), end_token(end_token) {
+            NAME = "Input";
+    }
+
+    Value eval() override {
+        auto value = expr->eval();
+        if (*value.type == STANDART_TYPE::STRING) {
+            cout << any_cast<string>(value.data);
+        } else if (*value.type == STANDART_TYPE::CHAR) {
+            cout << any_cast<char>(value.data);
+        } else {
+            ERROR::IncompartableTypeInput(start_token, end_token, *value.type);
+        }
+
+        string _input;
+        getline(cin, _input);
+
+        if (_input.empty())
+            return NewNull();
+
+        if (_input.length() == 1) {
+            // Один символ - может быть char или digit
+            char* ch = new char(_input[0]);
+            if (isdigit(*ch)) {
+                auto value = NewInt(atoi(ch));
+                delete ch;
+                return value;
+            } 
+            else { 
+                auto value = NewChar(*ch);
+                delete ch;
+                return value;
+            }
+        } else {
+            bool isNumber = true;
+            bool isDOuble = false;
+            for (char c : _input) {
+                if (!isdigit(c) && c != '.') {
+                    isNumber = false;
+                    break;
+                }
+                if (c == '.') isDOuble = true;
+            }
+            if (isNumber) {
+                if (isDOuble) {
+                    auto value = NewDouble(atof(_input.c_str()));
+                    return value;
+                } else {
+                    auto value = NewInt(atoi(_input.c_str()));
+                    return value;
+                }
+            } else {
+                auto value = NewString(_input);
+                return value;
+            }
+        }
+    }
+
+    void exec() override {}
+};
+
 struct Context {
     Memory memory;
     vector<unique_ptr<Node>> nodes;
@@ -1429,6 +1497,8 @@ struct ASTGenerator {
 
     unique_ptr<Node> ParseOut(Memory& memory);
     unique_ptr<Node> ParseOutLn(Memory& memory);
+    unique_ptr<Node> ParseInput(Memory& memory);
+
     unique_ptr<Node> ParseDelete(Memory& memory);
     unique_ptr<Node> ParseWhile(Memory& memory);
     unique_ptr<Node> ParseDoWhile(Memory& memory);
@@ -1480,6 +1550,9 @@ struct ASTGenerator {
 
         if (walker.CheckType(TokenType::LITERAL) && walker.CheckValue("null"))
             return ParseNull();
+
+        if (walker.CheckType(TokenType::LITERAL) && walker.CheckValue("input"))
+            return ParseInput(memory);
 
         if (walker.CheckValue("("))
             return ParseScopes(memory);
@@ -1777,6 +1850,23 @@ struct ContextExecutor {
         }
     }
 };
+
+
+unique_ptr<Node> ASTGenerator::ParseInput(Memory& memory) {
+    walker.next(); // pass 'input' token
+    if (!walker.CheckValue("("))
+        ERROR::UnexpectedToken(*walker.get(), "'('");
+    walker.next();
+    auto start_token = *walker.get();
+    auto expr = parse_expression(memory);
+    if (!expr)
+        ERROR::UnexpectedToken(*walker.get(), "expression");
+    if (!walker.CheckValue(")"))
+        ERROR::UnexpectedToken(*walker.get(), "')'");
+    auto end_token = *walker.get();
+    walker.next();
+    return make_unique<NodeInput>(std::move(expr), start_token, end_token);
+}
 
 
 unique_ptr<Node> ASTGenerator::ParseLeftDereference(Memory& memory) {
