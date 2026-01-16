@@ -1,0 +1,25 @@
+{
+  "name": "twistlang",
+  "displayName": "TwistLang",
+  "description": "twist support",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.108.1"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "twist",
+      "aliases": ["Twist", "twist"],
+      "extensions": [".twist"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "twist",
+      "scopeName": "source.twist",
+      "path": "./syntaxes/twist.tmLanguage.json"
+    }]
+  }
+}

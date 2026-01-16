@@ -1,0 +1,13 @@
+let a = 10;
+let age: let name = "Ivan";
+
+let ptr = &name; # ptr for name variable
+
+outln ptr; # print ptrInt = 10;
+static let age: auto = null;
+
+const let name = "Ivan";
+name = "Petr"; # error
+
+final let age = 10;
+let age = 100; # error

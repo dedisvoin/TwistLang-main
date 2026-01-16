@@ -1,0 +1,24 @@
+let AnyType = Int | Double | String | Char;
+# Types can be union (UNSTABLE)
+
+
+static let a: AnyType = 0; # OK
+static let b: AnyType = 0.0; # OK
+static let c: AnyType = "0"; # OK
+
+outln Int >> AnyType; # print true because Int is subtype of AnyType
+# operators >> and << check subtyping
+
+let StrPtr = *String; # IntPtr is pointer type to Int
+
+
+let name = "Ivan";
+static let ptr: StrPtr = &name;
+
+# we can dynamic types creating
+let value = "Hello";
+let MyTypePtr = *typeof(value);
+outln MyTypePtr; # print *String
+
+# union ptrs is UNSTABLE
+let Type = *typeof(a) | *typeof(b) | *typeof(c);

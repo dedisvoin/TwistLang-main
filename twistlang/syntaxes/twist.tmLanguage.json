@@ -1,0 +1,159 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Twist",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#namespace-declaration"
+		},
+		{
+			"include": "#namespace-resolution"
+		},
+		{
+			"include": "#modifiers"
+		},
+		{
+			"include": "#types"
+		},
+		{
+			"include": "#literals"
+		},
+		{
+			"include": "#operators"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#comments"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.twist",
+				"match": "\\b(for|while|let|out|outln|in|and|or|if|else|return|auto)\\b"
+			}]
+		},
+		
+		"namespace-declaration": {
+			"name": "meta.namespace.declaration.twist",
+			"begin": "\\b(namespace)\\b\\s+",
+			"beginCaptures": {
+				"1": {
+					"name": "keyword.control.twist"
+				}
+			},
+			"end": "(?=\\s*\\{|\\r|\\n|$)",
+			"patterns": [
+				{
+					"name": "entity.name.namespace.twist",
+					"match": "[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)*"
+				}
+			]
+		},
+		
+		"namespace-resolution": {
+			"name": "meta.namespace.resolution.twist",
+			"match": "\\b([a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)+)\\b",
+			"captures": {
+				"1": {
+					"patterns": [
+						{
+							"match": "::",
+							"name": "punctuation.separator.namespace.twist"
+						},
+						{
+							"match": "[a-zA-Z_][a-zA-Z0-9_]*",
+							"name": "entity.name.namespace.twist"
+						}
+					]
+				}
+			}
+		},
+		
+		"modifiers": {
+			"name": "storage.modifier.twist",
+			"match": "\\b(global|static|const|final|typeof|del)\\b"
+		},
+		
+		"types": {
+			"patterns": [
+				{
+					"name": "storage.type.builtin.twist",
+					"match": "\\b(Int|Bool|String|Char|Null|Double|Void)\\b"
+				},
+				{
+					"name": "storage.type.user-defined.twist",
+					"match": "\\b[A-Z][a-zA-Z0-9_]*\\b",
+					"comment": "Пользовательские типы (с заглавной буквы)"
+				}
+			]
+		},
+		
+		"literals": {
+			"name": "constant.language.twist",
+			"match": "\\b(true|false|null)\\b"
+		},
+		
+		"numbers": {
+			"patterns": [
+				{
+					"name": "constant.numeric.integer.twist",
+					"match": "\\b\\d+\\b"
+				},
+				{
+					"name": "constant.numeric.float.twist",
+					"match": "\\b\\d+\\.\\d+\\b"
+				},
+				{
+					"name": "constant.numeric.float.twist",
+					"match": "\\b\\d*\\.\\d+\\b"
+				}
+			]
+		},
+		
+		"operators": {
+			"name": "comment.line.hash.twist",
+			"match": "[+\\-*/%=&|^!<>~?]+|\\b(and|or)\\b"
+		},
+		
+		"strings": {
+			"name": "string.quoted.double.twist",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.twist",
+					"match": "\\\\."
+				}
+			]
+		},
+		
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.line.double-slash.twist",
+					"begin": "//",
+					"end": "$"
+				},
+				{
+					"name": "comment.line.hash.twist",
+					"begin": "#",
+					"end": "$"
+				},
+				{
+					"name": "comment.block.twist",
+					"begin": "/\\*",
+					"end": "\\*/"
+				}
+			]
+		}
+	},
+	"scopeName": "source.twist"
+}

@@ -1,0 +1,11 @@
+let IntVector = [Int]; # Integers vector
+
+let Vector = [Int | Double, 2]; # Vector of integers and doubles
+
+let a = [Int]{10, 20, 30, 40}; # Create Integers vector;
+
+let a = {10, true, "hello", 40}; # Create vector of different types
+
+let b: [Int, 4] = a; # Check vector type and size
+
+let b: [Int, 4] = {10, 20, 30, 40}; # Create Integers vector

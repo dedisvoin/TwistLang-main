@@ -1,0 +1,20 @@
+let name = "Ivan";
+
+let ptr = &name; # ptr for name variable
+outln ptr; # print *Void[0x16]
+
+*ptr = "Masha"; # change name variable
+outln *ptr; # print Masha
+
+
+let a = 0;
+let b = 10;
+let c = 20;
+
+ptr = &a; # ptr for a variable
+outln *(++ptr); # 10
+# ++ptr = <address of a> + 1 = <address of b> addres of next declared variable
+# --ptr = <address of b> - 1 = <address of a> address of previous declared variable
+
+outln *(++(++(++ptr))); # null 
+# if addres undeclared then return null

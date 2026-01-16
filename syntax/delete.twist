@@ -1,0 +1,5 @@
+let a = 10;
+outln a; # 10
+
+del a;
+outln a; # undefined
