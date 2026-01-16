@@ -274,6 +274,7 @@ struct ArgsParser {
     bool save_token = false;
     bool interp_time = false;
     bool compile_mod = false;
+    bool delete_precompiled = true;
 
     ArgsParser(vector<string> args) : args(args) {}
 
@@ -303,6 +304,10 @@ struct ArgsParser {
                     continue;
                 }
 
+                if (args[i] == "-no-del") {
+                    delete_precompiled = false;
+                    continue;
+                }
             }
         }
     }

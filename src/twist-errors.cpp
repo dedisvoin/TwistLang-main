@@ -2,16 +2,27 @@
 #include "twist-utils.cpp"
 #include "twist-values.cpp"
 
+
 namespace ERROR_TYPES {
     const string PARSE_ERROR = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::RED + "parse" + TERMINAL_COLORS::RESET;
     const string SYNTAX      = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::YELLOW + "syntax" + TERMINAL_COLORS::RESET;
     const string EXECUTION   = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::MAGENTA + "exec" + TERMINAL_COLORS::RESET;
     const string SEMANTIC    = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::CYAN + "semantic" + TERMINAL_COLORS::RESET;
-    const string FIX         = "[ " + TERMINAL_COLORS::BLACK + "fix" + TERMINAL_COLORS::RESET + " ] ";
+    const string MSG         = "[ " + TERMINAL_COLORS::BLACK + "msg" + TERMINAL_COLORS::RESET + " ] ";
+    const string WRN         = "[ " + TERMINAL_COLORS::YELLOW + " ! " + TERMINAL_COLORS::RESET + " ] ";
+    const string FIX         = "[ " + TERMINAL_COLORS::GREEN + " + " + TERMINAL_COLORS::RESET + " ] ";
+}
+
+void MSG(string message) {
+    cout << ERROR_TYPES::MSG + TERMINAL_COLORS::MAGENTA << message << TERMINAL_COLORS::RESET << endl;
+}
+
+void WRN(string message) {
+    cout << ERROR_TYPES::WRN + TERMINAL_COLORS::YELLOW << message << TERMINAL_COLORS::RESET << endl;
 }
 
 void FIX(string message) {
-    cout << ERROR_TYPES::FIX + TERMINAL_COLORS::BLACK << message << TERMINAL_COLORS::RESET;
+    cout << ERROR_TYPES::FIX + TERMINAL_COLORS::GREEN << message << TERMINAL_COLORS::RESET << endl;
 }
 
 namespace ERROR {
@@ -116,8 +127,8 @@ namespace ERROR {
             messsage = "Use 'auto' for this variable declaration statement";
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " " << messsage << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
-        FIX("Use '?' symbol after type expression to automatic create nullable type."); cout << endl;
-        FIX("After use '?' this variable type been '" + waited_type.name + " | Null'.");
+        MSG("Use '?' symbol after type expression to automatic create nullable type."); cout << endl;
+        MSG("After use '?' this variable type been '" + waited_type.name + " | Null'.");
         exit(0);
     }
 
@@ -135,6 +146,34 @@ namespace ERROR {
     }
 
 
+    void InvalidDereferenceType(const Token& start, const Token& end) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid dereference" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid dereference type" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        MSG("Syntax: '*'<variable name> to dereference a variable.");
+        MSG("        '*'<type name> to create a pointer type.");
+        WRN("Union type unsupported to creating a pointer of union types.");
+        FIX("if you want to create a pointer of union type, use *<type name> | *<type name> | ...");
+        exit(0);
+    }
+
+    void InvalidDereferenceValue(const Token& start, const Token& end) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid dereference" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid dereference value, waited <variable name> or <type name>" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        exit(0);
+    }
+
 
     // GOOD
     void ConstRedefinition(const Token& start, const Token& end, const string& var_name) {
@@ -146,7 +185,7 @@ namespace ERROR {
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Variable '" << var_name << "' cannot be mutated, because it is declared as constant value" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
-        FIX("Remove the 'const' keyword in variable declaration statement.");
+        MSG("Remove the 'const' keyword in variable declaration statement.");
         exit(0);
     }
 
@@ -160,7 +199,7 @@ namespace ERROR {
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid argument" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
-        FIX("Delete instruction waits a variable name or pointer.");
+        MSG("Delete instruction waits a variable name or pointer.");
         exit(0);
     }
 

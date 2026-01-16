@@ -1089,8 +1089,10 @@ struct NodeAddressOf : public Node {
 
 struct NodeDereference : public Node {
     unique_ptr<Node> expr;
+    Token start;
+    Token end;
 
-    NodeDereference(unique_ptr<Node> expr) : expr(std::move(expr)) {
+    NodeDereference(unique_ptr<Node> expr, Token start, Token end) : expr(std::move(expr)), start(start), end(end) {
         this->NAME = "Dereference";
     }
 
@@ -1107,8 +1109,12 @@ struct NodeDereference : public Node {
             return object->value;
         }
         if (*value.type == STANDART_TYPE::TYPE) {
+            if (any_cast<Type>(value.data).is_union_type()) {
+                ERROR::InvalidDereferenceType(start, end);
+            }
             return NewType(PointerType(any_cast<Type>(value.data)));
         }
+        ERROR::InvalidDereferenceValue(start, end);
     }
 };
 
@@ -1922,16 +1928,20 @@ unique_ptr<Node> ASTGenerator::ParseAddressOf(Memory& memory) {
 unique_ptr<Node> ASTGenerator::ParseDereference(Memory& memory) {
     walker.next(); // pass '*' token
     if (walker.CheckValue("(")) {
+        Token start_token = *walker.get();
         walker.next();
         auto expr = parse_expression(memory);
         if (!expr) ERROR::UnexpectedToken(*walker.get(), "expression");
         if (!walker.CheckValue(")")) ERROR::UnexpectedToken(*walker.get(), "')'");
+        Token end_token = *walker.get();
         walker.next();
-        return make_unique<NodeDereference>(std::move(expr));
+        return make_unique<NodeDereference>(std::move(expr), start_token, end_token);
     } else {
+        Token start_token = *walker.get();
         auto expr = parse_primary_expression(memory);
         if (!expr) ERROR::UnexpectedToken(*walker.get(), "primary expression or (expression)");
-        return make_unique<NodeDereference>(std::move(expr));
+        Token end_token = *walker.get(-1);
+        return make_unique<NodeDereference>(std::move(expr), start_token, end_token);
     }
 }
 

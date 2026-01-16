@@ -98,7 +98,8 @@ int main(int argc, char** argv) {
             string command = "clang -O3 -std=c++23 precompiled-" + args_parser.file_path + ".cpp -o main.exe";
             TimeIt("Compilation finished in ", [command](){
                 system(command.c_str());
-                filesystem::remove("precompiled-" + args_parser.file_path + ".cpp");
+                if (args_parser.delete_precompiled)
+                    filesystem::remove("precompiled-" + args_parser.file_path + ".cpp");
             });
             
         }

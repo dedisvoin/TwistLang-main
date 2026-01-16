@@ -1,8 +1,1 @@
-while (true) {
-    let _input = input("input value: ");
-    outln "----------------";
-    outln _input;
-    outln typeof(_input);
-    outln "----------------";
-    if (typeof(_input) == String and _input == "exit") break;
-}
+
