@@ -55,7 +55,20 @@ struct Memory {
         return true;
     }
 
-    bool add_object(const string& literal,MemoryObject* object) {
+    bool add_object(const string& literal, MemoryObject* object) {
+        
+        try {
+            string_pool.emplace(literal, object);
+            address_pool.emplace(object->address, object);
+        } catch (...) {
+            return false;
+        }
+        return true;
+    }
+
+    bool add_object_in_lambda(const string& literal, Value value) {
+        auto object = new MemoryObject(value, *value.type, true, true, true, true, this);
+        if (check_literal(literal)) delete_variable(literal);
         try {
             string_pool.emplace(literal, object);
             address_pool.emplace(object->address, object);
@@ -95,6 +108,30 @@ struct Memory {
             target_memory.string_pool[pair.first] = pair.second;
             target_memory.address_pool[pair.second->address] = pair.second;
         }
+    }
+
+    void copy_objects(Memory& target_memory) {
+        for (auto& pair : string_pool) {
+            if (!pair.second->modifiers.is_global)
+                continue;
+            if (target_memory.check_literal(pair.first))
+                target_memory.delete_variable(pair.first);
+            target_memory.add_object(pair.first, pair.second->value, pair.second->wait_type, 
+                pair.second->modifiers.is_const, pair.second->modifiers.is_static, pair.second->modifiers.is_final, pair.second->modifiers.is_global);
+        }
+    }
+
+    unique_ptr<Memory> clone() const {
+        auto new_memory = make_unique<Memory>();
+        
+        // Копируем все переменные
+        for (const auto& [name, obj] : string_pool) {
+            new_memory->add_object(name, obj->value, obj->wait_type,
+                                  obj->modifiers.is_const, obj->modifiers.is_static,
+                                  obj->modifiers.is_final, obj->modifiers.is_global);
+        }
+        
+        return new_memory;
     }
 
     Type get_wait_type(const string& literal) {
@@ -161,6 +198,8 @@ struct Memory {
         string_pool.erase(name);
     }
 
+    
+
     void debug_print() {
         cout << MT::INFO + "Memory Dump:" << endl;
         for (const auto& [name, obj] : string_pool) {
@@ -172,6 +211,8 @@ struct Memory {
                     cout << ", Value: " << any_cast<long double>(obj->value.data);
                 } else if (obj->value.type->name == STANDART_TYPE::BOOL.name) {
                     cout << ", Value: " << (any_cast<bool>(obj->value.data) ? "true" : "false");
+                } else if (obj->value.type->name == STANDART_TYPE::STRING.name) {
+                    cout << ", Value: " << any_cast<string>(obj->value.data);
                 }
             } catch (const std::bad_any_cast& e) {
                 cout << ", Value: <bad cast: " << e.what() << ">";

@@ -1,4 +1,19 @@
-let a = Type;
-outln sizeof(a);
-outln typeof(a);
-outln a;
+
+let object = lambda(name) {
+    namespace {
+        global let n = name;
+        outln n;
+        let get = lambda() { n};
+    }
+};
+
+let a = object("DED");
+let b = object("MOM");
+let c = object("SON");
+
+outln a::get(); # DED
+outln a::name; # DED
+outln b::get(); # MOM
+outln b::name; # MOM
+outln c::get(); # SON
+outln c::name; # SON

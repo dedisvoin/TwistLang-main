@@ -1,9 +1,11 @@
 #include "string"
 #include <memory>
+#include <ostream>
 #include <vcruntime_typeinfo.h>
 #include "any"
 #include <vector>
 #pragma once
+
 
 using namespace std;
 
@@ -241,6 +243,7 @@ namespace STANDART_TYPE {
     const Type NAMESPACE = Type("Namespace");
     const Type NULL_T = Type("Null");
     const Type VOID = Type("Void");
+    const Type LAMBDA = Type("Lambda");
     
     // Указатель на void (универсальный указатель)
     static Type get_void_ptr() {
@@ -302,6 +305,20 @@ struct Value {
     }
     
     Value& operator=(Value&& other) = default;
+
+    Value copy() {
+        return Value(*this);
+    }
+
+    friend ostream& operator<<(ostream& os, const Value& value) {
+        if (*value.type == STANDART_TYPE::STRING){
+            os << any_cast<string>(value.data) << endl;
+        }
+        if (*value.type == STANDART_TYPE::NAMESPACE){
+            os << "NAMESPACE" << endl;
+        }
+        return os;
+    }
 };
 
 struct Null {

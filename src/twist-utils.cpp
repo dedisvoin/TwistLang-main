@@ -47,6 +47,14 @@ bool InString(const char c, const string in) noexcept  {
     return false;
 }
 
+template<class T>
+bool InVector(vector<T> arr, T value) {
+    for (auto v : arr) {
+        if (v == value) return true;
+    }
+    return false;
+}
+
 bool IsSubString(const string str, const string sub_str, int index) {
     for (size_t i = static_cast<size_t>(index); i < static_cast<size_t>(index) + sub_str.size(); i++) {
         if (str[i] != sub_str[i - static_cast<size_t>(index)]) return false;

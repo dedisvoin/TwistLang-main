@@ -13,6 +13,7 @@ enum TokenType {
     L_BRACKET, R_BRACKET,
     L_RECT_BRACKET, R_RECT_BRACKET,
     L_CURVE_BRACKET, R_CURVE_BRACKET,
+    KEYWORD,
     END_OF_FILE,
     DUMMY // Dummy token
 };
@@ -22,6 +23,7 @@ enum TokenType {
     "L_BRACKET","R_BRACKET",
     "L_RECT_BRACKET", "R_RECT_BRACKET",
     "L_CURVE_BRACKET", "R_CURVE_BRACKET",
+    "KEYWORD",
     "END_OF_FILE"
 };
 

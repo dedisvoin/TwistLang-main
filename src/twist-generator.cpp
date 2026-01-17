@@ -1,10 +1,14 @@
 #include "twist-tokenwalker.cpp"
 #include "twist-namespace.cpp"
+#include "twist-lambda.cpp"
 #include "twist-tokens.cpp"
 #include "twist-errors.cpp"
 #include "twist-values.cpp"
 #include "twist-memory.cpp"
+#include "twist-args.cpp"
 
+#include <concepts>
+#include <iostream>
 #include <type_traits>
 #include <algorithm>
 #include <cstddef>
@@ -183,12 +187,12 @@ struct NodeNameResolution : public Node {
         auto ns = any_cast<Namespace>(ns_value.data);
 
         // Проверяем существование переменной/namespace
-        if (!ns.memory->check_literal(current_name)) {
+        if (!ns.memory.check_literal(current_name)) {
             ERROR::UndefinedLeftVariable(start, end, current_name);
         }
 
         // Получаем значение
-        Value result = ns.memory->get_variable(current_name)->value;
+        Value result = ns.memory.get_variable(current_name)->value;
 
         // Если есть оставшаяся цепочка, продолжаем рекурсивно
         if (!remaining_chain.empty()) {
@@ -435,11 +439,19 @@ struct NodeBinary : public Node {
             if (op == "!=")
                 return NewBool(any_cast<string>(left_val.data) != any_cast<string>(right_val.data));
 
-            if (op == "!=")
-                return NewBool(any_cast<string>(left_val.data) != any_cast<string>(right_val.data));
-
             if (op == "+")
                 return NewString(any_cast<string>(left_val.data) + any_cast<string>(right_val.data));
+            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+
+        } else if (*left_val.type == STANDART_TYPE::CHAR && *right_val.type == STANDART_TYPE::CHAR) {
+            if (op == "==")
+                return NewBool(any_cast<char>(left_val.data) == any_cast<char>(right_val.data));
+
+            if (op == "!=")
+                return NewBool(any_cast<char>(left_val.data) != any_cast<char>(right_val.data));
+
+            if (op == "+")
+                return NewString(string()+any_cast<char>(left_val.data) + string()+any_cast<char>(right_val.data));
             ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
         } else if (*left_val.type == STANDART_TYPE::STRING && *right_val.type == STANDART_TYPE::INT) {
             if (op == "*") {
@@ -653,22 +665,22 @@ struct NodeVariableEqual : public Node {
         Node* variable_ptr = variable.get();
 
         // Получаем целевую память и имя переменной
-        pair<Memory*, string> target = resolveAssignmentTarget(variable_ptr);
+        pair<Memory, string> target = resolveAssignmentTarget(variable_ptr);
 
-        Memory* target_memory = target.first;
+        Memory target_memory = target.first;
         string target_var_name = target.second;
 
-        if (!target_memory->check_literal(target_var_name))
+        if (!target_memory.check_literal(target_var_name))
             ERROR::UndefinedLeftVariable(start_left_value_token, end_left_value_token, target_var_name);
 
         // Проверяем константность
-        if (target_memory->is_const(target_var_name)) {
+        if (target_memory.is_const(target_var_name)) {
             ERROR::ConstRedefinition(start_left_value_token, end_value_token, target_var_name);
         }
 
         // Проверяем типизацию для статических переменных
-        if (target_memory->is_static(target_var_name)) {
-            auto wait_type = target_memory->get_wait_type(target_var_name);
+        if (target_memory.is_static(target_var_name)) {
+            auto wait_type = target_memory.get_wait_type(target_var_name);
             auto value_type = *right_value.type;
             if (!IsTypeCompatible(wait_type, value_type)) {
                 exit(-1);
@@ -676,17 +688,17 @@ struct NodeVariableEqual : public Node {
         }
 
         // Выполняем присваивание
-        target_memory->set_object_value(target_var_name, right_value);
+        target_memory.set_object_value(target_var_name, right_value);
     }
 
 
-    pair<Memory*, string> resolveAssignmentTarget(Node* node) {
+    pair<Memory, string> resolveAssignmentTarget(Node* node) {
         if (node->NAME == "Literal") {
             auto memory_object = ((NodeLiteral*)node)->get_memory_object();
             if (!memory_object) {
                 ERROR::UndefinedLeftVariable(start_left_value_token, end_left_value_token, ((NodeLiteral*)node)->name);
             }
-            return {static_cast<Memory*>(memory_object->memory_pointer), ((NodeLiteral*)node)->name};
+            return {*((Memory*)memory_object->memory_pointer), ((NodeLiteral*)node)->name};
         }
         else if (node->NAME == "NameResolutionLiteral") {
             NodeNameResolution* resolution = (NodeNameResolution*)node;
@@ -707,37 +719,37 @@ struct NodeVariableEqual : public Node {
 
             if (full_chain.size() > 1) {
                 // Ищем конечный namespace через цепочку
-                Memory* current_memory = ns.memory.get();
+                Memory current_memory = ns.memory;
 
                 // Проходим по всем промежуточным namespace кроме последнего
                 for (size_t i = 0; i < full_chain.size() - 1; i++) {
                     const string& ns_name = full_chain[i];
 
-                    if (!current_memory->check_literal(ns_name)) {
+                    if (!current_memory.check_literal(ns_name)) {
                         ERROR::UndefinedVariableInNamespace(ns_name, "current namespace");
                     }
 
-                    Value next_ns_value = current_memory->get_variable(ns_name)->value;
+                    Value next_ns_value = current_memory.get_variable(ns_name)->value;
 
                     if (*next_ns_value.type != STANDART_TYPE::NAMESPACE) {
                         cout << "ERROR TYPE" << endl;
                         exit(0);
                     }
 
-                    current_memory = any_cast<Namespace>(next_ns_value.data).memory.get();
+                    current_memory = any_cast<Namespace>(next_ns_value.data).memory;
                 }
 
                 return {current_memory, full_chain.back()};
             }
 
             // Если цепочки нет, возвращаем текущий namespace и имя
-            return {ns.memory.get(), resolution->current_name};
+            return {ns.memory, resolution->current_name};
         }
 
         // Ошибка для неизвестного типа ноды
         cout << "ERROR TYPE" << endl;
         exit(0);
-        return {nullptr, ""}; // Для компилятора
+
     }
 
     Value eval() override {}
@@ -824,7 +836,7 @@ struct NodeNamespaceDecl : public Node {
             parent_memory.delete_variable(name);
         }
 
-        auto new_namespace = NewNamespace(namespace_memory, name);
+        auto new_namespace = NewNamespace(*namespace_memory, name);
         parent_memory.add_object(name, new_namespace, STANDART_TYPE::NAMESPACE, is_const, is_static, is_final, is_global);
     }
 
@@ -1021,7 +1033,7 @@ struct NodeAddressOf : public Node {
 
     void exec() override {}
 
-    pair<Memory*, string> resolveAssignmentTarget(Node* node) {
+    pair<Memory, string> resolveAssignmentTarget(Node* node) {
         NodeNameResolution* resolution = (NodeNameResolution*)node;
 
         // Получаем namespace
@@ -1040,31 +1052,31 @@ struct NodeAddressOf : public Node {
 
         if (full_chain.size() > 1) {
             // Ищем конечный namespace через цепочку
-            Memory* current_memory = ns.memory.get();
+            Memory current_memory = ns.memory;
 
             // Проходим по всем промежуточным namespace кроме последнего
             for (size_t i = 0; i < full_chain.size() - 1; i++) {
                 const string& ns_name = full_chain[i];
 
-                if (!current_memory->check_literal(ns_name)) {
+                if (!current_memory.check_literal(ns_name)) {
                     ERROR::UndefinedVariableInNamespace(ns_name, "current namespace");
                 }
 
-                Value next_ns_value = current_memory->get_variable(ns_name)->value;
+                Value next_ns_value = current_memory.get_variable(ns_name)->value;
 
                 if (*next_ns_value.type != STANDART_TYPE::NAMESPACE) {
                     cout << "ERROR TYPE" << endl;
                     exit(0);
                 }
 
-                current_memory = any_cast<Namespace>(next_ns_value.data).memory.get();
+                current_memory = any_cast<Namespace>(next_ns_value.data).memory;
             }
 
             return {current_memory, full_chain.back()};
         }
 
         // Если цепочки нет, возвращаем текущий namespace и имя
-        return {ns.memory.get(), resolution->current_name};
+        return {ns.memory, resolution->current_name};
     }
 
     Value eval() override {
@@ -1080,12 +1092,11 @@ struct NodeAddressOf : public Node {
         }  
         if (expr->NAME == "NameResolutionLiteral") {
             auto [memory, var_name] = resolveAssignmentTarget(expr.get());
-            auto addr = memory->get_variable(var_name)->address;
+            auto addr = memory.get_variable(var_name)->address;
             return NewPointer(addr, *value.type);
         }
     }
 };
-
 
 struct NodeDereference : public Node {
     unique_ptr<Node> expr;
@@ -1137,14 +1148,14 @@ struct NodeLeftDereference : public Node {
             this->NAME = "LeftDereference";
         };
 
-    pair<Memory*, string> resolveAssignmentTarget(Node* node) {
+    pair<Memory, string> resolveAssignmentTarget(Node* node) {
         
         if (node->NAME == "Literal") {
             auto memory_object = ((NodeLiteral*)node)->get_memory_object();
             if (!memory_object) {
                 ERROR::UndefinedLeftVariable(start_left_value_token, end_left_value_token, ((NodeLiteral*)node)->name);
             }
-            return {static_cast<Memory*>(memory_object->memory_pointer), ((NodeLiteral*)node)->name};
+            return {*static_cast<Memory*>(memory_object->memory_pointer), ((NodeLiteral*)node)->name};
         }
         else if (node->NAME == "NameResolutionLiteral") {
             NodeNameResolution* resolution = (NodeNameResolution*)node;
@@ -1165,37 +1176,36 @@ struct NodeLeftDereference : public Node {
 
             if (full_chain.size() > 1) {
                 // Ищем конечный namespace через цепочку
-                Memory* current_memory = ns.memory.get();
+                Memory current_memory = ns.memory;
 
                 // Проходим по всем промежуточным namespace кроме последнего
                 for (size_t i = 0; i < full_chain.size() - 1; i++) {
                     const string& ns_name = full_chain[i];
 
-                    if (!current_memory->check_literal(ns_name)) {
+                    if (!current_memory.check_literal(ns_name)) {
                         ERROR::UndefinedVariableInNamespace(ns_name, "current namespace");
                     }
 
-                    Value next_ns_value = current_memory->get_variable(ns_name)->value;
+                    Value next_ns_value = current_memory.get_variable(ns_name)->value;
 
                     if (*next_ns_value.type != STANDART_TYPE::NAMESPACE) {
                         cout << "ERROR TYPE" << endl;
                         exit(0);
                     }
 
-                    current_memory = any_cast<Namespace>(next_ns_value.data).memory.get();
+                    current_memory = any_cast<Namespace>(next_ns_value.data).memory;
                 }
 
                 return {current_memory, full_chain.back()};
             }
 
             // Если цепочки нет, возвращаем текущий namespace и имя
-            return {ns.memory.get(), resolution->current_name};
+            return {ns.memory, resolution->current_name};
         }
 
         // Ошибка для неизвестного типа ноды
         cout << "ERROR TYPE" << endl;
         exit(0);
-        return {nullptr, ""}; // Для компилятора
     }
 
     void exec() override {
@@ -1308,31 +1318,31 @@ struct NodeDelete : public Node {
             }
             
         } else {
-            pair<Memory*, string> target_info = resolveDeleteTarget(target.get());
+            pair<Memory, string> target_info = resolveDeleteTarget(target.get());
 
-            Memory* target_memory = target_info.first;
+            Memory target_memory = target_info.first;
             string target_name = target_info.second;
 
-            if (!target_memory->check_literal(target_name)) {
+            if (!target_memory.check_literal(target_name)) {
                 ERROR::UndefinedVariable(start_token);
             }
 
             // Выполняем удаление
-            auto object = target_memory->get_variable(target_name);
-            target_memory->delete_variable(target_name, object->address);
+            auto object = target_memory.get_variable(target_name);
+            target_memory.delete_variable(target_name, object->address);
             STATIC_MEMORY.unregister_object(object->address);
         }
     }
 
     Value eval() override {}
 
-    pair<Memory*, string> resolveDeleteTarget(Node* node) {
+    pair<Memory, string> resolveDeleteTarget(Node* node) {
         if (node->NAME == "Literal") {
             auto memory_object = ((NodeLiteral*)node)->get_memory_object();
             if (!memory_object) {
                 ERROR::UndefinedVariable(start_token);
             }
-            return {static_cast<Memory*>(memory_object->memory_pointer), ((NodeLiteral*)node)->name};
+            return {*static_cast<Memory*>(memory_object->memory_pointer), ((NodeLiteral*)node)->name};
         }
         else if (node->NAME == "NameResolutionLiteral") {
             NodeNameResolution* resolution = (NodeNameResolution*)node;
@@ -1353,37 +1363,37 @@ struct NodeDelete : public Node {
 
             if (full_chain.size() > 1) {
                 // Ищем конечный namespace через цепочку
-                Memory* current_memory = ns.memory.get();
+                Memory current_memory = ns.memory;
 
                 // Проходим по всем промежуточным namespace кроме последнего
                 for (size_t i = 0; i < full_chain.size() - 1; i++) {
                     const string& ns_name = full_chain[i];
 
-                    if (!current_memory->check_literal(ns_name)) {
+                    if (!current_memory.check_literal(ns_name)) {
                         ERROR::UndefinedVariableInNamespace(ns_name, "current namespace");
                     }
 
-                    Value next_ns_value = current_memory->get_variable(ns_name)->value;
+                    Value next_ns_value = current_memory.get_variable(ns_name)->value;
 
                     if (*next_ns_value.type != STANDART_TYPE::NAMESPACE) {
                         cout << "ERROR TYPE" << endl;
                         exit(0);
                     }
 
-                    current_memory = any_cast<Namespace>(next_ns_value.data).memory.get();
+                    current_memory = any_cast<Namespace>(next_ns_value.data).memory;
                 }
 
                 return {current_memory, full_chain.back()};
             }
 
             // Если цепочки нет, возвращаем текущий namespace и имя
-            return {ns.memory.get(), resolution->current_name};
+            return {ns.memory, resolution->current_name};
         }
 
         // Ошибка для неизвестного типа ноды
         cout << "ERROR TYPE" << endl;
         exit(0);
-        return {nullptr, ""}; // Для компилятора
+
     }
 };
 
@@ -1495,22 +1505,22 @@ struct NodeNamespace : public Node {
             // Создаем новую память для namespace
             namespace_memory = make_unique<Memory>();
             // Копируем глобальные переменные из родительской области видимости
+            
         }
+        
 
     void exec() override {
         // Выполняем statement в контексте namespace памяти
-        
     }
 
     Value eval() override {
-        parent_memory.link_objects(*namespace_memory);
+        
+        parent_memory.copy_objects(*namespace_memory);
         if (statement) {
             statement->exec();
         }
 
-        
-
-        auto new_namespace = NewNamespace(namespace_memory, "anonymous-namespace");
+        auto new_namespace = NewNamespace(*namespace_memory, "anonymous-namespace");
         return new_namespace;
     }
 };
@@ -1539,6 +1549,92 @@ struct NodeAssert : public Node {
     Value eval() override {}
 };
 
+
+struct NodeLambda : public Node {
+    vector<Arg> args;
+    unique_ptr<Node> return_type;
+    unique_ptr<Node> body;
+
+    unique_ptr<Memory> lambda_memory;
+    Memory& parent_memory;
+
+    Token start_args_token;
+    Token end_args_token;
+
+    NodeLambda(Memory& parent_memory, unique_ptr<Node> body, vector<Arg> args, unique_ptr<Node> return_type,
+               Token start_args_token, Token end_args_token) :
+        parent_memory(parent_memory), body(std::move(body)), args(std::move(args)), return_type(std::move(return_type)),
+        start_args_token(start_args_token), end_args_token(end_args_token) {
+            this->NAME = "Lambda";
+            lambda_memory = make_unique<Memory>();
+        }
+
+    void exec() override {}
+
+    Value eval() override {
+        // Копируем глобальные переменные из родительской памяти
+        parent_memory.copy_objects(*lambda_memory);
+
+    
+        return NewLambda(lambda_memory.get(), body.get(), 
+        args, return_type.get(), start_args_token, end_args_token);
+    }
+
+};
+struct NodeCall : public Node {
+    unique_ptr<Node> callable;
+    vector<unique_ptr<Node>> args;
+    Token start_callable;
+    Token end_callable;
+
+    NodeCall(unique_ptr<Node> callable, vector<unique_ptr<Node>> args, Token start_callable, Token end_callable) : 
+        callable(std::move(callable)), args(std::move(args)), start_callable(start_callable), end_callable(end_callable) {
+        this->NAME = "Call";
+    }
+
+    void exec() override {}
+
+    Value eval() override {
+        auto value = callable->eval();
+        if (*value.type == STANDART_TYPE::LAMBDA) {
+            auto lambda = any_cast<Lambda>(value.data);
+            
+            // ГЛУБОКОЕ копирование памяти лямбды
+            Memory saved_memory;
+            for (const auto& [name, obj] : lambda.memory->string_pool) {
+                // Копируем ВСЕ объекты, а не только глобальные
+                saved_memory.add_object(name, obj->value, obj->wait_type,
+                                        obj->modifiers.is_const, obj->modifiers.is_static,
+                                        obj->modifiers.is_final, obj->modifiers.is_global);
+            }
+            
+            if (lambda.arguments.size() != args.size()) {
+                ERROR::InvalidLambdaArgumentCount(start_callable, end_callable, 
+                    lambda.start_args_token, lambda.end_args_token, lambda.arguments.size(), args.size());
+            }
+            
+            for (size_t i = 0; i < args.size(); i++) {
+                auto settable_value = args[i]->eval();
+                lambda.memory->add_object_in_lambda(lambda.arguments[i].name, settable_value);
+            }
+            
+            auto result = ((Node*)lambda.expr)->eval();
+            
+            // Восстанавливаем память лямбды, копируя обратно все объекты
+            lambda.memory->string_pool.clear();
+            for (const auto& [name, obj] : saved_memory.string_pool) {
+                lambda.memory->add_object(name, obj->value, obj->wait_type,
+                                        obj->modifiers.is_const, obj->modifiers.is_static,
+                                        obj->modifiers.is_final, obj->modifiers.is_global);
+            }
+            
+            return result;
+        }
+
+        ERROR::IvalidCallableType(start_callable, end_callable);
+    }
+};
+ 
 struct Context {
     Memory memory;
     vector<unique_ptr<Node>> nodes;
@@ -1604,6 +1700,8 @@ struct ASTGenerator {
     unique_ptr<Node> ParseIf(Memory& memory);
     unique_ptr<Node> ParseIfExpr(Memory& memory);
 
+    unique_ptr<Node> ParseCall(unique_ptr<Node> expr, Memory& memory, Token start, Token end);
+
     unique_ptr<Node> ParseNumber();
     unique_ptr<Node> ParseString();
     unique_ptr<Node> ParseChar();
@@ -1627,6 +1725,8 @@ struct ASTGenerator {
 
     unique_ptr<Node> ParseNameResolution(unique_ptr<Node> expression);
 
+    unique_ptr<Node> ParseLambda(Memory& memory);
+
     Memory GLOBAL_MEMORY;
 
 
@@ -1643,35 +1743,45 @@ struct ASTGenerator {
         if (walker.CheckType(TokenType::CHAR))
             return ParseChar();
 
-        if (walker.CheckType(TokenType::LITERAL) && (walker.CheckValue("true") || walker.CheckValue("false")))
-            return ParseBool();
-
-        if (walker.CheckType(TokenType::LITERAL) && walker.CheckValue("null"))
-            return ParseNull();
-
-        if (walker.CheckType(TokenType::LITERAL) && walker.CheckValue("input"))
-            return ParseInput(memory);
-
         if (walker.CheckValue("("))
             return ParseScopes(memory);
 
-        if (walker.CheckValue("typeof") && walker.CheckValue("(", 1)) {
+        if (walker.CheckType(TokenType::KEYWORD) && (walker.CheckValue("true") || walker.CheckValue("false")))
+            return ParseBool();
+
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("null"))
+            return ParseNull();
+
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("input"))
+            return ParseInput(memory);
+
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("lambda"))
+            return ParseLambda(memory);
+
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("typeof") && walker.CheckValue("(", 1)) {
             return ParseTypeof(memory);
         }
 
-        if (walker.CheckValue("sizeof") && walker.CheckValue("(", 1)) {
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("sizeof") && walker.CheckValue("(", 1)) {
             return ParseSizeof(memory);
         }
 
-        if (walker.CheckValue("namespace")) {
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("namespace")) {
             return ParseNamespace(memory);
         }
 
         if (walker.CheckType(TokenType::LITERAL)) {
+            Token start = *walker.get();
+            Token end = *walker.get();
             auto expr = ParseLiteral(memory);
             while (true) {
                 if (walker.CheckValue(":") && walker.CheckValue(":", 1)){
                     expr = ParseNameResolution(std::move(expr));
+                    end = *walker.get(-1);
+                    continue;
+                } else if (walker.CheckValue("(")) {
+                    expr = ParseCall(std::move(expr), memory, start, end);
+                    end = *walker.get(-1);
                     continue;
                 }
                 break;
@@ -1684,9 +1794,9 @@ struct ASTGenerator {
     }
 
     unique_ptr<Node> parse_unary_expression(Memory &memory) {
-        if (walker.CheckValue("-") || walker.CheckValue("+") 
+        if (walker.CheckType(TokenType::OPERATOR) && (walker.CheckValue("-") || walker.CheckValue("+") 
         || walker.CheckValue("--") || walker.CheckValue("++") ||
-            walker.CheckValue("!") || walker.CheckValue("not")) {
+            walker.CheckValue("!") || walker.CheckValue("not"))) {
             string op = walker.get()->value;
             Token operator_token = *walker.get();
             walker.next(); // pass operator
@@ -1695,10 +1805,10 @@ struct ASTGenerator {
             Token end = *walker.get(-1);
             return make_unique<NodeUnary>(std::move(operand), start, end, operator_token);
         }
-        if (walker.CheckValue("&")) {
+        if (walker.CheckType(TokenType::OPERATOR) && walker.CheckValue("&")) {
             return ParseAddressOf(memory);
         }
-        if (walker.CheckValue("*")) {
+        if (walker.CheckType(TokenType::OPERATOR) && walker.CheckValue("*")) {
             return ParseDereference(memory);
         }
 
@@ -1718,7 +1828,7 @@ struct ASTGenerator {
             string op;
 
             for (const auto& candidate : operators) {
-                if (walker.CheckValue(candidate)) {
+                if (walker.CheckType(TokenType::OPERATOR) &&walker.CheckValue(candidate)) {
                     found_operator = true;
                     op = candidate;
                     break;
@@ -1784,7 +1894,7 @@ struct ASTGenerator {
     }
 
     unique_ptr<Node> parse_higher_order_expressions(Memory &memory) {
-        if (walker.CheckType(TokenType::LITERAL) && walker.CheckValue("if")) {
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("if")) {
             return ParseIfExpr(memory);
         }
 
@@ -1804,17 +1914,17 @@ struct ASTGenerator {
         if (current.type == TokenType::L_CURVE_BRACKET) {
             return ParseBlock(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "out") {
+        if (current.type == TokenType::KEYWORD && current.value == "out") {
             return ParseOut(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "outln") {
+        if (current.type == TokenType::KEYWORD && current.value == "outln") {
             return ParseOutLn(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "assert") {
+        if (current.type == TokenType::KEYWORD && current.value == "assert") {
             return ParseAssert(memory);
         }
         // block declaration
-        if ((current.type == TokenType::LITERAL) &&
+        if ((current.type == TokenType::KEYWORD) &&
             (current.value == "final" || current.value == "const" ||
             current.value == "static" || current.value == "global")) {
 
@@ -1828,45 +1938,45 @@ struct ASTGenerator {
             walker.before();
             // Если не блочная декларация, продолжаем как обычно
         }
-        if (current.type == TokenType::LITERAL && current.value == "let") {
+        if (current.type == TokenType::KEYWORD && current.value == "let") {
             return ParseBaseVariableDecl(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "final") {
+        if (current.type == TokenType::KEYWORD && current.value == "final") {
             return ParseFinalVariableDecl(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "static") {
+        if (current.type == TokenType::KEYWORD && current.value == "static") {
             return ParseStaticVariableDecl(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "const") {
+        if (current.type == TokenType::KEYWORD && current.value == "const") {
             return ParseConstVariableDecl(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "global") {
+        if (current.type == TokenType::KEYWORD && current.value == "global") {
             return ParseGlobalVariableDecl(memory);
         }
 
 
-        if (current.type == TokenType::LITERAL && current.value == "namespace") {
+        if (current.type == TokenType::KEYWORD && current.value == "namespace") {
             return ParseNameSpaceDecl(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "if") {
+        if (current.type == TokenType::KEYWORD && current.value == "if") {
             return ParseIf(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "del") {
+        if (current.type == TokenType::KEYWORD && current.value == "del") {
             return ParseDelete(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "while") {
+        if (current.type == TokenType::KEYWORD && current.value == "while") {
             return ParseWhile(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "do") {
+        if (current.type == TokenType::KEYWORD && current.value == "do") {
             return ParseDoWhile(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "for") {
+        if (current.type == TokenType::KEYWORD && current.value == "for") {
             return ParseFor(memory);
         }
-        if (current.type == TokenType::LITERAL && current.value == "break") {
+        if (current.type == TokenType::KEYWORD && current.value == "break") {
             return ParseBreak();
         }
-        if (current.type == TokenType::LITERAL && current.value == "continue") {
+        if (current.type == TokenType::KEYWORD && current.value == "continue") {
             return ParseContinue();
         }
         if (current.type == TokenType::LITERAL) {
@@ -1960,6 +2070,102 @@ struct ContextExecutor {
     }
 };
 
+unique_ptr<Node> ASTGenerator::ParseCall(unique_ptr<Node> expr, Memory& memory, Token start, Token end) {
+    walker.next(); // pass '(' token
+
+    vector<unique_ptr<Node>> arguments;
+    while (true) {
+        if (walker.CheckValue(")")) {
+            walker.next();
+            break;
+        }
+        auto arg = parse_expression(memory);
+        if (!arg)
+            ERROR::UnexpectedToken(*walker.get(), "argument expression");
+        arguments.push_back(std::move(arg));
+
+        if (!walker.CheckValue(")") && !walker.CheckValue(",")) {
+            ERROR::UnexpectedToken(*walker.get(), "',' or ')'");
+        }
+
+        if (walker.CheckValue(",")) walker.next();
+    }
+    return make_unique<NodeCall>(std::move(expr), std::move(arguments), start, end);
+}
+
+
+unique_ptr<Node> ASTGenerator::ParseLambda(Memory& memory) {
+    walker.next(); // pass 'lambda' token
+    Token start_args_token = *walker.get();
+    if (!walker.CheckValue("("))
+        ERROR::UnexpectedToken(*walker.get(), "'('");
+    walker.next();
+
+    vector<Arg> arguments;
+    while (true) {
+        if (walker.CheckValue(")")) {
+            walker.next();
+            break;
+        }
+        if (!walker.CheckType(TokenType::LITERAL))
+            ERROR::UnexpectedToken(*walker.get(), "variable name");
+        string arg_name = walker.get()->value;
+        walker.next();
+
+        unique_ptr<Node> type_expr = nullptr;
+        unique_ptr<Node> default_expr = nullptr;
+
+        if (walker.CheckValue(":")) {
+            walker.next();
+            type_expr = parse_expression(memory);
+            if (!type_expr)
+                ERROR::UnexpectedToken(*walker.get(), "type expression");
+        }
+
+        if (walker.CheckValue("=")) {
+            walker.next();
+            default_expr = parse_expression(memory);
+            if (!default_expr)
+                ERROR::UnexpectedToken(*walker.get(), "default value expression");
+        }
+
+        // ВНИМАНИЕ: потенциальная проблема с владением указателями!
+        arguments.push_back(Arg(arg_name, std::move(type_expr.get()), std::move(default_expr.get())));
+
+        if (!walker.CheckValue(",") && !walker.CheckValue(")")) {
+            ERROR::UnexpectedToken(*walker.get(), "',' or ')'");
+        } 
+        if (walker.CheckValue(",")) walker.next();
+    }
+
+    Token end_args_token = *walker.get(-1);
+
+
+
+    unique_ptr<Node> return_type = nullptr;
+    if (walker.CheckValue("->")) {
+        walker.next();
+        return_type = parse_expression(memory);
+        if (!return_type)
+            ERROR::UnexpectedToken(*walker.get(), "return type expression");
+    }
+
+    if (!walker.CheckValue("{"))
+        ERROR::UnexpectedToken(*walker.get(), "'{'");
+    walker.next();
+
+    auto lambda_node = make_unique<NodeLambda>(memory, nullptr, std::move(arguments), std::move(return_type), start_args_token, end_args_token);
+
+    auto block = parse_expression(*lambda_node->lambda_memory);
+
+    lambda_node->body = std::move(block);
+
+    if (!walker.CheckValue("}"))
+        ERROR::UnexpectedToken(*walker.get(), "'}'");
+    walker.next();
+    
+    return lambda_node;
+}
 
 unique_ptr<Node> ASTGenerator::ParseAssert(Memory& memory) {
     walker.next(); // pass 'assert' token
@@ -2040,6 +2246,8 @@ unique_ptr<Node> ASTGenerator::ParseTypeof(Memory& memory) {
     walker.next(); // pass 'typeof' token
     walker.next(); // pass '(' token
     auto expr = parse_expression(memory);
+    if (!expr)
+        ERROR::UnexpectedToken(*walker.get(), "expression");
     if (!walker.CheckValue(")")) 
         ERROR::UnexpectedToken(*walker.get(), "')' after typeof");
     walker.next();
@@ -2050,6 +2258,8 @@ unique_ptr<Node> ASTGenerator::ParseSizeof(Memory& memory) {
     walker.next(); // pass 'sizeof' token
     walker.next(); // pass '(' token
     auto expr = parse_expression(memory);
+    if (!expr)
+        ERROR::UnexpectedToken(*walker.get(), "expression");
     if (!walker.CheckValue(")")) 
         ERROR::UnexpectedToken(*walker.get(), "')' after sizeof");
     walker.next();

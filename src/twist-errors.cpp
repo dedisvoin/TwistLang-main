@@ -162,6 +162,35 @@ namespace ERROR {
         exit(0);
     }
 
+    void IvalidCallableType(const Token& start, const Token& end) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid call" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid callable type" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        MSG("You must call a this object types (lambda, function, method)");
+        exit(0);
+    }
+
+    void InvalidLambdaArgumentCount(const Token& start, const Token& end, const Token& start_args, const Token& end_args, int wait_count, int found_count) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid call" << endl;
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Arguments count mismatch" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << TM::YELLOW << ". " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Waited " << wait_count << " arguments but found " << found_count << " arguments" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
+        
+        exit(0);
+    }
+
     void InvalidDereferenceValue(const Token& start, const Token& end) {
         string file_lines = PREPROCESSOR_OUTPUT;
 

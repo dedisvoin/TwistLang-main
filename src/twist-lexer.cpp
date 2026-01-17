@@ -23,6 +23,14 @@ inline static const bool IS_OPER(const char c) { return InString(c, APT::OPER); 
 inline static const bool IS_BRAC(const char c) { return InString(c, APT::BRAC); }
 inline static const bool IS_SEPP(const char c) { return InString(c, APT::SEPP); }
 
+
+
+vector<string> KEYWORDS = { "if", "else", "for", "while", 
+    "do", "break", "continue", "let", 
+    "static", "final", "const", "global", "typeof", "sizeof",
+     "del", "new" ,"true", "false", "null",
+    "out", "outln", "input", "in" , "and", "or", "namespace", "assert", "lambda" };
+
 struct Lexer {
     int line = 1;
     int pos = 0;
@@ -87,7 +95,8 @@ struct Lexer {
             .index = PL,
             .lenght = L
         };
-        this->add_token(V, TokenType::LITERAL, PIF);
+        if (InVector(KEYWORDS, V)) this->add_token(V, TokenType::KEYWORD, PIF);
+        else this->add_token(V, TokenType::LITERAL, PIF);
     }
 
     /*

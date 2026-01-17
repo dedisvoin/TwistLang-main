@@ -2,12 +2,12 @@
 #include "twist-memory.cpp"
 
 struct Namespace {
-    shared_ptr<Memory> memory;
+    Memory memory;
     string name;
 
-    Namespace(shared_ptr<Memory> memory, string name) : memory(memory), name(name) {};
+    Namespace(Memory memory, string name) : memory(memory), name(name) {};
 };
 
-Value NewNamespace(shared_ptr<Memory> memory, const string& name) {
+Value NewNamespace(Memory memory, const string& name) {
     return Value(make_unique<Type>(STANDART_TYPE::NAMESPACE), Namespace(memory, name));
 }
