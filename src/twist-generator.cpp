@@ -825,10 +825,7 @@ struct NodeNamespaceDecl : public Node {
         parent_memory.add_object(name, new_namespace, STANDART_TYPE::NAMESPACE, is_const, is_static, is_final, is_global);
     }
 
-    Value eval() override {
-        // Namespace не возвращает значение
-        return NewNull();
-    }
+    Value eval() override {}
 };
 
 struct Break {};
@@ -1451,6 +1448,38 @@ struct NodeInput : public Node {
     void exec() override {}
 };
 
+
+struct NodeNamespace : public Node {
+    shared_ptr<Memory> namespace_memory;
+    unique_ptr<Node> statement;
+    Memory& parent_memory;
+
+    NodeNamespace(Memory& parent_memory, unique_ptr<Node> statement) :
+        parent_memory(parent_memory), statement(std::move(statement)) {
+            this->NAME = "Namespace";
+            // Создаем новую память для namespace
+            namespace_memory = make_unique<Memory>();
+            // Копируем глобальные переменные из родительской области видимости
+        }
+
+    void exec() override {
+        // Выполняем statement в контексте namespace памяти
+        
+    }
+
+    Value eval() override {
+        parent_memory.link_objects(*namespace_memory);
+        if (statement) {
+            statement->exec();
+        }
+
+        
+
+        auto new_namespace = NewNamespace(namespace_memory, "anonymous-namespace");
+        return new_namespace;
+    }
+};
+
 struct Context {
     Memory memory;
     vector<unique_ptr<Node>> nodes;
@@ -1512,6 +1541,7 @@ struct ASTGenerator {
 
     unique_ptr<Node> ParseBlock(Memory& memory);
     unique_ptr<Node> ParseNameSpaceDecl(Memory& memory);
+    unique_ptr<Node> ParseNamespace(Memory& memory);
     unique_ptr<Node> ParseIf(Memory& memory);
     unique_ptr<Node> ParseIfExpr(Memory& memory);
 
@@ -1565,6 +1595,10 @@ struct ASTGenerator {
 
         if (walker.CheckValue("typeof") && walker.CheckValue("(", 1)) {
             return ParseTypeof(memory);
+        }
+
+        if (walker.CheckValue("namespace")) {
+            return ParseNamespace(memory);
         }
 
         if (walker.CheckType(TokenType::LITERAL)) {
@@ -1856,6 +1890,16 @@ struct ContextExecutor {
         }
     }
 };
+
+unique_ptr<Node> ASTGenerator::ParseNamespace(Memory& memory) {
+    walker.next(); // pass "namespace" token
+    auto namespace_node = make_unique<NodeNamespace>(memory, nullptr);
+
+    auto block = parse_statement(*namespace_node->namespace_memory);
+    namespace_node->statement = std::move(block);
+
+    return namespace_node;
+}
 
 
 unique_ptr<Node> ASTGenerator::ParseInput(Memory& memory) {

@@ -40,14 +40,14 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.twist",
-				"match": "\\b(for|while|let|out|outln|in|and|or|if|else|return|auto)\\b"
+				"match": "\\b(for|while|let|in|and|or|if|else|return|auto|assert)\\b"
 			}]
 		},
 		
 		"input-keyword": {
 			"patterns": [{
 				"name": "support.function.input.twist",
-				"match": "\\binput\\b"
+				"match": "\\b(input|out|outln)\\b"
 			}]
 		},
 		
