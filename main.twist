@@ -1,0 +1,4 @@
+let a = Type;
+outln sizeof(a);
+outln typeof(a);
+outln a;

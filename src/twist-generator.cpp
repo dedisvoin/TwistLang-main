@@ -508,7 +508,10 @@ struct NodeBaseVariableDecl : public Node {
             if (memory.is_final(var_name)) {
                 ERROR::VariableAlreadyDefined(decl_token, var_name);
             }
+            auto addr = memory.get_variable(var_name)->address;
+            STATIC_MEMORY.unregister_object(addr);
             memory.delete_variable(var_name);
+            
         }
 
         Type static_type = *value.type.get();
@@ -1245,6 +1248,38 @@ struct NodeTypeof : public Node {
     }
 };
 
+struct NodeSizeof : public Node {
+    unique_ptr<Node> expr;
+
+    NodeSizeof(unique_ptr<Node> expr) : expr(std::move(expr)) {}
+
+    void exec() override {}
+
+    Value eval() override {
+        auto value = expr->eval();
+        if (*value.type == STANDART_TYPE::INT)
+            return NewInt(sizeof(int64_t));
+        if (*value.type == STANDART_TYPE::DOUBLE)
+            return NewInt(sizeof(long double));
+        if (*value.type == STANDART_TYPE::CHAR)
+            return NewInt(sizeof(char));
+        if (*value.type == STANDART_TYPE::STRING)
+            return NewInt(any_cast<string>(value.data).size() * sizeof(char));
+        if (*value.type == STANDART_TYPE::BOOL)
+            return NewInt(sizeof(bool));
+        if (*value.type == STANDART_TYPE::TYPE)
+            return NewInt(sizeof(Type));
+        if (*value.type == STANDART_TYPE::NAMESPACE)
+            return NewInt(sizeof(Namespace));
+        if (*value.type == STANDART_TYPE::NULL_T)
+            return NewInt(sizeof(Null));
+        if (*value.type == STANDART_TYPE::VOID)
+            return NewInt(0);
+
+        return NewInt(sizeof(std::any));
+    }
+};
+
 
 // TODO AND TESTS
 // +- UNSTABLE WORKS
@@ -1480,6 +1515,30 @@ struct NodeNamespace : public Node {
     }
 };
 
+
+struct NodeAssert : public Node {
+    unique_ptr<Node> expr;
+    Token start_token;
+    Token end_token;
+
+    NodeAssert(unique_ptr<Node> expr, Token start_token, Token end_token)
+        : expr(std::move(expr)), start_token(start_token), end_token(end_token) {
+            NAME = "Assert";
+    }
+
+    void exec() override {
+        auto value = expr->eval();
+        if (*value.type != STANDART_TYPE::BOOL) {
+            ERROR::AssertionIvalidArgument(start_token, end_token);
+        }
+        if (!any_cast<bool>(value.data)) {
+            ERROR::AssertionFailed(start_token, end_token);
+        }
+    }
+
+    Value eval() override {}
+};
+
 struct Context {
     Memory memory;
     vector<unique_ptr<Node>> nodes;
@@ -1554,12 +1613,15 @@ struct ASTGenerator {
     unique_ptr<Node> ParseContinue();
     unique_ptr<Node> ParseLiteral(Memory& memory);
 
+    unique_ptr<Node> ParseAssert(Memory& memory);
+
 
     unique_ptr<Node> ParseAddressOf(Memory& memory);
     unique_ptr<Node> ParseDereference(Memory& memory);
     unique_ptr<Node> ParseLeftDereference(Memory& memory);
 
     unique_ptr<Node> ParseTypeof(Memory& memory);
+    unique_ptr<Node> ParseSizeof(Memory& memory);
 
     unique_ptr<Node> ParseScopes(Memory& memory);
 
@@ -1595,6 +1657,10 @@ struct ASTGenerator {
 
         if (walker.CheckValue("typeof") && walker.CheckValue("(", 1)) {
             return ParseTypeof(memory);
+        }
+
+        if (walker.CheckValue("sizeof") && walker.CheckValue("(", 1)) {
+            return ParseSizeof(memory);
         }
 
         if (walker.CheckValue("namespace")) {
@@ -1638,7 +1704,6 @@ struct ASTGenerator {
 
         return parse_primary_expression(memory);
     }
-
 
     // Вспомогательный метод для парсинга бинарных выражений с заданными операторами
     unique_ptr<Node> ParseBinaryLevel(
@@ -1745,6 +1810,9 @@ struct ASTGenerator {
         if (current.type == TokenType::LITERAL && current.value == "outln") {
             return ParseOutLn(memory);
         }
+        if (current.type == TokenType::LITERAL && current.value == "assert") {
+            return ParseAssert(memory);
+        }
         // block declaration
         if ((current.type == TokenType::LITERAL) &&
             (current.value == "final" || current.value == "const" ||
@@ -1849,6 +1917,7 @@ struct ASTGenerator {
         GLOBAL_MEMORY.add_object("Type", NewType("Type"), STANDART_TYPE::TYPE, true, true, true, true);
         GLOBAL_MEMORY.add_object("Null", NewType("Null"), STANDART_TYPE::TYPE, true, true, true, true);
         GLOBAL_MEMORY.add_object("Void", NewType("Void"), STANDART_TYPE::TYPE, true, true, true, true);
+        GLOBAL_MEMORY.add_object("Namespace", NewType("Namespace"), STANDART_TYPE::TYPE, true, true, true, true);
     }
 
     inline void parse() {
@@ -1890,6 +1959,20 @@ struct ContextExecutor {
         }
     }
 };
+
+
+unique_ptr<Node> ASTGenerator::ParseAssert(Memory& memory) {
+    walker.next(); // pass 'assert' token
+    Token start_token = *walker.get();
+    auto expr = parse_expression(memory);
+    Token end_token = *walker.get(-1);
+    if (!expr)
+        ERROR::UnexpectedToken(*walker.get(), "expression");
+    if (!walker.CheckValue(";"))
+        ERROR::UnexpectedToken(*walker.get(), "';'");
+    walker.next();
+    return make_unique<NodeAssert>(std::move(expr), start_token, end_token);
+}
 
 unique_ptr<Node> ASTGenerator::ParseNamespace(Memory& memory) {
     walker.next(); // pass "namespace" token
@@ -1961,6 +2044,16 @@ unique_ptr<Node> ASTGenerator::ParseTypeof(Memory& memory) {
         ERROR::UnexpectedToken(*walker.get(), "')' after typeof");
     walker.next();
     return make_unique<NodeTypeof>(std::move(expr));
+}
+
+unique_ptr<Node> ASTGenerator::ParseSizeof(Memory& memory) {
+    walker.next(); // pass 'sizeof' token
+    walker.next(); // pass '(' token
+    auto expr = parse_expression(memory);
+    if (!walker.CheckValue(")")) 
+        ERROR::UnexpectedToken(*walker.get(), "')' after sizeof");
+    walker.next();
+    return make_unique<NodeSizeof>(std::move(expr));
 }
 
 unique_ptr<Node> ASTGenerator::ParseAddressOf(Memory& memory) {

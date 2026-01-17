@@ -40,14 +40,14 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.twist",
-				"match": "\\b(for|while|let|in|and|or|if|else|return|auto|assert)\\b"
+				"match": "\\b(for|while|let|in|and|or|if|else|return|auto|assert|lambda)\\b"
 			}]
 		},
 		
 		"input-keyword": {
 			"patterns": [{
 				"name": "support.function.input.twist",
-				"match": "\\b(input|out|outln)\\b"
+				"match": "\\b(input|out|outln|typeof|sizeof)\\b"
 			}]
 		},
 		
@@ -89,7 +89,7 @@
 		
 		"modifiers": {
 			"name": "storage.modifier.twist",
-			"match": "\\b(global|static|const|final|typeof|del)\\b"
+			"match": "\\b(global|static|const|final|del)\\b"
 		},
 		
 		"types": {

@@ -140,7 +140,7 @@ namespace ERROR {
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
-        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " " << "Input instruction wait `String` type but found `" << found_type.name << "`" << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " " << "Input instruction wait `String` or `Char` type but found `" << found_type.name << "`" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         exit(0);
     }
@@ -172,6 +172,31 @@ namespace ERROR {
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid dereference value, waited <variable name> or <type name>" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         exit(0);
+    }
+
+
+    void AssertionIvalidArgument(const Token& start, const Token& end) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid assertion argument" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid assertion argument, waited `Bool` type" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        exit(0);
+    }
+
+    void AssertionFailed(const Token& start, const Token& end) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+
+        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Assertion failed" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::YELLOW << "|" << TM::RESET << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::YELLOW << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Assertion failed" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+
     }
 
 
