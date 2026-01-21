@@ -1,5 +1,6 @@
 let a = 10;
-let age: let name = "Ivan";
+let age:
+let name = "Ivan";
 
 let ptr = &name; # ptr for name variable
 

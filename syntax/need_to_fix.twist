@@ -1,0 +1,20 @@
+################################################
+#                    ANOMALY                   #
+#              MEMMORY CORAPTION 1             #
+################################################
+let create = lambda(name) {
+    namespace {
+        let any_fn = lambda() {name};
+    }
+};
+
+let A = create("Ivan");
+let B = create("Masha");
+
+outln A::name; # Ivan
+outln B::name; # Masha
+
+outln "--" * 20;
+
+outln A::any_fn(); # Masha // MEMMORY LEAK
+outln B::any_fn(); # Masha

@@ -9,3 +9,4 @@ let a = {10, true, "hello", 40}; # Create vector of different types
 let b: [Int, 4] = a; # Check vector type and size
 
 let b: [Int, 4] = {10, 20, 30, 40}; # Create Integers vector
+

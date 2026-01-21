@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <iostream>
+#include <unordered_map>
 
 #pragma once
 
@@ -37,11 +38,30 @@ struct MemoryObject {
         address = GLOBAL_ADDRESS;
         GLOBAL_ADDRESS++;
     }
+
+    MemoryObject* copy() {
+        return new MemoryObject(value, wait_type, modifiers.is_const, modifiers.is_static, modifiers.is_final, modifiers.is_global, memory_pointer);
+    }
 };
 
 struct Memory {
-    map<string, MemoryObject*> string_pool;
-    map<Address, MemoryObject*> address_pool;
+    unordered_map<string, MemoryObject*> string_pool;
+    unordered_map<Address, MemoryObject*> address_pool;
+
+    void clear() {
+        string_pool.clear();
+        address_pool.clear();
+    }
+
+    void clear_unglobals() {
+        for (auto it = string_pool.begin(); it != string_pool.end();) {
+            if (!it->second->modifiers.is_global) {
+                it = string_pool.erase(it);
+            } else {
+                it++;
+            }
+        }
+    }
 
     // add memory object in all pools
     bool add_object(const string& literal, Value value, Type wait_type, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false) {
@@ -67,7 +87,7 @@ struct Memory {
     }
 
     bool add_object_in_lambda(const string& literal, Value value) {
-        auto object = new MemoryObject(value, *value.type, true, true, true, true, this);
+        auto object = new MemoryObject(value, *value.type, false, true, false, true, this);
         if (check_literal(literal)) delete_variable(literal);
         try {
             string_pool.emplace(literal, object);
@@ -105,19 +125,19 @@ struct Memory {
         for (auto& pair : string_pool) {
             if (!pair.second->modifiers.is_global)
                 continue;
+            
             target_memory.string_pool[pair.first] = pair.second;
             target_memory.address_pool[pair.second->address] = pair.second;
         }
     }
 
+
     void copy_objects(Memory& target_memory) {
         for (auto& pair : string_pool) {
-            if (!pair.second->modifiers.is_global)
-                continue;
-            if (target_memory.check_literal(pair.first))
-                target_memory.delete_variable(pair.first);
-            target_memory.add_object(pair.first, pair.second->value, pair.second->wait_type, 
-                pair.second->modifiers.is_const, pair.second->modifiers.is_static, pair.second->modifiers.is_final, pair.second->modifiers.is_global);
+            // Копируем ВСЕ объекты, не только глобальные
+            target_memory.add_object(pair.first, pair.second->value, pair.second->wait_type,
+                                    pair.second->modifiers.is_const, pair.second->modifiers.is_static,
+                                    pair.second->modifiers.is_final, pair.second->modifiers.is_global);
         }
     }
 

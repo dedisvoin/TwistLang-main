@@ -109,7 +109,18 @@ namespace ERROR {
         exit(0);
     }
 
+    void StaticTypesMisMatch(const Token& start, const Token& end, Type waited_type, Type found_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
 
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Types mismatch" << endl;
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Variable waited `" << waited_type.name << "` type, but found `" << found_type.name << "` type" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+    
+        exit(0);
+    }
 
     void IncompartableTypeVarDeclaration(const Token& start, const Token& end, const Token& start_expr, const Token& end_expr, Type waited_type, Type found_type) {
         string file_lines = PREPROCESSOR_OUTPUT;
@@ -191,6 +202,64 @@ namespace ERROR {
         exit(0);
     }
 
+    void InvalidLambdaArgumentType(const Token& start, const Token& end, const Token& start_args, const Token& end_args, Type wait_type, Type found_type, string index) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << "+ " << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid call" << endl;
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid argument type" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << TM::YELLOW << ". " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Argument '" << index << "' waited `" << wait_type.name << "` but found `" << found_type.name << "` type" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
+        
+        exit(0);
+    }
+
+    void InvalidLambdaReturnType(const Token& start, const Token& end, const Token start_args, const Token end_args, Type wait_type, Type found_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << "+ " << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid call" << endl;
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid return type `" << found_type.name << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << TM::YELLOW << ". " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Return waited `" << wait_type.name << "` but found `" << found_type.name << "` type" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
+        
+        exit(0);
+    }
+
+    void WaitedLambdaArgumentTypeSpecifier(const Token& start_args, const Token& end_args, string index) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << start_args.pif << " >> Invalid type specifier" << endl;
+        cout << TM::YELLOW << "|" << TM::RESET << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid type specifier for argument '" << index << "'" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
+        
+        exit(0);
+    }
+
+    void WaitedLambdaReturnTypeSpecifier(const Token& start_args, const Token& end_args) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << start_args.pif << " >> Invalid type specifier" << endl;
+        cout << TM::YELLOW << "|" << TM::RESET << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid return type specifier" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
+        FIX("Waited type specifier for return type 'Int', 'Float | Double', ... ");
+        exit(0);
+    }
+
     void InvalidDereferenceValue(const Token& start, const Token& end) {
         string file_lines = PREPROCESSOR_OUTPUT;
 
@@ -239,7 +308,21 @@ namespace ERROR {
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Variable '" << var_name << "' cannot be mutated, because it is declared as constant value" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
-        MSG("Remove the 'const' keyword in variable declaration statement.");
+        FIX("Remove the 'const' keyword in variable declaration statement.");
+        exit(0);
+    }
+
+
+    void ConstPointerRedefinition(const Token& start, const Token& end) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Constant mutation"  << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Pointer value cannot be mutated, because it is declared as pointer to constant value" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        FIX("Remove the 'const' keyword in declaration expression.");
         exit(0);
     }
 

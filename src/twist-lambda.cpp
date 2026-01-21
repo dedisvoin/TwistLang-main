@@ -7,25 +7,26 @@
 using namespace std;
 
 struct Lambda {
-    Memory* memory;  // shared_ptr, но будет создаваться новый при каждом вызове
-    void* expr;
-    vector<Arg> arguments;
-    void* return_type;
+    shared_ptr<Memory> memory;  // Изменяем с Memory* на shared_ptr<Memory>
+    unique_ptr<Node> expr;
+    vector<Arg*> arguments;
+    unique_ptr<Node> return_type;
     
     Token start_args_token;
     Token end_args_token;
+    Token start_type_token;
+    Token end_type_token;
     
-    Lambda(Memory* memory, void* expr, vector<Arg> args, 
-           void* return_type, Token start_args_token, Token end_args_token)
-        : memory(memory), expr(expr), arguments(std::move(args)),
-          return_type(return_type), start_args_token(start_args_token), 
-          end_args_token(end_args_token) {}
-
+    Lambda(shared_ptr<Memory> memory, unique_ptr<Node> expr, vector<Arg*> args, 
+           unique_ptr<Node> return_type, 
+           Token start_args_token, Token end_args_token, Token start_type_token, Token end_type_token)
+        : memory(memory), expr(std::move(expr)), arguments(std::move(args)),
+          return_type(std::move(return_type)), start_args_token(start_args_token), 
+          end_args_token(end_args_token), start_type_token(start_type_token), end_type_token(end_type_token) {}
 };
 
-
-Value NewLambda(Memory* memory, void* expr, std::vector<Arg> arguments, void* return_type,
-                Token start_args_token, Token end_args_token) {
-    Lambda lambda = Lambda(memory, expr, arguments, return_type, start_args_token, end_args_token);
+Value NewLambda(shared_ptr<Memory> memory, unique_ptr<Node> expr, std::vector<Arg*> arguments, unique_ptr<Node> return_type,
+                Token start_args_token, Token end_args_token, Token start_type_token, Token end_type_token) {
+    Lambda* lambda = new Lambda(memory, std::move(expr), std::move(arguments), std::move(return_type), start_args_token, end_args_token, start_type_token, end_type_token);
     return Value(make_unique<Type>(STANDART_TYPE::LAMBDA), lambda);
 }

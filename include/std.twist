@@ -1,0 +1,20 @@
+let std = namespace {
+    global final const let Any = Int | Double | String | Char |
+                           Bool | Null | Void | Lambda | 
+                           Namespace;
+
+    global final const let Number = Int | Double;
+    global final const let Literal = String | Char;
+
+    let sum = lambda (a: Number, b: Number) -> Number { a + b };
+    let sub = lambda (a: Number, b: Number) -> Number { a - b };
+
+    let min = lambda (a: Number, b: Number) -> Number { 
+        if (a < b) { a } else { b }
+    };
+    let max = lambda (a: Number, b: Number) -> Number { 
+        if (a > b) { a } else { b }
+    };
+};
+
+

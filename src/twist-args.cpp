@@ -1,14 +1,18 @@
 #include "string"
+#include "twist-nodetemp.cpp"
+
 #pragma once
 
 using namespace std;
 
 struct Arg {
-    void* type_expr = nullptr;
-    void* default_parameter = nullptr;
+    unique_ptr<Node> type_expr = nullptr;
+    unique_ptr<Node> default_parameter = nullptr;
     string name;
     bool is_const = false;
     bool is_final = false;
 
-    Arg(string name, void* default_parameter, void* type_expr) : name(name), default_parameter(default_parameter), type_expr(type_expr) {}
+    Arg(string name) : name(name) {
+        
+    }
 };
