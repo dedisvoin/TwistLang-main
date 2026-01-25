@@ -72,7 +72,7 @@ namespace ERROR {
         TM::YELLOW  << string(op_t.pif.index - start.pif.index, '^') << 
         string(op_t.pif.lenght, '~') << 
         string(end.pif.index - (op_t.pif.index + op_t.pif.lenght) + end.pif.lenght, '^') << 
-        " `" << value_l.type->name << "` and `" << value_r.type->name <<"` types are not support this binary operator" << endl;
+        " `" << value_l.type.pool << "` and `" << value_r.type.pool <<"` types are not support this binary operator" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         exit(0);
     }
@@ -89,13 +89,13 @@ namespace ERROR {
         cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(op_t.pif.index + op_t.pif.lenght - 1, ' ') << TM::RED << ".---- Ivalid operator: '" << op_t.value << "'" << endl;
         cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(op_t.pif.index, ' ') << TM::RED << string(op_t.pif.lenght, 'v') << endl;
         cout << TM::YELLOW << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
-        cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::YELLOW << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " `" << value.type->name << "` type is not support this unary operator" << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::YELLOW << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " `" << value.type.pool << "` type is not support this unary operator" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         exit(0);
     }
 
 
-
+    // GOOD
     void InvalidType(const Token& start, const Token& end) {
         string file_lines = PREPROCESSOR_OUTPUT;
 
@@ -109,6 +109,8 @@ namespace ERROR {
         exit(0);
     }
 
+
+    // GOOD
     void StaticTypesMisMatch(const Token& start, const Token& end, Type waited_type, Type found_type) {
         string file_lines = PREPROCESSOR_OUTPUT;
         vector<string> lines = SplitString(file_lines, '\n');
@@ -116,34 +118,37 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Types mismatch" << endl;
         cout << TM::RED << "|" << TM::RESET << endl;
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
-        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Variable waited `" << waited_type.name << "` type, but found `" << found_type.name << "` type" << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Variable waited `" << waited_type.pool << "` type, but found `" << found_type.pool << "` type" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
     
         exit(0);
     }
 
+
+    // GOOD
     void IncompartableTypeVarDeclaration(const Token& start, const Token& end, const Token& start_expr, const Token& end_expr, Type waited_type, Type found_type) {
         string file_lines = PREPROCESSOR_OUTPUT;
 
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Incompartable types" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        if (found_type.name != "Null") {
-            cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(end_expr.pif.index + end_expr.pif.lenght - 1, ' ') << TM::RED << ".---- This expression type `" << found_type.name << "` but waited `" << waited_type.name << "`" << endl;
+        if (found_type.pool != "Null") {
+            cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(end_expr.pif.index + end_expr.pif.lenght - 1, ' ') << TM::RED << ".---- This expression type `" << found_type.pool << "` but waited `" << waited_type.pool << "`" << endl;
             cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start_expr.pif.index, ' ') << TM::RED << string(end_expr.pif.index - start_expr.pif.index + end_expr.pif.lenght, 'v') << endl;
         }
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
         string messsage = "Incompartable type in this variable declaration statement";
-        if (found_type.name == "Null")
+        if (found_type.pool == "Null")
             messsage = "Use 'auto' for this variable declaration statement";
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " " << messsage << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         MSG("Use '?' symbol after type expression to automatic create nullable type."); cout << endl;
-        MSG("After use '?' this variable type been '" + waited_type.name + " | Null'.");
+        MSG("After use '?' this variable type been '" + waited_type.pool + " | Null'.");
         exit(0);
     }
 
 
+    // GOOD
     void IncompartableTypeInput(const Token& start, const Token& end, Type found_type) {
         string file_lines = PREPROCESSOR_OUTPUT;
 
@@ -151,12 +156,12 @@ namespace ERROR {
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
-        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " " << "Input instruction wait `String` or `Char` type but found `" << found_type.name << "`" << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " " << "Input instruction wait `String` or `Char` type but found `" << found_type.pool << "`" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         exit(0);
     }
 
-
+    // GOOD
     void InvalidDereferenceType(const Token& start, const Token& end) {
         string file_lines = PREPROCESSOR_OUTPUT;
 
@@ -173,6 +178,8 @@ namespace ERROR {
         exit(0);
     }
 
+
+    // GOOD
     void IvalidCallableType(const Token& start, const Token& end) {
         string file_lines = PREPROCESSOR_OUTPUT;
 
@@ -186,6 +193,8 @@ namespace ERROR {
         exit(0);
     }
 
+
+    // GOOD
     void InvalidLambdaArgumentCount(const Token& start, const Token& end, const Token& start_args, const Token& end_args, int wait_count, int found_count) {
         string file_lines = PREPROCESSOR_OUTPUT;
         vector<string> lines = SplitString(file_lines, '\n');
@@ -202,6 +211,8 @@ namespace ERROR {
         exit(0);
     }
 
+
+    // GOOD
     void InvalidLambdaArgumentType(const Token& start, const Token& end, const Token& start_args, const Token& end_args, Type wait_type, Type found_type, string index) {
         string file_lines = PREPROCESSOR_OUTPUT;
         vector<string> lines = SplitString(file_lines, '\n');
@@ -212,12 +223,14 @@ namespace ERROR {
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid argument type" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         cout << TM::YELLOW << ". " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
-        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Argument '" << index << "' waited `" << wait_type.name << "` but found `" << found_type.name << "` type" << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Argument '" << index << "' waited `" << wait_type.pool << "` but found `" << found_type.pool << "` type" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
         
         exit(0);
     }
 
+
+    // GOOD
     void InvalidLambdaReturnType(const Token& start, const Token& end, const Token start_args, const Token end_args, Type wait_type, Type found_type) {
         string file_lines = PREPROCESSOR_OUTPUT;
         vector<string> lines = SplitString(file_lines, '\n');
@@ -225,15 +238,17 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << "+ " << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid call" << endl;
         cout << TM::RED << "|" << TM::RESET << endl;
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
-        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid return type `" << found_type.name << "`" << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid return type `" << found_type.pool << "`" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         cout << TM::YELLOW << ". " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
-        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Return waited `" << wait_type.name << "` but found `" << found_type.name << "` type" << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Return waited `" << wait_type.pool << "` but found `" << found_type.pool << "` type" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
         
         exit(0);
     }
 
+
+    // GOOD
     void WaitedLambdaArgumentTypeSpecifier(const Token& start_args, const Token& end_args, string index) {
         string file_lines = PREPROCESSOR_OUTPUT;
         vector<string> lines = SplitString(file_lines, '\n');
@@ -242,6 +257,33 @@ namespace ERROR {
         cout << TM::YELLOW << "|" << TM::RESET << endl;
         cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
         cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid type specifier for argument '" << index << "'" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
+        
+        exit(0);
+    }
+
+    
+    void WaitedFuncTypeArgumentTypeSpecifier(const Token& start_args, const Token& end_args, int index) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << start_args.pif << " >> Invalid type specifier" << endl;
+        cout << TM::YELLOW << "|" << TM::RESET << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid type specifier for argument '" << index << "'" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
+        
+        exit(0);
+    }
+
+    void WaitedFuncTypeReturnTypeSpecifier(const Token& start_args, const Token& end_args) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << start_args.pif << " >> Invalid type specifier" << endl;
+        cout << TM::YELLOW << "|" << TM::RESET << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid reurn type specifier" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
         
         exit(0);

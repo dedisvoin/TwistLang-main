@@ -28,5 +28,5 @@ struct Lambda {
 Value NewLambda(shared_ptr<Memory> memory, unique_ptr<Node> expr, std::vector<Arg*> arguments, unique_ptr<Node> return_type,
                 Token start_args_token, Token end_args_token, Token start_type_token, Token end_type_token) {
     Lambda* lambda = new Lambda(memory, std::move(expr), std::move(arguments), std::move(return_type), start_args_token, end_args_token, start_type_token, end_type_token);
-    return Value(make_unique<Type>(STANDART_TYPE::LAMBDA), lambda);
+    return Value(STANDART_TYPE::LAMBDA, lambda);
 }

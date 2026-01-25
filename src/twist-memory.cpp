@@ -10,8 +10,28 @@
 
 typedef int Address;
 
-// global address counter
-static Address GLOBAL_ADDRESS = 0;
+// Создайте отдельный класс для управления адресами
+class AddressManager {
+private:
+    static int next_address;
+    
+public:
+    static int get_next_address() {
+        return ++next_address;
+    }
+
+    static int get_current_address() {
+        return next_address;
+    }
+    
+    static void reset() {
+        next_address = 0;
+    }
+};
+
+int AddressManager::next_address = 0;
+
+
 
 struct Modifiers {
     bool is_const;
@@ -33,16 +53,21 @@ struct MemoryObject {
 
     MemoryObject(Value value, Type wait_type,
                  bool is_const, bool is_static, bool is_final, bool is_global,
-                 void* memory
-    ) : value(value), wait_type(wait_type), modifiers({is_const, is_static, is_final, is_global}), memory_pointer(memory) {
-        address = GLOBAL_ADDRESS;
-        GLOBAL_ADDRESS++;
+                 void* memory, Address address
+    ) : value(value), wait_type(wait_type), modifiers({is_const, is_static, is_final, is_global}), memory_pointer(memory), address(address) {
+        
     }
 
-    MemoryObject* copy() {
-        return new MemoryObject(value, wait_type, modifiers.is_const, modifiers.is_static, modifiers.is_final, modifiers.is_global, memory_pointer);
-    }
 };
+
+MemoryObject* CreateMemoryObject(Value value, Type wait_type, bool is_const, bool is_static, bool is_final, bool is_global, void* memory) {
+    int address = AddressManager::get_next_address();
+    return new MemoryObject(value, wait_type, is_const, is_static, is_final, is_global, memory, address);
+}
+
+MemoryObject* CreateMemoryObjectWithAddress(Value value, Type wait_type, bool is_const, bool is_static, bool is_final, bool is_global, void* memory, Address address) {
+    return new MemoryObject(value, wait_type, is_const, is_static, is_final, is_global, memory, address);
+}
 
 struct Memory {
     unordered_map<string, MemoryObject*> string_pool;
@@ -66,7 +91,7 @@ struct Memory {
     // add memory object in all pools
     bool add_object(const string& literal, Value value, Type wait_type, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false) {
         try {
-            auto object = new MemoryObject(value, wait_type, is_const, is_static, is_final, is_global, this);
+            auto object = CreateMemoryObject(value, wait_type, is_const, is_static, is_final, is_global, this);
             string_pool.emplace(literal, object);
             address_pool.emplace(object->address, object);
         } catch (...) {
@@ -76,7 +101,6 @@ struct Memory {
     }
 
     bool add_object(const string& literal, MemoryObject* object) {
-        
         try {
             string_pool.emplace(literal, object);
             address_pool.emplace(object->address, object);
@@ -86,8 +110,20 @@ struct Memory {
         return true;
     }
 
+    bool copy_object(const string& literal, Value value, Type wait_type, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false, Address address = 0) {
+        try {
+            auto object = CreateMemoryObjectWithAddress(value, wait_type, is_const, is_static, is_final, is_global, this, address);
+            string_pool.emplace(literal, object);
+            address_pool.emplace(object->address, object);
+        } catch (...) {
+            return false;
+        }
+        return true;
+    }
+
     bool add_object_in_lambda(const string& literal, Value value) {
-        auto object = new MemoryObject(value, *value.type, false, true, false, true, this);
+
+        auto object = new MemoryObject(value, value.type, false, true, false, true, this, 0);
         if (check_literal(literal)) delete_variable(literal);
         try {
             string_pool.emplace(literal, object);
@@ -218,20 +254,26 @@ struct Memory {
         string_pool.erase(name);
     }
 
+
+    void delete_variable(const Address addr) {
+        auto object = get_variable(addr);
+        address_pool.erase(object->address);
+        delete object;
+    }
     
 
     void debug_print() {
         cout << MT::INFO + "Memory Dump:" << endl;
         for (const auto& [name, obj] : string_pool) {
-            cout << "\tVariable Name: " << name << ", Type: " << obj->value.type->name;
+            cout << "\tVariable Name: " << name << ", Type: " << obj->value.type.pool;
             try {
-                if (obj->value.type->name == STANDART_TYPE::INT.name) {
+                if (obj->value.type.pool == STANDART_TYPE::INT.pool) {
                     cout << ", Value: " << any_cast<int64_t>(obj->value.data);
-                } else if (obj->value.type->name == STANDART_TYPE::DOUBLE.name) {
+                } else if (obj->value.type.pool == STANDART_TYPE::DOUBLE.pool) {
                     cout << ", Value: " << any_cast<long double>(obj->value.data);
-                } else if (obj->value.type->name == STANDART_TYPE::BOOL.name) {
+                } else if (obj->value.type.pool == STANDART_TYPE::BOOL.pool) {
                     cout << ", Value: " << (any_cast<bool>(obj->value.data) ? "true" : "false");
-                } else if (obj->value.type->name == STANDART_TYPE::STRING.name) {
+                } else if (obj->value.type.pool == STANDART_TYPE::STRING.pool) {
                     cout << ", Value: " << any_cast<string>(obj->value.data);
                 }
             } catch (const std::bad_any_cast& e) {
@@ -244,9 +286,19 @@ struct Memory {
 
 struct GlobalMemory {
     static map<int, MemoryObject*> all_objects;
+
+    static void debug_print() {
+        for (auto& pair : all_objects) {
+            cout << pair.first << ": " << pair.second->value.type.pool << endl;
+        }
+    }
     
     static void register_object(MemoryObject* obj) {
         all_objects[obj->address] = obj;
+    }
+
+    static bool is_registered(int address) {
+        return all_objects.find(address) != all_objects.end();
     }
     
     static void unregister_object(int address) {

@@ -48,10 +48,10 @@
 			"begin": "\\b(func)\\b\\s+",
 			"beginCaptures": {
 				"1": {
-					"name": "keyword.operator.new"
+					"name": "keyword.control.twist"
 				}
 			},
-			"end": "(?=\\{|;|\\r|\\n|$)",
+			"end": "(?=\\{|;|\\r|\\n)",
 			"patterns": [
 				{
 					"name": "entity.name.function.twist",
@@ -59,31 +59,51 @@
 				},
 				{
 					"begin": "\\(",
-					"beginCaptures": {
-						"0": {
-							"name": "punctuation.definition.parameters.begin.twist"
-						}
-					},
 					"end": "\\)",
-					"endCaptures": {
-						"0": {
-							"name": "punctuation.definition.parameters.end.twist"
-						}
-					},
 					"contentName": "meta.function.parameters.twist",
 					"patterns": [
 						{
-							"name": "punctuation.separator.parameter.twist",
 							"match": ","
 						},
 						{
-							"name": "keyword.operator.assignment.twist",
 							"match": "="
 						},
 						{
 							"name": "punctuation.separator.type.twist",
 							"match": ":"
 						},
+						{
+							"name": "meta.type.annotation.twist",
+							"begin": "(?<=:)\\s*",
+							"end": "(?=,|=\\s*|\\))",
+							"patterns": [
+								{
+									"include": "source.twist"
+								}
+							]
+						},
+						{
+							"include": "#literals"
+						},
+						{
+							"include": "#function-call"
+						},
+						{
+							"include": "#numbers"
+						},
+						{
+							"include": "#strings"
+						},
+						{
+							"include": "source.twist"
+						}
+					]
+				},
+				{
+					"name": "meta.return.type.twist",
+					"begin": "\\s*(->)\\s*",
+					"end": "(?=\\{|;|\\r|\\n)",
+					"patterns": [
 						{
 							"include": "source.twist"
 						}
@@ -94,21 +114,8 @@
 		
 		"function-call": {
 			"name": "meta.function.call.twist",
-			"begin": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
-			"beginCaptures": {
-				"1": {
-					"name": "entity.name.function.call.twist"
-				},
-				"2": {
-					"name": "punctuation.definition.arguments.begin.twist"
-				}
-			},
+			"begin": "([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
 			"end": "\\)",
-			"endCaptures": {
-				"0": {
-					"name": "punctuation.definition.arguments.end.twist"
-				}
-			},
 			"contentName": "meta.function.arguments.twist",
 			"patterns": [
 				{
@@ -120,7 +127,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.twist",
-				"match": "\\b(for|while|let|in|and|or|if|else|return|auto|assert|lambda)\\b"
+				"match": "\\b(for|while|let|in|and|or|if|else|ret|auto|assert|lambda)\\b"
 			}]
 		},
 		
@@ -149,22 +156,19 @@
 		},
 		
 		"namespace-resolution": {
-			"name": "meta.namespace.resolution.twist",
-			"match": "\\b([a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)+)\\b",
-			"captures": {
-				"1": {
-					"patterns": [
-						{
-							"match": "::",
-							"name": "punctuation.separator.namespace.twist"
-						},
-						{
-							"match": "[a-zA-Z_][a-zA-Z0-9_]*",
+			"patterns": [
+				{
+					"match": "([a-zA-Z_][a-zA-Z0-9_]*)(::)",
+					"captures": {
+						"1": {
 							"name": "entity.name.namespace.twist"
+						},
+						"2": {
+							"name": "punctuation.separator.namespace.twist"
 						}
-					]
+					}
 				}
-			}
+			]
 		},
 		
 		"modifiers": {
@@ -177,11 +181,6 @@
 				{
 					"name": "storage.type.builtin.twist",
 					"match": "\\b(Int|Bool|String|Char|Null|Double|Void|Namespace|Lambda)\\b"
-				},
-				{
-					"name": "storage.type.user-defined.twist",
-					"match": "\\b[A-Z][a-zA-Z0-9_]*\\b",
-					"comment": "Пользовательские типы (с заглавной буквы)"
 				}
 			]
 		},
@@ -209,18 +208,33 @@
 		},
 		
 		"operators": {
-			"name": "comment.block",
+			"name": "comment.block.twist",
 			"match": "[+\\-*/%=&|^!<>~?]+"
 		},
 		
 		"strings": {
-			"name": "string.quoted.double.twist",
-			"begin": "\"",
-			"end": "\"",
 			"patterns": [
 				{
-					"name": "constant.character.escape.twist",
-					"match": "\\\\."
+					"name": "string.quoted.double.twist",
+					"begin": "\"",
+					"end": "\"",
+					"patterns": [
+						{
+							"name": "constant.character.escape.twist",
+							"match": "\\\\(x\\h{2}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.)"
+						}
+					]
+				},
+				{
+					"name": "string.quoted.single.twist",
+					"begin": "'",
+					"end": "'",
+					"patterns": [
+						{
+							"name": "constant.character.escape.twist",
+							"match": "\\\\(x\\h{2}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.)"
+						}
+					]
 				}
 			]
 		},

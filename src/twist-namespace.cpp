@@ -9,5 +9,5 @@ struct Namespace {
 };
 
 Value NewNamespace(Memory memory, const string& name) {
-    return Value(make_unique<Type>(STANDART_TYPE::NAMESPACE), Namespace(memory, name));
+    return Value(STANDART_TYPE::NAMESPACE, Namespace(memory, name));
 }

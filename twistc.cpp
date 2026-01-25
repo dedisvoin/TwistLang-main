@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
             SaveTokensFile("tokens.txt", parser.tokens);
 
         TokenWalker walker = TokenWalker(&parser.tokens);
-        ASTGenerator generator = ASTGenerator(walker);
+        ASTGenerator generator = ASTGenerator(walker, args_parser.file_path);
         auto context = generator.run();
         static ContextExecutor executor = ContextExecutor(std::move(context));
 
@@ -68,8 +68,11 @@ int main(int argc, char** argv) {
             executor.run();
     } else {
         // Компиляторный режим
-        string out_filename = "precompiled-" + args_parser.file_path + ".cpp";
-        std::ofstream out_file(out_filename);
+        
+        std::filesystem::path path_obj(args_parser.file_path);
+        static std::string stem = "compiled_" + path_obj.stem().string() + ".cpp";
+        std::ofstream out_file(stem);
+        
 
         if (out_file.is_open()) {
             // Просто записываем все напрямую
@@ -85,7 +88,7 @@ int main(int argc, char** argv) {
             out_file << "    parser.run();\n";
             out_file << "    \n";
             out_file << "    TokenWalker walker = TokenWalker(&parser.tokens);\n";
-            out_file << "    ASTGenerator generator = ASTGenerator(walker);\n";
+            out_file << "    ASTGenerator generator = ASTGenerator(walker, file_path);\n";
             out_file << "    auto context = generator.run();\n";
             out_file << "    static ContextExecutor executor = ContextExecutor(std::move(context));\n";
             out_file << "    \n";
@@ -94,14 +97,16 @@ int main(int argc, char** argv) {
             out_file << "}\n";
 
             out_file.close();
-
-            string command = "clang -O3 -std=c++23 precompiled-" + args_parser.file_path + ".cpp -o main.exe";
+            
+            string command = "clang -O3 -std=c++23 " + stem + " -o main.exe";
             TimeIt("Compilation finished in ", [command](){
                 system(command.c_str());
                 if (args_parser.delete_precompiled)
-                    filesystem::remove("precompiled-" + args_parser.file_path + ".cpp");
+                    filesystem::remove(stem.c_str());
             });
 
+        } else {
+            std::cout << "Error opening file: " << stem << std::endl;
         }
     }
     return 0;

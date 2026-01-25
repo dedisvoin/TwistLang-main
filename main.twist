@@ -1,8 +1,16 @@
+func Test(a: Int | Double, b: Int | Double ) -> Char {
+    ret a * b;
+} 
 
-let fib = new<static, const> lambda[fib](n) { 
-    if (n > 2) { fib(n - 1) + fib(n - 2) } else { 1 }
-};
 
-for (let i = 1; i <= 40; i = i + 1;) {
-    out i; out " => "; outln (*fib)(i);
+let a = a * 10 ;
+
+namespace std {
+    let name = 10;
 }
+
+
+std::name = 10;
+
+
+let a = name("ded", T);
