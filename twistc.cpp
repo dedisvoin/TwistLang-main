@@ -9,6 +9,7 @@
 #include <fstream>
 
 
+
 Preprocessor preprocessor;
 
 const ArgsParser GenerateArgsParser(const int argc, char** const argv) noexcept {
@@ -21,6 +22,8 @@ const ArgsParser GenerateArgsParser(const int argc, char** const argv) noexcept 
 
 
 int main(int argc, char** argv) {
+    std::locale::global(std::locale("ru_RU.UTF-8"));
+    std::wcout.imbue(std::locale());
     // Create and generate argparser for parse system arguments
     static ArgsParser args_parser = GenerateArgsParser(argc, argv);
 

@@ -1,16 +1,3 @@
-func Test(a: Int | Double, b: Int | Double ) -> Char {
-    ret a * b;
-} 
-
-
-let a = a * 10 ;
-
-namespace std {
-    let name = 10;
+func sum(a, b) {
+    ret a + b;
 }
-
-
-std::name = 10;
-
-
-let a = name("ded", T);

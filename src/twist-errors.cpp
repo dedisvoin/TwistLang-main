@@ -302,14 +302,14 @@ namespace ERROR {
         exit(0);
     }
 
-    void InvalidDereferenceValue(const Token& start, const Token& end) {
+    void InvalidDereferenceValue(const Token& start, const Token& end, Type type) {
         string file_lines = PREPROCESSOR_OUTPUT;
 
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid dereference" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
-        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid dereference value, waited <variable name> or <type name>" << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid dereference value, waited <variable name> or <type name>, but found `" << type.pool << "`" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         exit(0);
     }

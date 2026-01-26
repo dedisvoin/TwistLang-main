@@ -71,11 +71,9 @@ MemoryObject* CreateMemoryObjectWithAddress(Value value, Type wait_type, bool is
 
 struct Memory {
     unordered_map<string, MemoryObject*> string_pool;
-    unordered_map<Address, MemoryObject*> address_pool;
 
     void clear() {
         string_pool.clear();
-        address_pool.clear();
     }
 
     void clear_unglobals() {
@@ -93,7 +91,7 @@ struct Memory {
         try {
             auto object = CreateMemoryObject(value, wait_type, is_const, is_static, is_final, is_global, this);
             string_pool.emplace(literal, object);
-            address_pool.emplace(object->address, object);
+
         } catch (...) {
             return false;
         }
@@ -103,7 +101,6 @@ struct Memory {
     bool add_object(const string& literal, MemoryObject* object) {
         try {
             string_pool.emplace(literal, object);
-            address_pool.emplace(object->address, object);
         } catch (...) {
             return false;
         }
@@ -114,7 +111,7 @@ struct Memory {
         try {
             auto object = CreateMemoryObjectWithAddress(value, wait_type, is_const, is_static, is_final, is_global, this, address);
             string_pool.emplace(literal, object);
-            address_pool.emplace(object->address, object);
+
         } catch (...) {
             return false;
         }
@@ -127,7 +124,6 @@ struct Memory {
         if (check_literal(literal)) delete_variable(literal);
         try {
             string_pool.emplace(literal, object);
-            address_pool.emplace(object->address, object);
         } catch (...) {
             return false;
         }
@@ -139,21 +135,8 @@ struct Memory {
         return it != string_pool.end() ? it->second : nullptr;
     }
 
-    MemoryObject* get_variable(const Address addr) {
-        auto it = address_pool.find(addr);
-        return it != address_pool.end() ? it->second : nullptr;
-    }
-
     void set_object_value(const string& literal, Value new_value) {
         get_variable(literal)->value = new_value;
-    }
-
-    void set_object_value(const Address addr, Value new_value) {
-        get_variable(addr)->value = new_value;
-    }
-
-    bool check_address(const Address addr) {
-        return address_pool.find(addr) != address_pool.end();
     }
 
     void link_objects(Memory& target_memory) {
@@ -163,7 +146,6 @@ struct Memory {
                 continue;
             
             target_memory.string_pool[pair.first] = pair.second;
-            target_memory.address_pool[pair.second->address] = pair.second;
         }
     }
 
@@ -194,9 +176,6 @@ struct Memory {
         return string_pool.find(literal)->second->wait_type;
     }
 
-    Type get_wait_type(const Address addr) {
-        return address_pool.find(addr)->second->wait_type;
-    }
 
     bool check_literal(const string& literal) {
         return string_pool.find(literal) != string_pool.end();
@@ -207,19 +186,12 @@ struct Memory {
         return string_pool.find(literal)->second->modifiers.is_final;
     }
 
-    inline bool is_final(const Address addr) {
-        return address_pool.find(addr)->second->modifiers.is_final;
-    }
-
     ///////////////////////////////////////////////////////////////////////////
 
     inline bool is_const(const string& literal) {
         return string_pool.find(literal)->second->modifiers.is_const;
     }
 
-    inline bool is_const(const Address addr) {
-        return address_pool.find(addr)->second->modifiers.is_const;
-    }
 
     ///////////////////////////////////////////////////////////////////////////
 
@@ -227,9 +199,6 @@ struct Memory {
         return string_pool.find(literal)->second->modifiers.is_static;
     }
 
-    inline bool is_static(const Address addr) {
-        return address_pool.find(addr)->second->modifiers.is_static;
-    }
 
     ///////////////////////////////////////////////////////////////////////////
 
@@ -237,30 +206,20 @@ struct Memory {
         return string_pool.find(name)->second->modifiers.is_global;
     }
 
-    inline bool is_global(const Address addr) {
-        return address_pool.find(addr)->second->modifiers.is_global;
-    }
+
 
     ///////////////////////////////////////////////////////////////////////////
 
     void delete_variable(const string& name, Address addr) {
-        address_pool.erase(addr);
         string_pool.erase(name);
     }
 
     void delete_variable(const string& name) {
         auto object = get_variable(name);
-        address_pool.erase(object->address);
         string_pool.erase(name);
     }
 
 
-    void delete_variable(const Address addr) {
-        auto object = get_variable(addr);
-        address_pool.erase(object->address);
-        delete object;
-    }
-    
 
     void debug_print() {
         cout << MT::INFO + "Memory Dump:" << endl;

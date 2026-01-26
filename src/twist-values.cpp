@@ -351,9 +351,12 @@ Value NewChar(char value) {
     return Value(STANDART_TYPE::CHAR, value);
 }
 
-Value NewPointer(int value, const Type& pointer_type) {
-    auto type = pointer_type;
-    return Value(create_pointer_type(pointer_type), value);
+Value NewPointer(int value, const Type& pointer_type, const bool create_pointer = true) {
+
+    if (create_pointer)
+        return Value(create_pointer_type(pointer_type), value);
+    else
+        return Value(pointer_type, value);
 }
 
 // Создать тип указателя из другого типа

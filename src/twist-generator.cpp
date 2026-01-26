@@ -19,8 +19,10 @@
 #include <cmath>
 #include <any>
 
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreturn-type"
+
 
 
 #define NO_EXEC \
@@ -231,50 +233,50 @@ struct NodeUnary : public Node { NO_EXEC
         }
 
     Value eval_from(Memory& _memory) override {
-        Value val = operand->eval_from(_memory);
+        Value value = operand->eval_from(_memory);
 
-        if (val.type == STANDART_TYPE::INT) {
+        if (value.type == STANDART_TYPE::INT) {
             if (op == "-") {
-                int64_t v = any_cast<int64_t>(val.data);
+                int64_t v = any_cast<int64_t>(value.data);
                 return NewInt(-v);
             } else if (op == "+") {
-                int64_t v = any_cast<int64_t>(val.data);
+                int64_t v = any_cast<int64_t>(value.data);
                 return NewInt(+v);
             }
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, val);
-        } else if (val.type == STANDART_TYPE::BOOL) {
+            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
+        } else if (value.type == STANDART_TYPE::BOOL) {
             if (op == "!" || op == "not")
-                return NewBool(!any_cast<bool>(val.data));
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, val);
-        } else if (val.type == STANDART_TYPE::NULL_T) {
+                return NewBool(!any_cast<bool>(value.data));
+            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
+        } else if (value.type == STANDART_TYPE::NULL_T) {
             if (op == "!")
                 return NewBool(true);
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, val);
-        } else if (val.type == STANDART_TYPE::DOUBLE) {
+            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
+        } else if (value.type == STANDART_TYPE::DOUBLE) {
             if (op == "-") {
-                long double v = any_cast<long double>(val.data);
+                long double v = any_cast<long double>(value.data);
                 return NewDouble(-v);
             } else if (op == "+") {
-                long double v = any_cast<long double>(val.data);
+                long double v = any_cast<long double>(value.data);
                 return NewDouble(+v);
             }
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, val);
-        } else if (val.type.is_pointer()) {
+            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
+        } else if (value.type.is_pointer()) {
             if (op == "--") {
-                long double v = any_cast<int>(val.data);
-                return NewPointer(v - 1, val.type);
+                long double v = any_cast<int>(value.data);
+                return NewPointer(v - 1, value.type, false);
             } else if (op == "++") {
-                long double v = any_cast<int>(val.data);
-                return NewPointer(v + 1, val.type);
+                long double v = any_cast<int>(value.data);
+                return NewPointer(v + 1, value.type, false);
             }
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, val);
+            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
         } else
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, val);
+            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
 
 
 
         // Implement unary operation evaluation here
-        return val;
+        return value;
     }
 };
 
@@ -468,6 +470,15 @@ struct NodeBinary : public Node { NO_EXEC
             if (op == "<=")
                 return NewBool(any_cast<int>(left_val.data) <= any_cast<int>(right_val.data));
             ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+        } else if (left_val.type.is_pointer() && right_val.type == STANDART_TYPE::INT) {
+            
+            if (op == "+") 
+                return NewPointer(any_cast<int>(left_val.data) + any_cast<int64_t>(right_val.data), left_val.type, false);;
+            
+            if (op == "-")
+                return NewPointer(any_cast<int>(left_val.data) - any_cast<int64_t>(right_val.data), left_val.type, false);
+        
+        
         } else
             ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
     }
@@ -582,8 +593,10 @@ struct NodeBaseOut : public Node { NO_EVAL
             cout << "Lambda(";
             auto lambda = any_cast<Lambda*>(value.data);
             for (int i = 0; i < lambda->arguments.size(); i++) {
-                cout << lambda->arguments[i]->name << ((i != lambda->arguments.size() - 1) ? ", " : ")");
+                cout << lambda->arguments[i]->name;
+                if (i != lambda->arguments.size() - 1) cout << ", ";
             }
+            cout << ")";
         }
         if (value.type.is_pointer()) {
             cout << value.type.pool << "[0x" + to_string(any_cast<int>(value.data)) << "]";
@@ -634,8 +647,10 @@ struct NodeBaseOutLn : public Node { NO_EVAL
             cout << "Lambda(";
             auto lambda = any_cast<Lambda*>(value.data);
             for (int i = 0; i < lambda->arguments.size(); i++) {
-                cout << lambda->arguments[i]->name << ((i != lambda->arguments.size() - 1) ? ", " : ")");
+                cout << lambda->arguments[i]->name;
+                if (i != lambda->arguments.size() - 1) cout << ", ";
             }
+            cout << ")";
         }
         if (value.type.is_pointer()) {
             cout << value.type.pool << "[0x" + to_string(any_cast<int>(value.data)) << "]";
@@ -1115,7 +1130,7 @@ struct NodeDereference : public Node { NO_EXEC
             }
             return NewType(PointerType(any_cast<Type>(value.data)));
         }
-        ERROR::InvalidDereferenceValue(start, end);
+        ERROR::InvalidDereferenceValue(start, end, value.type);
     }
 };
 
@@ -1140,18 +1155,20 @@ struct NodeLeftDereference : public Node { NO_EVAL
 
     void exec_from(Memory& _memory) override {
         auto right_value = right_expr->eval_from(_memory);
+        
 
         // НЕ перемещаем variable, используем сырой указатель
         Node* variable_ptr = left_expr.get();
 
         auto value = left_expr->eval_from(_memory);
 
+        
+
         if (value.type.is_pointer()) {
             auto address = any_cast<int>(value.data);
             auto object = STATIC_MEMORY.get_by_address(address);
             auto modifiers = object->modifiers;
 
-            
 
             // Проверяем константность
             if (modifiers.is_const) {
@@ -1167,13 +1184,14 @@ struct NodeLeftDereference : public Node { NO_EVAL
                 }
             }
 
-            
-
             // Выполняем присваивание
-            if (STATIC_MEMORY.is_registered(address)) 
+            if (STATIC_MEMORY.is_registered(address)) {
+                STATIC_MEMORY.set_object_value(address, right_value);
+            }
+
 
             
-                STATIC_MEMORY.set_object_value(address, right_value);
+            
             
         }
     }
@@ -1241,8 +1259,6 @@ struct NodeDelete : public Node { NO_EVAL
             auto value = ((NodeDereference*)(target.get()))->expr->eval_from(_memory);
             if (value.type.is_pointer()) {
                 auto address = any_cast<int>(value.data);
-                if (_memory.check_address(address))
-                    _memory.delete_variable(address);
                 if (STATIC_MEMORY.is_registered(address))
                     STATIC_MEMORY.unregister_object(address);
             }
@@ -1471,6 +1487,15 @@ struct NodeAssert : public Node { NO_EVAL
 
 };
 
+struct NodeExpressionStatement : public Node { NO_EVAL
+    unique_ptr<Node> expr;
+    NodeExpressionStatement(unique_ptr<Node> expr) : expr(std::move(expr)) {
+        NAME = "ExpressionStatement";
+    }
+    void exec_from(Memory& _memory) override {
+        expr->eval_from(_memory);
+    }
+};
 
 struct NodeLambda : public Node { NO_EXEC
     vector<Arg*> args;
@@ -1516,7 +1541,7 @@ struct NodeLambda : public Node { NO_EXEC
                 ERROR::WaitedLambdaReturnTypeSpecifier(start_type_token, end_type_token);
             }
         }
-        auto lambda = NewLambda(new_lambda_memory, std::move(body), std::move(args), std::move(return_type), start_args_token, end_args_token, start_type_token, end_type_token);
+        auto lambda = NewLambda(new_lambda_memory, body.get(), vector(args), std::move(return_type), start_args_token, end_args_token, start_type_token, end_type_token);
         if (name != "") {
             (any_cast<Lambda*>(lambda.data))->memory->add_object(name, lambda, lambda.type, true, true, true, true);
         }
@@ -1562,8 +1587,9 @@ struct NodeCall : public Node { NO_EXEC
                 lambda->memory->add_object_in_lambda(lambda->arguments[i]->name, settable_value);
             }
             
-
-            auto result = lambda->expr->eval_from(*lambda->memory);
+            
+            auto result = ((Node*)(lambda->expr))->eval_from(*lambda->memory);
+            
             if (lambda->return_type) {
                 auto super_type_value = lambda->return_type->eval_from(*lambda->memory);
                 if (!result.type.is_sub_type(any_cast<Type>(super_type_value.data))) {
@@ -1574,7 +1600,7 @@ struct NodeCall : public Node { NO_EXEC
             *lambda->memory = saved_mem;
             //lambda->memory->clear_unglobals();
             
-
+            
             return result;
         }
 
@@ -1596,7 +1622,7 @@ struct NodeNew : public Node { NO_EXEC
         auto result = expr->eval_from(_memory);
         
         auto object = CreateMemoryObject(result, result.type, is_const, is_static, false, false, nullptr );
-        auto addres = NewPointer(object->address, result.type);
+        auto addres = NewPointer(object->address, result.type, true);
         STATIC_MEMORY.register_object(object);
         return addres;
     }
@@ -1798,6 +1824,8 @@ struct ASTGenerator {
     unique_ptr<Node> ParseNewFunctionType(Memory& memory);
     unique_ptr<Node> ParseFuncDecl(Memory& memory);
 
+    unique_ptr<Node> ParsePostfix(unique_ptr<Node> expr, Memory &memory);
+
     Memory GLOBAL_MEMORY;
 
 
@@ -1817,11 +1845,8 @@ struct ASTGenerator {
         if (walker.CheckValue("(")) {
             Token start = *walker.get();
             auto expr =  ParseScopes(memory);
-            Token end = *walker.get(-1);
-            if (walker.CheckValue("(")) {
-                expr = ParseCall(std::move(expr), memory, start, end);
-            }
-            return expr;
+            // Применяем постфиксные операции к скобочному выражению
+            return ParsePostfix(std::move(expr), memory);
         }
 
         if (walker.CheckType(TokenType::KEYWORD) && (walker.CheckValue("true") || walker.CheckValue("false")))
@@ -1857,22 +1882,9 @@ struct ASTGenerator {
         }
 
         if (walker.CheckType(TokenType::LITERAL)) {
-            Token start = *walker.get();
-            Token end = *walker.get();
             auto expr = ParseLiteral(memory);
-            while (true) {
-                if (walker.CheckValue(":") && walker.CheckValue(":", 1)){
-                    expr = ParseNameResolution(std::move(expr));
-                    end = *walker.get(-1);
-                    continue;
-                } else if (walker.CheckValue("(")) {
-                    expr = ParseCall(std::move(expr), memory, start, end);
-                    end = *walker.get(-1);
-                    continue;
-                }
-                break;
-            }
-            return expr;
+            // Применяем постфиксные операции к литералу
+            return ParsePostfix(std::move(expr), memory);
         }
 
 
@@ -1887,18 +1899,18 @@ struct ASTGenerator {
             Token operator_token = *walker.get();
             walker.next(); // pass operator
             Token start = *walker.get();
-            auto operand = parse_primary_expression(memory);
+            auto operand = parse_unary_expression(memory);
             Token end = *walker.get(-1);
             return make_unique<NodeUnary>(std::move(operand), start, end, operator_token);
         }
         if (walker.CheckType(TokenType::OPERATOR) && walker.CheckValue("&")) {
             return ParseAddressOf(memory);
         }
-        if (walker.CheckType(TokenType::OPERATOR) && walker.CheckValue("*")) {
+        if (walker.CheckType(TokenType::DEREFERENCE) && walker.CheckValue("*")) {
             return ParseDereference(memory);
         }
-
-        return parse_primary_expression(memory);
+        auto expr = parse_primary_expression(memory);
+        return ParsePostfix(std::move(expr), memory);
     }
 
     // Вспомогательный метод для парсинга бинарных выражений с заданными операторами
@@ -1914,7 +1926,7 @@ struct ASTGenerator {
             string op;
 
             for (const auto& candidate : operators) {
-                if (walker.CheckType(TokenType::OPERATOR) &&walker.CheckValue(candidate)) {
+                if ((walker.CheckType(TokenType::OPERATOR) || walker.CheckType(TokenType::DEREFERENCE)) && walker.CheckValue(candidate)) {
                     found_operator = true;
                     op = candidate;
                     break;
@@ -1989,10 +2001,6 @@ struct ASTGenerator {
 
     unique_ptr<Node> parse_expression(Memory &memory) {
         return parse_higher_order_expressions(memory);
-    }
-
-    unique_ptr<Node> parse_left_statement(Memory &memory) {
-        auto expr = parse_expression(memory);
     }
 
     unique_ptr<Node> parse_statement(Memory& memory) {
@@ -2072,45 +2080,50 @@ struct ASTGenerator {
         if (current.type == TokenType::LITERAL) {
 
             auto start_left_value_token = *walker.get();
-            auto left_expr = parse_primary_expression(memory);
-
-            while (true) {
-                if (walker.CheckValue(":") && walker.CheckValue(":", 1)) {
-                    left_expr = ParseNameResolution(std::move(left_expr));
-                    continue;
-                } else if (walker.CheckValue("(")) {
-                    Token walker_end = *walker.get(-1);
-                    cout << "YES" << endl;
-                    left_expr = ParseCall(std::move(left_expr), memory, start_left_value_token, walker_end);
-                    continue;
-                }
-                break;
-            }
+            auto left_expr = parse_expression(memory);
 
             auto end_left_value_token = *walker.get(-1);
 
-            if (!walker.CheckValue("="))
-                ERROR::UnexpectedToken(*walker.get(), "'='");
-            walker.next();
-            auto start_value_token = *walker.get();
-            auto expr = parse_expression(memory);
+            if (walker.CheckValue("=")) {
+             
+                walker.next();
+                auto start_value_token = *walker.get();
+                auto expr = parse_expression(memory);
 
-            if (!expr)
-                ERROR::UnexpectedToken(*walker.get(), "expression");
-
-
-            if (!walker.CheckValue(";"))
-                ERROR::UnexpectedToken(*walker.get(), "';'");
-            auto end_value_token = *walker.get();
-            walker.next();
+                if (!expr)
+                    ERROR::UnexpectedToken(*walker.get(), "expression");
 
 
-            return make_unique<NodeVariableEqual>(std::move(left_expr), std::move(expr), start_left_value_token, end_left_value_token, start_value_token, end_value_token);
+                if (!walker.CheckValue(";"))
+                    ERROR::UnexpectedToken(*walker.get(), "';'");
+                auto end_value_token = *walker.get();
+                walker.next();
+
+
+                return make_unique<NodeVariableEqual>(std::move(left_expr), std::move(expr), start_left_value_token, end_left_value_token, start_value_token, end_value_token);
+            } else {
+                if (!walker.CheckValue(";"))
+                    ERROR::UnexpectedToken(*walker.get(), "';'");
+                walker.next();
+                return make_unique<NodeExpressionStatement>(std::move(left_expr));
+            }
         }
         if (current.value == "*") {
             return ParseLeftDereference(memory);
         }
-        return nullptr;
+        // Expression statement (например, *a + 1;)
+        auto expr = parse_expression(memory);
+        if (expr) {
+            if (!walker.CheckValue(";"))
+                ERROR::UnexpectedToken(*walker.get(), "';'");
+            walker.next();
+            
+            // Создаем специальный узел для выражения, которое вычисляется, но ничего не делает
+            
+            
+            return make_unique<NodeExpressionStatement>(std::move(expr));
+        }
+        ERROR::UnexpectedToken(current, "expression or statement");
     }
 
     void GenerateStandartTypes(Memory& _memory) {
@@ -2198,6 +2211,22 @@ struct ContextExecutor {
         }
     }
 };
+
+
+unique_ptr<Node> ASTGenerator::ParsePostfix(unique_ptr<Node> expr, Memory &memory) {
+    while (true) {
+        if (walker.CheckValue("(")) {
+            Token start = *walker.get(-1);
+            Token end;
+            expr = ParseCall(std::move(expr), memory, start, end);
+        } else if (walker.CheckValue(":") && walker.CheckValue(":", 1)) {
+            expr = ParseNameResolution(std::move(expr));
+        } else {
+            break;
+        }
+    }
+    return expr;
+}
 
 
 unique_ptr<Node> ASTGenerator::ParseFuncDecl(Memory& memory) {
@@ -2540,15 +2569,11 @@ unique_ptr<Node> ASTGenerator::ParseLeftDereference(Memory& memory) {
     walker.next(); // pass '*' token
 
     auto start_left_value_token = *walker.get(-1);
-    auto left_expr = parse_primary_expression(memory);
+    auto left_expr = parse_expression(memory);
 
-    while (true) {
-        if (walker.CheckValue(":") && walker.CheckValue(":", 1)) {
-            left_expr = ParseNameResolution(std::move(left_expr));
-            continue;
-        }
-        break;
-    }
+    if (!left_expr)
+        ERROR::UnexpectedToken(*walker.get(), "expression");
+    
 
     auto end_left_value_token = *walker.get(-1);
 
@@ -2613,7 +2638,7 @@ unique_ptr<Node> ASTGenerator::ParseDereference(Memory& memory) {
         return make_unique<NodeDereference>(std::move(expr), start_token, end_token);
     } else {
         Token start_token = *walker.get();
-        auto expr = parse_primary_expression(memory);
+        auto expr = parse_expression(memory);
         if (!expr) ERROR::UnexpectedToken(*walker.get(), "primary expression or (expression)");
         Token end_token = *walker.get(-1);
         return make_unique<NodeDereference>(std::move(expr), start_token, end_token);

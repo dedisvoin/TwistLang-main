@@ -1,0 +1,80 @@
+let array = lambda(size: Int, type: Type) {
+    namespace {
+        global let start_ptr = (new null) + 3;          # создаем указатель на начало массива
+        for (let i = 0; i < size; i = i + 1;)  {        # выделяем память для необходимого количества элементов
+            let ptr = new null;
+        }
+            
+        global let _add_index = 0;                      # индекс добавляемого элемента
+
+        let add = lambda (element) {                    # lambda функция для добавления элемента
+            namespace {
+                if (typeof(element) != type) 
+                    outln "Invalid type of element";
+                
+                let ptr = start_ptr + _add_index * 2;   # указатель на добавляемый элемент
+                *ptr = element;                         # добавляем элемент
+                _add_index = _add_index + 1;            # увеличиваем индекс
+            }
+        };
+
+        let set = lambda(index: Int, element) {
+            namespace {
+                if (typeof(element) != type)
+                    outln "Invalid type of element";
+                let ptr = start_ptr + index * 2;
+                *ptr = element;
+            }
+        };
+
+        let get = lambda (index: Int) {                 # lambda функция для получения элемента
+            *(start_ptr + index * 2)                
+        };
+    }
+};
+
+
+let is_equal = lambda(a, b) {
+    if (typeof(a) == typeof(b)) {
+        a == b
+    } else {
+        false
+    }
+};
+
+
+static let size: Int = input("Enter the size of the array: ");
+
+let arr = array(size, Int);
+
+while (true) {
+    let command = input("Enter the command: ");
+    if (is_equal(command, "exit")) {
+        break;
+    }
+    else if (is_equal(command, "add")) {
+        let element = input("Enter the element: ");
+        arr::add(element);
+        continue;
+    }
+    else if (is_equal(command, "get")) {
+        let index = input("Enter the index: ");
+        let element = arr::get(index);
+        outln element;
+        continue;
+    }
+    else if (is_equal(command, "set")) {
+        let index = input("Enter the index: ");
+        let element = input("Enter the element: ");
+        arr::set(index, element);
+        continue;
+    }
+    else if (is_equal(command, "print")) {
+        for (let i = 0; i < size; i = i + 1;) {
+            let element = arr::get(i);
+            outln element;
+        }
+        continue;
+    }
+    outln "Unknown command";
+}

@@ -11,7 +11,7 @@ using namespace std;
 namespace ALPHABET {
     CH CHAR = "abcdefghijklmnopqrstuvwxyz" + ToUpper("abcdefghijklmnopqrstuvwxyz");
     CH NUMS = "0123456789";
-    CH OPER = "+-=*&/@^%!|~,.<>?";
+    CH OPER = "+-=&/@^%!|~,.<>?";
     CH BRAC = "{[()]}";
     CH SEPP = ":;";
 }
@@ -224,6 +224,25 @@ struct Lexer {
         this->add_token(V, TokenType::OPERATOR, PIF);
     }
 
+    void parse_dereference() {
+        int         P = this->pos;
+        int         PL = this->pos_in_line;
+        string      V;
+        char        C = this->get();
+        V = "*";
+        
+        next();
+        this->next_in_line();
+        int L = this->pos - P;
+        PosInFile PIF = {
+            .file_name = this->this_file,
+            .line = this->line,
+            .index = PL,
+            .lenght = L
+        };
+        this->add_token(V, TokenType::DEREFERENCE, PIF);
+    }
+
     /*
         Parse bracket
     */
@@ -351,6 +370,10 @@ struct Lexer {
 
             if (_ == ';' || _ == ':') {
                 parse_sepparator();
+                continue;
+            }
+            if (_ == '*') {
+                parse_dereference();
                 continue;
             }
 
