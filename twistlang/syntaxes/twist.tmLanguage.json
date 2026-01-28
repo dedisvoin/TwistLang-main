@@ -3,6 +3,9 @@
 	"name": "Twist",
 	"patterns": [
 		{
+			"include": "#preprocessor"
+		},
+		{
 			"include": "#function-declaration"
 		},
 		{
@@ -43,6 +46,127 @@
 		}
 	],
 	"repository": {
+		"preprocessor": {
+			"patterns": [
+				{
+					"include": "#define-directive"
+				},
+				{
+					"include": "#macro-directive"
+				},
+				{
+					"include": "#include-directive"
+				}
+			]
+		},
+		
+		"define-directive": {
+			"name": "meta.preprocessor.define.twist",
+			"begin": "^\\s*(@define)\\s+",
+			"beginCaptures": {
+				"1": {
+					"name": "keyword.control.directive.twist"
+				}
+			},
+			"end": "$",
+			"patterns": [
+				{
+					"name": "entity.name.constant.twist",
+					"match": "[a-zA-Z_][a-zA-Z0-9_]*"
+				},
+				{
+					"name": "keyword.operator.assignment.twist",
+					"match": "="
+				},
+				{
+					"include": "#strings"
+				},
+				{
+					"include": "#numbers"
+				},
+				{
+					"include": "#literals"
+				},
+				{
+					"include": "#function-call"
+				},
+				{
+					"include": "#operators"
+				}
+			]
+		},
+		
+		"macro-directive": {
+			"name": "meta.preprocessor.macro.twist",
+			"begin": "^\\s*(@macro)\\s+",
+			"beginCaptures": {
+				"1": {
+					"name": "keyword.control.directive.twist"
+				}
+			},
+			"end": "$",
+			"patterns": [
+				{
+					"name": "entity.name.function.macro.twist",
+					"match": "[a-zA-Z_][a-zA-Z0-9_]*"
+				},
+				{
+					"begin": "\\(",
+					"end": "\\)",
+					"contentName": "meta.function.parameters.twist",
+					"patterns": [
+						{
+							"name": "variable.parameter.twist",
+							"match": "[a-zA-Z_][a-zA-Z0-9_]*"
+						},
+						{
+							"match": ","
+						}
+					]
+				},
+				{
+					"name": "keyword.operator.assignment.twist",
+					"match": "="
+				},
+				{
+					"include": "#strings"
+				},
+				{
+					"include": "#numbers"
+				},
+				{
+					"include": "#literals"
+				},
+				{
+					"include": "#function-call"
+				},
+				{
+					"include": "#operators"
+				}
+			]
+		},
+		
+		"include-directive": {
+			"name": "meta.preprocessor.include.twist",
+			"match": "^\\s*(@include)\\s+(\"[^\"]+\"|'[^']+'|[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)*)",
+			"captures": {
+				"1": {
+					"name": "keyword.control.directive.twist"
+				},
+				"2": {
+					"patterns": [
+						{
+							"include": "#strings"
+						},
+						{
+							"name": "entity.name.namespace.twist",
+							"match": "[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)*"
+						}
+					]
+				}
+			}
+		},
+		
 		"function-declaration": {
 			"name": "meta.function.declaration.twist",
 			"begin": "\\b(func)\\b\\s+",
@@ -134,7 +258,7 @@
 		"input-keyword": {
 			"patterns": [{
 				"name": "support.function.input.twist",
-				"match": "\\b(input|out|outln|typeof|sizeof|new)\\b"
+				"match": "\\b(input|out|outln|typeof|sizeof|new|exit)\\b"
 			}]
 		},
 		
@@ -208,7 +332,7 @@
 		},
 		
 		"operators": {
-			"name": "comment.block.twist",
+			"name": "keyword.operator.twist",
 			"match": "[+\\-*/%=&|^!<>~?]+"
 		},
 		

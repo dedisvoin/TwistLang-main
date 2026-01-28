@@ -1,3 +1,7 @@
-func sum(a, b) {
-    ret a + b;
-}
+
+
+let n = new<static(Double | Int)> 10;
+
+
+
+outln n;

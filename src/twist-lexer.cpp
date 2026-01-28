@@ -28,11 +28,12 @@ inline static const bool IS_SEPP(const char c) { return InString(c, APT::SEPP); 
 vector<string> KEYWORDS = { "if", "else", "for", "while", 
     "do", "break", "continue", "let", 
     "static", "final", "const", "global", "typeof", "sizeof",
-     "del", "new" ,"true", "false", "null",
-    "out", "outln", "input", "in" , "and", "or", "namespace", "assert", "lambda",  "func", "Func"};
+     "del", "new" ,"true", "false", "null", "ret",
+    "out", "outln", "input", "in" , "and", "or", "namespace", "assert", "lambda",  "func", "Func", "exit"};
 
 struct Lexer {
     int line = 1;
+    int global_line = 1;
     int pos = 0;
     int pos_in_line = 0;
     int saved_pos_in_line = 0;
@@ -57,6 +58,7 @@ struct Lexer {
     inline void next_in_line() { this->pos_in_line++; }
     inline void next_line() { 
         this->line++; 
+        this->global_line++;
         if (!(pos == this->main_file_size)) 
             this->pos_in_line = 0; 
         
@@ -92,8 +94,9 @@ struct Lexer {
         PosInFile PIF = {
             .file_name = this->this_file,
             .line = this->line,
+            .global_line = global_line,
             .index = PL,
-            .lenght = L
+            .lenght = L,
         };
         if (InVector(KEYWORDS, V)) this->add_token(V, TokenType::KEYWORD, PIF);
         else this->add_token(V, TokenType::LITERAL, PIF);
@@ -127,6 +130,7 @@ struct Lexer {
         PosInFile PIF = {
             .file_name = this->this_file,
             .line = this->line,
+            .global_line = global_line,
             .index = PL,
             .lenght = L
         };
@@ -163,6 +167,7 @@ struct Lexer {
         PosInFile PIF = {
             .file_name = this->this_file,
             .line = SL,
+            .global_line = global_line,
             .index = PL,
             .lenght = L
         };
@@ -190,6 +195,7 @@ struct Lexer {
         PosInFile PIF = {
             .file_name = this->this_file,
             .line = this->line,
+            .global_line = global_line,
             .index = PL,
             .lenght = 1
         };
@@ -218,6 +224,7 @@ struct Lexer {
         PosInFile PIF = {
             .file_name = this->this_file,
             .line = this->line,
+            .global_line = global_line,
             .index = PL,
             .lenght = L
         };
@@ -237,6 +244,7 @@ struct Lexer {
         PosInFile PIF = {
             .file_name = this->this_file,
             .line = this->line,
+            .global_line = global_line,
             .index = PL,
             .lenght = L
         };
@@ -267,6 +275,7 @@ struct Lexer {
         PosInFile PIF = {
             .file_name = this->this_file,
             .line = this->line,
+            .global_line = global_line,
             .index = PL,
             .lenght = 1
         };
@@ -317,6 +326,7 @@ struct Lexer {
                 // found new line 
                 while (get() != '\n') { next(); }
                 next(); // pass next line sym
+                global_line++;
                 continue;
             }
             if (get() == '<' && 
@@ -346,6 +356,7 @@ struct Lexer {
                 
                 while (get() != '\n') { next(); }
                 next();
+                global_line++;
                 continue;
             }
             if (_ == ' ') {

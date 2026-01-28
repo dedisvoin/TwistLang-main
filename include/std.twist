@@ -1,20 +1,126 @@
-let std = namespace {
-    global final const let Any = Int | Double | String | Char |
-                           Bool | Null | Void | Lambda | 
-                           Namespace;
+static const final namespace std {
+    global final const let AnyBase = Int | Double | String | Char |
+                                     Bool | Null | Lambda | Namespace;
+
+    global final const let AnyBasePtr = *(AnyBase);
+
+    global final const let Any = AnyBasePtr | AnyBase;
 
     global final const let Number = Int | Double;
     global final const let Literal = String | Char;
 
-    let sum = lambda (a: Number, b: Number) -> Number { a + b };
-    let sub = lambda (a: Number, b: Number) -> Number { a - b };
 
+    # min lambda
     let min = lambda (a: Number, b: Number) -> Number { 
         if (a < b) { a } else { b }
     };
+
+    # max lambda
     let max = lambda (a: Number, b: Number) -> Number { 
         if (a > b) { a } else { b }
     };
+
+    # перемещает значение в другую область динамической памяти
+    # старое значение удаляется из диначиской памяти
+    let move = lambda(_value: AnyBasePtr) -> AnyBasePtr { 
+        namespace {
+            let ptr = new<static, const> (*_value);
+            del *_value;
+        }::ptr
+    };
+
+    let delete = lambda(_value: AnyBasePtr) {
+        namespace {
+            del *_value;  
+        }::_value
+    };
+    
+    # сравнение значений по типу 
+    let equal = lambda(a, b) {
+        if (typeof(a) == typeof(b)) {
+            a == b
+        } else {
+            false
+        }
+    };
+
+}
+
+let outype = lambda (value: auto) -> Null {
+    namespace {
+        let _ = null;
+        outln "Type(", typeof(value), ")";
+    }::_
 };
 
+global func allocate(T: Type) -> *auto {
+    if (T == Int) ret new<static> (0);
+    if (T == Double) ret new<static> (0.0);
+    if (T == Char) ret new<static> (0);
+    if (T == String) ret new<static> ("");
+    if (T == Bool) ret new<static> (false);
+    outln "Error basic type: ", T;
+    exit -1;
+}
 
+global func allocate_vec(T: Type, size: Int) -> Namespace {
+    global let _start_ptr = allocate(T) + 6;
+    global let _size = size;
+    global let _type = T;
+    global let _index = 0;
+    for (let i = 0; i < size; i = i + 1;) {
+        allocate(T);
+    }
+    ret namespace {};
+}
+
+global let VecT = Namespace;
+global let VecPtrT = *Namespace;
+
+global func reallocate_vec(O: VecT, size: Int) -> Namespace {
+    global let _start_ptr = allocate(O::_type);
+    global let _size = size;
+    global let _index = O::_index;
+
+    let new_ptr = allocate_vec(O::_type, size);
+
+    for (let i = 0; i < O::_size; i = i + 1;) {
+        
+        *(new_ptr::_start_ptr + i) = *(O::_start_ptr + i);
+        if (i == size) break;
+    }
+
+    ret new_ptr;
+}
+
+global func set(O: VecT, index: Int, value: auto) -> auto {
+    *(O::_start_ptr + index) = value;
+}
+
+global func append_to_vec(O: VecPtrT, value: auto) -> auto {
+    let val = *O;
+    
+    if (val::_index == val::_size) 
+        *O = reallocate_vec(*O, val::_size * 2);
+    
+    set(*O, val::_index, value);
+    
+    (*O)::_index = val::_index + 1;
+}
+
+global func get_from_vec(O: VecPtrT, index: Int) -> auto {
+    if (index < 0 || index >= (*O)::_index) {
+        outln "Index out of range";
+        exit -1;
+    }
+    ret *((*O)::_start_ptr + index);
+}
+
+global func print_vec(O: VecPtrT) -> Null {
+    out "[";
+    for (let i = 0; i < (*O)::_size; i = i + 1;) {
+        out *((*O)::_start_ptr + i);
+        if (i != (*O)::_size - 1) out ", ";
+    }
+    outln "]";
+}

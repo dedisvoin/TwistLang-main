@@ -21,6 +21,6 @@ struct Function {
 
 
 Value NewFunction(shared_ptr<Memory> memory, unique_ptr<Node> body, std::vector<Arg*> args, unique_ptr<Node> return_type, Type func_type) {
-    Function* lambda = new Function(memory, std::move(body), std::move(args), std::move(return_type));
-    return Value(func_type, lambda);
+    Function* func = new Function(memory, std::move(body), std::move(args), std::move(return_type));
+    return Value(func_type, func);
 }

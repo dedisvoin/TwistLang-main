@@ -34,7 +34,8 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::SYNTAX << " >> " << token.pif << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.line - 1] << endl;
+        
+        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(token.pif.line).length() + 3, ' ') << string(token.pif.index, ' ') << TERMINAL_COLORS::RED << string(token.pif.lenght, '^') << " Expected " << expected << ", but found '" << token.value << "'" << endl;
         cout << TM::RED << "`" << string(to_string(token.pif.line).length() + 4, '-') << string(token.pif.index, '-') << "'" << TM::RESET << endl;
         cout << endl;
@@ -49,7 +50,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::PARSE_ERROR << " >> " << token.pif << " >> Invalid number: '" << value << "'" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(token.pif.line).length() + 3, ' ') << string(token.pif.index, ' ') << TERMINAL_COLORS::RED << string(token.pif.lenght, '^') << " Invalid number format: '" << value << "'" << endl;
         cout << TM::RED << "`" << string(to_string(token.pif.line).length() + 4, '-') << string(token.pif.index, '-') << "'" << TM::RESET << endl;
         cout << endl;
@@ -67,7 +68,7 @@ namespace ERROR {
         cout << TM::YELLOW << "|" << TM::RESET << endl;
         cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(op_t.pif.index + op_t.pif.lenght - 1, ' ') << TM::RED << ".---- Ivalid operator: '" << op_t.value << "'" << endl;
         cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(op_t.pif.index, ' ') << TM::RED << string(op_t.pif.lenght, 'v') << endl;
-        cout << TM::YELLOW << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << 
         TM::YELLOW  << string(op_t.pif.index - start.pif.index, '^') << 
         string(op_t.pif.lenght, '~') << 
@@ -88,7 +89,7 @@ namespace ERROR {
         cout << TM::YELLOW << "|" << TM::RESET << endl;
         cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(op_t.pif.index + op_t.pif.lenght - 1, ' ') << TM::RED << ".---- Ivalid operator: '" << op_t.value << "'" << endl;
         cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(op_t.pif.index, ' ') << TM::RED << string(op_t.pif.lenght, 'v') << endl;
-        cout << TM::YELLOW << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::YELLOW << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " `" << value.type.pool << "` type is not support this unary operator" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         exit(0);
@@ -102,7 +103,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid value, expected <type expression> or 'auto' keyword" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         cout << endl;
@@ -117,7 +118,7 @@ namespace ERROR {
 
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Types mismatch" << endl;
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Variable waited `" << waited_type.pool << "` type, but found `" << found_type.pool << "` type" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
     
@@ -136,7 +137,7 @@ namespace ERROR {
             cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(end_expr.pif.index + end_expr.pif.lenght - 1, ' ') << TM::RED << ".---- This expression type `" << found_type.pool << "` but waited `" << waited_type.pool << "`" << endl;
             cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start_expr.pif.index, ' ') << TM::RED << string(end_expr.pif.index - start_expr.pif.index + end_expr.pif.lenght, 'v') << endl;
         }
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         string messsage = "Incompartable type in this variable declaration statement";
         if (found_type.pool == "Null")
             messsage = "Use 'auto' for this variable declaration statement";
@@ -155,7 +156,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Incompartable type" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " " << "Input instruction wait `String` or `Char` type but found `" << found_type.pool << "`" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         exit(0);
@@ -168,7 +169,8 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid dereference" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid dereference type" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         MSG("Syntax: '*'<variable name> to dereference a variable.");
@@ -186,7 +188,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid call" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid callable type" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         MSG("You must call a this object types (lambda, function, method)");
@@ -201,10 +203,13 @@ namespace ERROR {
 
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid call" << endl;
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line-1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Arguments count mismatch" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
-        cout << TM::YELLOW << ". " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        
+        cout << TM::YELLOW << ". " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.global_line-1] << endl;
+        
         cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Waited " << wait_count << " arguments but found " << found_count << " arguments" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
         
@@ -219,10 +224,10 @@ namespace ERROR {
 
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << "+ " << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid call" << endl;
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid argument type" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
-        cout << TM::YELLOW << ". " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << ". " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.global_line - 1] << endl;
         cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Argument '" << index << "' waited `" << wait_type.pool << "` but found `" << found_type.pool << "` type" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
         
@@ -237,10 +242,10 @@ namespace ERROR {
 
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << "+ " << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid call" << endl;
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid return type `" << found_type.pool << "`" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
-        cout << TM::YELLOW << ". " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << ". " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.global_line - 1] << endl;
         cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Return waited `" << wait_type.pool << "` but found `" << found_type.pool << "` type" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
         
@@ -255,7 +260,7 @@ namespace ERROR {
 
         cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << start_args.pif << " >> Invalid type specifier" << endl;
         cout << TM::YELLOW << "|" << TM::RESET << endl;
-        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.global_line - 1] << endl;
         cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid type specifier for argument '" << index << "'" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
         
@@ -269,7 +274,7 @@ namespace ERROR {
 
         cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << start_args.pif << " >> Invalid type specifier" << endl;
         cout << TM::YELLOW << "|" << TM::RESET << endl;
-        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.global_line - 1] << endl;
         cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid type specifier for argument '" << index << "'" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
         
@@ -282,7 +287,7 @@ namespace ERROR {
 
         cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << start_args.pif << " >> Invalid type specifier" << endl;
         cout << TM::YELLOW << "|" << TM::RESET << endl;
-        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.global_line - 1] << endl;
         cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid reurn type specifier" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
         
@@ -295,7 +300,7 @@ namespace ERROR {
 
         cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << start_args.pif << " >> Invalid type specifier" << endl;
         cout << TM::YELLOW << "|" << TM::RESET << endl;
-        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.global_line - 1] << endl;
         cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid return type specifier" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
         FIX("Waited type specifier for return type 'Int', 'Float | Double', ... ");
@@ -308,7 +313,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid dereference" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid dereference value, waited <variable name> or <type name>, but found `" << type.pool << "`" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         exit(0);
@@ -333,7 +338,7 @@ namespace ERROR {
         cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Assertion failed" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::YELLOW << "|" << TM::RESET << endl;
-        cout << TM::YELLOW << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::YELLOW << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Assertion failed" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
 
@@ -347,7 +352,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Constant mutation"  << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Variable '" << var_name << "' cannot be mutated, because it is declared as constant value" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         FIX("Remove the 'const' keyword in variable declaration statement.");
@@ -361,7 +366,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Constant mutation"  << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Pointer value cannot be mutated, because it is declared as pointer to constant value" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         FIX("Remove the 'const' keyword in declaration expression.");
@@ -375,10 +380,28 @@ namespace ERROR {
 
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid delete instruction" << endl;
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid argument" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         MSG("Delete instruction waits a variable name or pointer.");
+        exit(0);
+    }
+
+    void InvalidNewInstruction(const Token& start, const Token& end) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid new instruction" << endl;
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid 'new' syntax" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        MSG("'new' instruction syntax:");
+        MSG("   new _value_;");
+        MSG("   new <const> _value_;");
+        MSG("   new <static(_type_)>;");
+        MSG("   new <static(_type_), const> _value_;");
+        MSG("   ...");
         exit(0);
     }
 
@@ -391,7 +414,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << "::" << ERROR_TYPES::SEMANTIC << " >> " << token.pif << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(token.pif.line).length() + 3, ' ') << string(token.pif.index, ' ') << TERMINAL_COLORS::RED << string(token.pif.lenght, '^') << " Expected " << expected << " statement, but found " << token.value << " statement" << endl;
         cout << TM::RED << "`" << string(to_string(token.pif.line).length() + 4, '-') << string(token.pif.index, '-') << "'" << TM::RESET << endl;
         cout << endl;
@@ -404,7 +427,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::SEMANTIC<< " >> " << token.pif << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(token.pif.line).length() + 3, ' ') << string(token.pif.index, ' ') << TERMINAL_COLORS::RED << string(token.pif.lenght, '^') << " Expected sytnax :<type expression> or 'auto'" << endl;
         cout << TM::RED << "`" << string(to_string(token.pif.line).length() + 4, '-') << string(token.pif.index, '-') << "'" << TM::RESET << endl;
         cout << endl;
@@ -417,7 +440,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION  << " >> " << token.pif << " >> Undefined variable: '" << token.value << "'" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(token.pif.line).length() + 3, ' ') << string(token.pif.index, ' ') << TM::RED << string(token.pif.lenght, '^') << " Undefined variable: '" << token.value << "'" << endl;
         cout << TM::RED << "`" << string(to_string(token.pif.line).length() + 4, '-') << string(token.pif.index, '-') << "'" << TM::RESET << endl;
         cout << endl;
@@ -430,7 +453,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Undefine variable" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Undefined variable '" << name << "'" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         cout << endl;
@@ -443,7 +466,7 @@ namespace ERROR {
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION  << " >> " << token.pif << " >> Final variable redefinition: '" << var_name << "'" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.line - 1] << endl;
+        cout << TM::RED << "| " << TM::CYAN << token.pif.line << " | " << TM::RESET << lines[token.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(token.pif.line).length() + 3, ' ') << string(token.pif.index, ' ') << TM::RED << string(token.pif.lenght, '^') << " Variable '" << var_name << "' already defined" << endl;
         cout << TM::RED << "`" << string(to_string(token.pif.line).length() + 4, '-') << string(token.pif.index, '-') << "'" << TM::RESET << endl;
         cout << endl;

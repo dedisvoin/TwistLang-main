@@ -38,6 +38,7 @@ const string TokenTypeToString(TokenType T) noexcept{
 struct PosInFile {
     string file_name;
     int line;
+    int global_line;
     int index;
     int lenght;
 

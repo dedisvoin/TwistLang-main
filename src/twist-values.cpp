@@ -2,6 +2,7 @@
 #include <ostream>
 #include <vcruntime_typeinfo.h>
 #include "any"
+#include "iostream"
 #include <vector>
 #pragma once
 
@@ -23,8 +24,11 @@ struct Type {
 
     bool is_sub_type(const Type& other) const {
         // Разбиваем текущий тип на компоненты и проверяем, содержит ли он other
-        vector<string> components = split_union_components();
 
+        if (other.pool == "auto") return true;
+
+        vector<string> components = split_union_components();
+        
         
         // Разбиваем other на компоненты (если это union, проверяем все компоненты)
         vector<string> other_components = other.split_union_components();
@@ -73,11 +77,25 @@ struct Type {
         return !is_union_type();
     }
 
+    bool is_func() const {
+        // Проверяем, является ли тип функцией
+        // Функция должна быть базовым типом и начинаться с '('
+        if (pool.substr(0,5) == "(Func") return true;
+        if (pool.substr(0,4) == "Func") return true;
+        return false;
+    }
+
     bool is_pointer() const {
         // Проверяем, является ли тип указателем
         // Указатель должен быть базовым типом и начинаться с '*'
-        if (!is_base_type()) return false;
-        return !pool.empty() && pool[0] == '*';
+        vector<string> components = split_union_components();
+        int is_p = 0;
+        for (const string& comp : components) {
+            if (comp.substr(0,1) == "*") {
+                is_p++;
+            }
+        }
+        return is_p == components.size();
     }
 
     // Вспомогательная функция для разбора union типа на компоненты
@@ -256,6 +274,7 @@ namespace STANDART_TYPE {
     const Type NAMESPACE = Type("Namespace");
     const Type NULL_T = Type("Null");
     const Type LAMBDA = Type("Lambda");
+    const Type AUTO = Type("auto");
     
 }
 
@@ -322,7 +341,7 @@ Value NewInt(int64_t value) {
     return Value(STANDART_TYPE::INT, value);
 }
 
-Value NewDouble(long double value) {
+Value NewDouble(float value) {
     return Value(STANDART_TYPE::DOUBLE, value);
 }
 
