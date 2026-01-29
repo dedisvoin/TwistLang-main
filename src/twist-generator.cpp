@@ -28,7 +28,6 @@
 #define NO_EXEC \
     void exec_from(Memory& _memory) override {} \
 
-
 #define NO_EVAL \
     Value eval_from(Memory& _memory) override {} \
 
@@ -44,7 +43,7 @@ struct NodeNumber : public Node { NO_EXEC
 
 
     NodeNumber(Token& token) {
-        this->NAME = "Number";
+        this->NODE_TYPE = NodeTypes::NODE_NUMBER;
         string value = token.value;
 
         size_t dot_count = count(value.begin(), value.end(), '.');
@@ -75,6 +74,7 @@ struct NodeNumber : public Node { NO_EXEC
 struct NodeString : public Node { NO_EXEC
     string value;
     NodeString(string value) {
+        this->NODE_TYPE = NodeTypes::NODE_STRING;
         this->value = value;
     }
 
@@ -86,6 +86,7 @@ struct NodeString : public Node { NO_EXEC
 struct NodeChar : public Node { NO_EXEC
     char value;
     NodeChar(char value) {
+        this->NODE_TYPE = NodeTypes::NODE_CHAR;
         this->value = value;
     }
 
@@ -98,6 +99,7 @@ struct NodeBool : public Node { NO_EXEC
     bool value;
 
     NodeBool(Token& token) {
+        this->NODE_TYPE = NodeTypes::NODE_BOOL;
         if (token.value == "true") value = true;
         if (token.value == "false") value = false;
     }
@@ -108,7 +110,9 @@ struct NodeBool : public Node { NO_EXEC
 struct NodeNull : public Node { NO_EXEC
     Value value = NewNull();
 
-    NodeNull() {}
+    NodeNull() {
+        this->NODE_TYPE = NodeTypes::NODE_NULL;
+    }
 
     Value eval_from(Memory& _memory) override {
         return this->value;
@@ -122,7 +126,7 @@ struct NodeLiteral : public Node { NO_EXEC
 
     NodeLiteral(Token& token, Memory& memory) : token(token), memory(memory) {
         name = token.value;
-        this->NAME = "Literal";
+        this->NODE_TYPE = NODE_LITERAL;
     }
 
     Value eval_from(Memory& _memory) override {
@@ -141,7 +145,7 @@ struct NodeValueHolder : public Node { NO_EXEC
     Value value;
 
     NodeValueHolder(Value val) : value(std::move(val)) {
-        this->NAME = "ValueHolder";
+        this->NODE_TYPE = NodeTypes::NODE_VALUE_HOLDER;
     }
 
     Value eval_from(Memory& _memory) override {
@@ -161,7 +165,7 @@ struct NodeNameResolution : public Node { NO_EXEC
                       const vector<string>& remaining_chain = {}) :
         namespace_expr(std::move(namespace_expr)), current_name(current_name), start(start), end(end) ,
         remaining_chain(remaining_chain) {
-        this->NAME = "NameResolutionLiteral";
+        this->NODE_TYPE = NodeTypes::NODE_NAME_RESOLUTION;
     }
 
     Value eval_from(Memory& _memory) override {
@@ -209,7 +213,7 @@ struct NodeScopes : public Node { NO_EXEC
     unique_ptr<Node> expression;
 
     NodeScopes(unique_ptr<Node> expr) : expression(std::move(expr)) {
-        this->NAME = "Scopes";
+        this->NODE_TYPE = NodeTypes::NODE_SCOPES;
     }
 
     Value eval_from(Memory& _memory) override {
@@ -229,7 +233,7 @@ struct NodeUnary : public Node { NO_EXEC
 
     NodeUnary(unique_ptr<Node> operand, Token start, Token end, Token operator_token)
         : operand(std::move(operand)), start(start), end(end), operator_token(operator_token) {
-            this->NAME = "UnaryExpression";
+            this->NODE_TYPE = NodeTypes::NODE_UNARY;
             op = operator_token.value;
         }
 
@@ -293,7 +297,7 @@ struct NodeBinary : public Node { NO_EXEC
 
     NodeBinary(unique_ptr<Node> left, const string& operation, unique_ptr<Node> right, Token& start_token, Token& end_token, Token& op_token)
         : left(std::move(left)), right(std::move(right)), op(operation), start_token(start_token), end_token(end_token), op_token(op_token) {
-            this->NAME = "BinaryExpression";
+            this->NODE_TYPE = NodeTypes::NODE_BINARY;
         }
 
     Value eval_from(Memory& _memory) override {
@@ -509,7 +513,7 @@ struct NodeBaseVariableDecl : public Node { NO_EVAL
                             Token type_start_token, Token type_end_token, bool nullable, Token start_expr_token, Token end_expr_token)
         : var_name(name), memory(memory), decl_token(decl_token), type_start_token(type_start_token), type_end_token(type_end_token),
         nullable(nullable), start_expr_token(start_expr_token), end_expr_token(end_expr_token) {
-            this->NAME = "BaseVariableDecl";
+            this->NODE_TYPE = NodeTypes::NODE_VARIABLE_DECLARATION;
             this->value_expr = std::move(expr);
             this->type_expr = std::move(type_expr);
         }
@@ -531,7 +535,7 @@ struct NodeBaseVariableDecl : public Node { NO_EVAL
         if (is_static) {
             if (!type_expr) ERROR::WaitedTypeExpression(type_end_token);
 
-            if (type_expr->NAME == "Literal" && ((NodeLiteral*)type_expr.get())->name == "auto") {
+            if (type_expr->NODE_TYPE == NodeTypes::NODE_LITERAL && ((NodeLiteral*)type_expr.get())->name == "auto") {
                 static_type = value.type;
             } else {
                 auto type_value = type_expr->eval_from(_memory);
@@ -562,7 +566,7 @@ struct NodeBaseVariableDecl : public Node { NO_EVAL
 struct NodeBaseOut : public Node { NO_EVAL
     vector<unique_ptr<Node>> expression;
     NodeBaseOut(vector<unique_ptr<Node>> expr) : expression(std::move(expr)) {
-        this->NAME = "BaseOut";
+        this->NODE_TYPE = NodeTypes::NODE_OUT;
     }
 
     void print(Value value) {
@@ -616,7 +620,7 @@ struct NodeBaseOut : public Node { NO_EVAL
 struct NodeBaseOutLn : public Node { NO_EVAL
     vector<unique_ptr<Node>> expression;
     NodeBaseOutLn(vector<unique_ptr<Node>> expr) : expression(std::move(expr)) {
-        this->NAME = "BaseOut";
+        this->NODE_TYPE = NodeTypes::NODE_OUTLN;
     }
 
     void print(Value value) {
@@ -684,7 +688,7 @@ struct NodeVariableEqual : public Node { NO_EVAL
         expression(std::move(expression)), variable(std::move(variable)),
         start_left_value_token(start_left_value_token), end_left_value_token(end_left_value_token),
         start_value_token(start_value_token), end_value_token(end_value_token) {
-            NAME = "VariableEqual";
+            this->NODE_TYPE = NodeTypes::NODE_VARIABLE_EQUAL;
         };
 
     void exec_from(Memory& _memory) override {
@@ -727,14 +731,14 @@ struct NodeVariableEqual : public Node { NO_EVAL
 
     pair<Memory, string> resolveAssignmentTargetMemory(Node* node, Memory& _memory) {
         
-        if (node->NAME == "Literal") {
+        if (node->NODE_TYPE == NodeTypes::NODE_LITERAL) {
             
             if (!_memory.check_literal(((NodeLiteral*)node)->name)) {
                 ERROR::UndefinedLeftVariable(start_left_value_token, end_left_value_token, ((NodeLiteral*)node)->name);
             }
             return {_memory, ((NodeLiteral*)node)->name};
         }
-        else if (node->NAME == "NameResolutionLiteral") {
+        else if (node->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
             NodeNameResolution* resolution = (NodeNameResolution*)node;
 
             // Получаем namespace
@@ -791,7 +795,9 @@ struct NodeVariableEqual : public Node { NO_EVAL
 struct NodeBlock : public Node { NO_EVAL
     vector<unique_ptr<Node>> nodes_array;
 
-    NodeBlock(vector<unique_ptr<Node>> &nodes_array) : nodes_array(std::move(nodes_array)) {}
+    NodeBlock(vector<unique_ptr<Node>> &nodes_array) : nodes_array(std::move(nodes_array)) {
+        this->NODE_TYPE = NodeTypes::NODE_BLOCK_OF_NODES;
+    }
 
     void exec_from(Memory& _memory) override {
         for (int i = 0; i < nodes_array.size(); i++) {
@@ -808,7 +814,9 @@ struct NodeIf : public Node { NO_EVAL
 
     NodeIf(unique_ptr<Node> eq_expression, unique_ptr<Node> true_statement, unique_ptr<Node> else_statement = nullptr) :
         eq_expression(std::move(eq_expression)), true_statement(std::move(true_statement)),
-        else_statement(std::move(else_statement)) {}
+        else_statement(std::move(else_statement)) {
+        this->NODE_TYPE = NodeTypes::NODE_IF;
+    }
 
     void exec_from(Memory& _memory) override {
         auto value = eq_expression->eval_from(_memory);
@@ -843,11 +851,7 @@ struct NodeNamespaceDecl : public Node { NO_EVAL
 
     NodeNamespaceDecl(Memory& parent_memory, unique_ptr<Node> statement, string name, Token decl_token) :
         parent_memory(parent_memory), statement(std::move(statement)), name(name), decl_token(decl_token) {
-            this->NAME = "NamespaceDecl";
-            // Создаем новую память для namespace
-            namespace_memory = make_unique<Memory>();
-            // Копируем глобальные переменные из родительской области видимости
-
+            this->NODE_TYPE = NodeTypes::NODE_NAMESPACE_DECLARATION;
         }
 
     void exec_from(Memory& _memory) override {
@@ -874,7 +878,9 @@ struct Break {};
 
 // + SUCCESS WORKS
 struct NodeBreak : public Node { NO_EVAL
-    NodeBreak() {}
+    NodeBreak() {
+        this->NODE_TYPE = NodeTypes::NODE_BREAK;
+    }
 
     void exec_from(Memory& _memory) override {
         throw Break();
@@ -885,7 +891,9 @@ struct Continue {};
 
 // + SUCCESS WORKS
 struct NodeContinue : public Node { NO_EVAL
-    NodeContinue() {}
+    NodeContinue() {
+        this->NODE_TYPE = NodeTypes::NODE_CONTINUE;
+    }
 
     void exec_from(Memory& _memory) override {
         throw Continue();
@@ -899,7 +907,9 @@ struct NodeWhile : public Node { NO_EVAL
     unique_ptr<Node> statement;
 
     NodeWhile(unique_ptr<Node> eq_expression, unique_ptr<Node> statement) :
-        eq_expression(std::move(eq_expression)), statement(std::move(statement)) {}
+        eq_expression(std::move(eq_expression)), statement(std::move(statement)) {
+        this->NODE_TYPE = NodeTypes::NODE_WHILE;
+    }
 
 
     void exec_from(Memory& _memory) override {
@@ -934,7 +944,9 @@ struct NodeDoWhile : public Node { NO_EVAL
     unique_ptr<Node> statement;
 
     NodeDoWhile(unique_ptr<Node> eq_expression, unique_ptr<Node> statement) :
-        eq_expression(std::move(eq_expression)), statement(std::move(statement)) {}
+        eq_expression(std::move(eq_expression)), statement(std::move(statement)) {
+        this->NODE_TYPE = NodeTypes::NODE_DO_WHILE;
+    }
 
     void exec_from(Memory& _memory) override {
         while (true) {
@@ -969,7 +981,9 @@ struct NodeFor : public Node { NO_EVAL
 
     NodeFor(unique_ptr<Node> start_state, unique_ptr<Node> check_expr, unique_ptr<Node> update_state, unique_ptr<Node> body) :
         start_state(std::move(start_state)), check_expr(std::move(check_expr)),
-        update_state(std::move(update_state)), body(std::move(body)) {}
+        update_state(std::move(update_state)), body(std::move(body)) {
+        this->NODE_TYPE = NodeTypes::NODE_FOR;
+    }
 
     void exec_from(Memory& _memory) override {
         start_state->exec_from(_memory);
@@ -1020,18 +1034,18 @@ struct NodeBlockDecl : public Node { NO_EVAL
     vector<unique_ptr<Node>> decls;
 
     NodeBlockDecl(vector<unique_ptr<Node>> decls) : decls(std::move(decls)) {
-        this->NAME = "BlockDecl";
+        this->NODE_TYPE = NodeTypes::NODE_BLOCK_OF_DECLARATIONS;
     }
 
     void exec_from(Memory& _memory) override {
         for (int i = 0; i < decls.size(); i++) {
-            if (decls[i]->NAME == "BaseVariableDecl") {
+            if (decls[i]->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
                 ((NodeBaseVariableDecl*)decls[i].get())->is_const = is_const;
                 ((NodeBaseVariableDecl*)decls[i].get())->is_static = is_static;
                 ((NodeBaseVariableDecl*)decls[i].get())->is_final = is_final;
                 ((NodeBaseVariableDecl*)decls[i].get())->is_global = is_global;
             }
-            if (decls[i]->NAME == "NamespaceDecl") {
+            if (decls[i]->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
                 ((NodeNamespaceDecl*)decls[i].get())->is_const = is_const;
                 ((NodeNamespaceDecl*)decls[i].get())->is_static = is_static;
                 ((NodeNamespaceDecl*)decls[i].get())->is_final = is_final;
@@ -1045,7 +1059,9 @@ struct NodeBlockDecl : public Node { NO_EVAL
 struct NodeAddressOf : public Node { NO_EXEC
     unique_ptr<Node> expr;
 
-    NodeAddressOf(unique_ptr<Node> expr) : expr(std::move(expr)) {}
+    NodeAddressOf(unique_ptr<Node> expr) : expr(std::move(expr)) {
+        this->NODE_TYPE = NodeTypes::NODE_ADDRESS_OF;
+    }
 
     pair<Memory, string> resolveAssignmentTarget(Node* node, Memory& _memory) {
         NodeNameResolution* resolution = (NodeNameResolution*)node;
@@ -1095,16 +1111,16 @@ struct NodeAddressOf : public Node { NO_EXEC
 
     Value eval_from(Memory& _memory) override {
         auto value = expr->eval_from(_memory);
-        if (expr->NAME == "Scopes") {
-            while (expr->NAME == "Scopes")
+        if (expr->NODE_TYPE == NodeTypes::NODE_SCOPES) {
+            while (expr->NODE_TYPE == NodeTypes::NODE_SCOPES)
                 expr = std::move(((NodeScopes*)(expr.get()))->expression);
         }
-        if (expr->NAME == "Literal") {
+        if (expr->NODE_TYPE == NodeTypes::NODE_LITERAL) {
             auto var_name = ((NodeLiteral*)(expr.get()))->name;
             auto addr = _memory.get_variable(var_name)->address;
             return NewPointer(addr, value.type);
         }
-        if (expr->NAME == "NameResolutionLiteral") {
+        if (expr->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
             auto [memory, var_name] = resolveAssignmentTarget(expr.get(), _memory);
             auto addr = memory.get_variable(var_name)->address;
             return NewPointer(addr, value.type);
@@ -1118,7 +1134,7 @@ struct NodeDereference : public Node { NO_EXEC
     Token end;
 
     NodeDereference(unique_ptr<Node> expr, Token start, Token end) : expr(std::move(expr)), start(start), end(end) {
-        this->NAME = "Dereference";
+        this->NODE_TYPE = NodeTypes::NODE_DEREFERENCE;
     }
 
     Value eval_from(Memory& _memory) override {
@@ -1155,7 +1171,7 @@ struct NodeLeftDereference : public Node { NO_EVAL
         left_expr(std::move(variable)), right_expr(std::move(expression)),
         start_left_value_token(start_left_value_token), end_left_value_token(end_left_value_token),
         start_value_token(start_value_token), end_value_token(end_value_token) {
-            this->NAME = "LeftDereference";
+            this->NODE_TYPE = NodeTypes::NODE_LEFT_DEREFERENCE;
         };
 
     void exec_from(Memory& _memory) override {
@@ -1206,7 +1222,9 @@ struct NodeLeftDereference : public Node { NO_EVAL
 struct NodeTypeof : public Node { NO_EXEC
     unique_ptr<Node> expr;
 
-    NodeTypeof(unique_ptr<Node> expr) : expr(std::move(expr)) {}
+    NodeTypeof(unique_ptr<Node> expr) : expr(std::move(expr)) {
+        this->NODE_TYPE = NodeTypes::NODE_TYPEOF;
+    }
 
     Value eval_from(Memory& _memory) override {
         auto value = expr->eval_from(_memory);
@@ -1217,7 +1235,9 @@ struct NodeTypeof : public Node { NO_EXEC
 struct NodeSizeof : public Node { NO_EXEC
     unique_ptr<Node> expr;
 
-    NodeSizeof(unique_ptr<Node> expr) : expr(std::move(expr)) {}
+    NodeSizeof(unique_ptr<Node> expr) : expr(std::move(expr)) {
+        this->NODE_TYPE = NodeTypes::NODE_SIZEOF;
+    }
 
     Value eval_from(Memory& _memory) override {
         auto value = expr->eval_from(_memory);
@@ -1252,15 +1272,15 @@ struct NodeDelete : public Node { NO_EVAL
 
     NodeDelete(unique_ptr<Node> target, Token start_token, Token end_token)
         : target(std::move(target)), start_token(start_token), end_token(end_token) {
-        this->NAME = "Delete";
+        this->NODE_TYPE = NodeTypes::NODE_DELETE;
     }
 
     void exec_from(Memory& _memory) override {
-        if (target->NAME != "Literal" && target->NAME != "NameResolutionLiteral" && target->NAME != "Dereference") {
+        if (target->NODE_TYPE != NodeTypes::NODE_LITERAL && target->NODE_TYPE != NodeTypes::NODE_NAME_RESOLUTION && target->NODE_TYPE != NodeTypes::NODE_DEREFERENCE) {
             ERROR::InvalidDeleteInstruction(start_token, end_token);
         }
 
-        if (target->NAME == "Dereference") {
+        if (target->NODE_TYPE == NodeTypes::NODE_DEREFERENCE) {
             auto value = ((NodeDereference*)(target.get()))->expr->eval_from(_memory);
             if (value.type.is_pointer()) {
                 auto address = any_cast<int>(value.data);
@@ -1288,13 +1308,13 @@ struct NodeDelete : public Node { NO_EVAL
     }
 
     pair<Memory&, string> resolveDeleteTargetMemory(Node* node, Memory& _memory) {
-        if (node->NAME == "Literal") {
+        if (node->NODE_TYPE == NodeTypes::NODE_LITERAL) {
             if (!_memory.check_literal(((NodeLiteral*)node)->name)) {
                 ERROR::UndefinedVariable(start_token);
             }
             return {_memory, ((NodeLiteral*)node)->name};
         }
-        else if (node->NAME == "NameResolutionLiteral") {
+        else if (node->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
             NodeNameResolution* resolution = (NodeNameResolution*)node;
 
             // Получаем namespace
@@ -1355,7 +1375,7 @@ struct NodeIfExpr : public Node { NO_EXEC
 
     NodeIfExpr(unique_ptr<Node> condition, unique_ptr<Node> true_expr, unique_ptr<Node> else_expr)
         : condition(std::move(condition)), true_expr(std::move(true_expr)), else_expr(std::move(else_expr)) {
-            NAME = "IfExpr";
+            this->NODE_TYPE = NodeTypes::NODE_IF_EXPRESSION;
     }
 
     Value eval_from(Memory& _memory) override {
@@ -1382,7 +1402,7 @@ struct NodeInput : public Node { NO_EXEC
 
     NodeInput(unique_ptr<Node> expr, Token start_token, Token end_token)
         : expr(std::move(expr)), start_token(start_token), end_token(end_token) {
-            NAME = "Input";
+            this->NODE_TYPE = NodeTypes::NODE_INPUT;
     }
 
     Value eval_from(Memory& _memory) override {
@@ -1446,16 +1466,12 @@ struct NodeInput : public Node { NO_EXEC
 
 
 struct NodeNamespace : public Node { NO_EXEC
-    shared_ptr<Memory> namespace_memory;
     unique_ptr<Node> statement;
     Memory& parent_memory;
 
     NodeNamespace(Memory& parent_memory, unique_ptr<Node> statement) :
         parent_memory(parent_memory), statement(std::move(statement)) {
-            this->NAME = "Namespace";
-            // Создаем новую память для namespace
-            namespace_memory = make_unique<Memory>();
-            // Копируем глобальные переменные из родительской области видимости
+            this->NODE_TYPE = NodeTypes::NODE_NAMESPACE_EXPRESSION;
         }
 
     Value eval_from(Memory& _memory) override {
@@ -1479,7 +1495,7 @@ struct NodeAssert : public Node { NO_EVAL
 
     NodeAssert(unique_ptr<Node> expr, Token start_token, Token end_token)
         : expr(std::move(expr)), start_token(start_token), end_token(end_token) {
-            NAME = "Assert";
+            this->NODE_TYPE = NodeTypes::NODE_ASSERT;
     }
 
     void exec_from(Memory& _memory) override {
@@ -1497,7 +1513,7 @@ struct NodeAssert : public Node { NO_EVAL
 struct NodeExpressionStatement : public Node { NO_EVAL
     unique_ptr<Node> expr;
     NodeExpressionStatement(unique_ptr<Node> expr) : expr(std::move(expr)) {
-        NAME = "ExpressionStatement";
+        this->NODE_TYPE = NodeTypes::NODE_EXPRESSION_STATEMENT;
     }
     void exec_from(Memory& _memory) override {
         expr->eval_from(_memory);
@@ -1523,7 +1539,7 @@ struct NodeLambda : public Node { NO_EXEC
                Token start_args_token, Token end_args_token, Token start_type_token, Token end_type_token) :
         parent_memory(parent_memory), body(std::move(body)), args(std::move(args)), return_type(std::move(return_type)),
         start_args_token(start_args_token), end_args_token(end_args_token), start_type_token(start_type_token), end_type_token(end_type_token) {
-            this->NAME = "Lambda";
+            this->NODE_TYPE = NodeTypes::NODE_LAMBDA;
         }
 
     
@@ -1567,7 +1583,7 @@ struct NodeReturn : public Node { NO_EVAL
     Token start_token;
     Token end_token;
     NodeReturn(unique_ptr<Node> expr, Token start_token, Token end_token) : expr(std::move(expr)), start_token(start_token), end_token(end_token) {
-        this->NAME = "Return";
+        this->NODE_TYPE = NodeTypes::NODE_RETURN;
     }
 
     void exec_from(Memory& _memory) override {
@@ -1586,7 +1602,7 @@ struct NodeCall : public Node { NO_EXEC
 
     NodeCall(unique_ptr<Node> callable, vector<unique_ptr<Node>> args, Token start_callable, Token end_callable) :
         callable(std::move(callable)), args(std::move(args)), start_callable(start_callable), end_callable(end_callable) {
-        this->NAME = "Call";
+        this->NODE_TYPE = NodeTypes::NODE_CALL;
     }
 
     Value eval_from(Memory& _memory) override {
@@ -1695,7 +1711,7 @@ struct NodeNew : public Node { NO_EXEC
             Token start_type, Token end_type) : 
     expr(std::move(expr)), type_expr(std::move(type_expr)), is_const(is_const), is_static(is_static),
     start_type(start_type), end_type(end_type) {
-        this->NAME = "New";
+        this->NODE_TYPE = NodeTypes::NODE_NEW;
     }
 
     Value eval_from(Memory& _memory) override {
@@ -1754,7 +1770,7 @@ struct NodeNewFuncType : public Node { NO_EXEC
                     args_types_expr(std::move(args_types)), return_type_expr(std::move(return_type_expr)),
                     start_token_args(start_token_args), end_token_args(end_token_args),
                     start_token_return(start_token_return), end_token_return(end_token_return) {
-        this->NAME = "NewFuncType";
+        this->NODE_TYPE = NodeTypes::NODE_FUNCTION_TYPE;
     }
 
 
@@ -1807,7 +1823,7 @@ struct NodeFuncDecl : public Node { NO_EVAL
                 Token start_args_token, Token end_args_token, Token start_return_token, Token end_return_token) : 
         name(name), args(std::move(args)), return_type(std::move(return_type)), body(std::move(body)),
         start_args_token(start_args_token), end_args_token(end_args_token), start_return_token(start_return_token), end_return_token(end_return_token) {
-        this->NAME = "FuncDecl";
+        this->NODE_TYPE = NodeTypes::NODE_FUNCTION_DECLARATION;
     }
 
     Type construct_type(Memory& _memory) {
@@ -1847,6 +1863,8 @@ struct NodeFuncDecl : public Node { NO_EVAL
 
         auto func = NewFunction(name, new_function_memory, std::move(body), args, std::move(return_type), function_type, start_args_token, end_args_token, start_return_token, end_return_token);
         auto object = CreateMemoryObject(func, function_type, is_const, is_static, is_final, is_global, &new_function_memory);
+        if (_memory.check_literal(name))
+            _memory.delete_variable(name);
         _memory.add_object(name, object);
         STATIC_MEMORY.register_object(object);
     }
@@ -1856,7 +1874,7 @@ struct NodeExit : public Node { NO_EVAL
     unique_ptr<Node> expr;
 
     NodeExit(unique_ptr<Node> expr) : expr(std::move(expr)) {
-        this->NAME = "Exit";
+        this->NODE_TYPE = NodeTypes::NODE_EXIT;
     }
 
     void exec_from(Memory& _memory) override {
@@ -2375,6 +2393,7 @@ struct ContextExecutor {
     }
 };
 
+
 unique_ptr<Node> ASTGenerator::ParseReturn(Memory& memory) {
     walker.next();
     Token start = *walker.get();
@@ -2386,6 +2405,7 @@ unique_ptr<Node> ASTGenerator::ParseReturn(Memory& memory) {
     return make_unique<NodeReturn>(std::move(expr), start, end);
 }
 
+
 unique_ptr<Node> ASTGenerator::ParseExit(Memory& memory) {
     walker.next();
     auto expr = parse_expression(memory);
@@ -2395,10 +2415,11 @@ unique_ptr<Node> ASTGenerator::ParseExit(Memory& memory) {
     return make_unique<NodeExit>(std::move(expr));
 }
 
+
 unique_ptr<Node> ASTGenerator::ParsePostfix(unique_ptr<Node> expr, Memory &memory) {
     while (true) {
         if (walker.CheckValue("(")) {
-            Token start = *walker.get(-1);
+            Token start = *walker.get();
             Token end;
             expr = ParseCall(std::move(expr), memory, start, end);
         } else if (walker.CheckValue(":") && walker.CheckValue(":", 1)) {
@@ -2775,7 +2796,7 @@ unique_ptr<Node> ASTGenerator::ParseNamespace(Memory& memory) {
     walker.next(); // pass "namespace" token
     auto namespace_node = make_unique<NodeNamespace>(memory, nullptr);
     
-    auto block = parse_statement(*namespace_node->namespace_memory);
+    auto block = parse_statement(memory);
     namespace_node->statement = std::move(block);
 
     return namespace_node;
@@ -3357,13 +3378,13 @@ unique_ptr<Node> ASTGenerator::ParseFinalVariableDecl(Memory& memory) {
     auto token = *walker.get();
     auto decl = parse_statement(memory);
 
-    if (decl->NAME == "BaseVariableDecl") {
+    if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
         ((NodeBaseVariableDecl*)decl.get())->is_final = true;
-    } else if (decl->NAME == "NamespaceDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
         ((NodeNamespaceDecl*)decl.get())->is_final = true;
-    } else if (decl->NAME == "BlockDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_final = true;
-    } else if (decl->NAME == "FuncDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
         ((NodeFuncDecl*)decl.get())->is_final = true;
     } else {
         ERROR::UnexpectedStatement(token, "variable declaration");
@@ -3387,13 +3408,13 @@ unique_ptr<Node> ASTGenerator::ParseStaticVariableDecl(Memory& memory) {
     auto token = *walker.get();
     auto decl = parse_statement(memory);
 
-    if (decl->NAME == "BaseVariableDecl") {
+    if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
         ((NodeBaseVariableDecl*)decl.get())->is_static = true;
-    } else if (decl->NAME == "NamespaceDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
         ((NodeNamespaceDecl*)decl.get())->is_static = true;
-    } else if (decl->NAME == "BlockDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_static = true;
-    } else if (decl->NAME == "FuncDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
         ((NodeFuncDecl*)decl.get())->is_static = true;
     } else {
         ERROR::UnexpectedStatement(token, "variable declaration");
@@ -3417,13 +3438,13 @@ unique_ptr<Node> ASTGenerator::ParseConstVariableDecl(Memory& memory) {
     auto token = *walker.get();
     auto decl = parse_statement(memory);
 
-    if (decl->NAME == "BaseVariableDecl") {
+    if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
         ((NodeBaseVariableDecl*)decl.get())->is_const = true;
-    } else if (decl->NAME == "NamespaceDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
         ((NodeNamespaceDecl*)decl.get())->is_const = true;
-    } else if (decl->NAME == "BlockDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_const = true;
-    } else if (decl->NAME == "FuncDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
         ((NodeFuncDecl*)decl.get())->is_const = true;
     } else {
         ERROR::UnexpectedStatement(token, "variable declaration");
@@ -3447,13 +3468,13 @@ unique_ptr<Node> ASTGenerator::ParseGlobalVariableDecl(Memory& memory) {
     auto token = *walker.get();
     auto decl = parse_statement(memory);
 
-    if (decl->NAME == "BaseVariableDecl") {
+    if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
         ((NodeBaseVariableDecl*)decl.get())->is_global = true;
-    } else if (decl->NAME == "NamespaceDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
         ((NodeNamespaceDecl*)decl.get())->is_global = true;
-    } else if (decl->NAME == "BlockDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_global = true;
-    } else if (decl->NAME == "FuncDecl") {
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
         ((NodeFuncDecl*)decl.get())->is_global = true;
     } else {
         ERROR::UnexpectedStatement(token, "variable declaration");

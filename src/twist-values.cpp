@@ -27,8 +27,8 @@ struct Type {
     if (pool == other.pool) return true;
     
     // Специальные случаи
-    if (pool == "auto") return true;
-    if (pool == "*auto") return true;
+    if (other.pool == "auto") return true;
+    if (other.pool == "*auto") return true;
     
     // Разбиваем на компоненты union
     vector<string> current_components = split_union_components();

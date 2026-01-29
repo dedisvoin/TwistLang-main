@@ -1,0 +1,8 @@
+func sum(a: Int, b: Int) -> Int {
+    ret a + b;
+}
+
+func sum2(a: String, b: String) -> Int {
+    ret a + b;
+}
+
