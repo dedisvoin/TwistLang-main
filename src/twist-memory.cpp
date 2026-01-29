@@ -60,12 +60,12 @@ struct MemoryObject {
 
 };
 
-MemoryObject* CreateMemoryObject(Value value, Type wait_type, bool is_const, bool is_static, bool is_final, bool is_global, void* memory) {
+inline MemoryObject* CreateMemoryObject(Value value, Type wait_type, bool is_const, bool is_static, bool is_final, bool is_global, void* memory) {
     int address = AddressManager::get_next_address();
     return new MemoryObject(value, wait_type, is_const, is_static, is_final, is_global, memory, address);
 }
 
-MemoryObject* CreateMemoryObjectWithAddress(Value value, Type wait_type, bool is_const, bool is_static, bool is_final, bool is_global, void* memory, Address address) {
+inline MemoryObject* CreateMemoryObjectWithAddress(Value value, Type wait_type, bool is_const, bool is_static, bool is_final, bool is_global, void* memory, Address address) {
     return new MemoryObject(value, wait_type, is_const, is_static, is_final, is_global, memory, address);
 }
 
@@ -130,7 +130,19 @@ struct Memory {
         return true;
     }
 
-    MemoryObject* get_variable(const string& literal){
+    bool add_object_in_func(const string& literal, Value value, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false) {
+
+        auto object = new MemoryObject(value, value.type, is_const, is_static, is_final, is_global, this, 0);
+        if (check_literal(literal)) delete_variable(literal);
+        try {
+            string_pool.emplace(literal, object);
+        } catch (...) {
+            return false;
+        }
+        return true;
+    }
+
+    inline MemoryObject* get_variable(const string& literal){
         auto it = string_pool.find(literal);
         return it != string_pool.end() ? it->second : nullptr;
     }

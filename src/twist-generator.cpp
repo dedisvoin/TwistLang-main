@@ -1,7 +1,6 @@
 #include "twist-tokenwalker.cpp"
 #include "twist-namespace.cpp"
 #include "twist-functions.cpp"
-#include <iomanip>
 #include <vcruntime_startup.h>
 #include "twist-lambda.cpp"
 #include "twist-tokens.cpp"
@@ -570,7 +569,7 @@ struct NodeBaseOut : public Node { NO_EVAL
         if (value.type == STANDART_TYPE::INT)
             cout << any_cast<int64_t>(value.data);
         if (value.type == STANDART_TYPE::DOUBLE)
-            cout << any_cast<long double>(value.data);
+            cout << any_cast<float>(value.data);
         if (value.type == STANDART_TYPE::BOOL) {
             auto v = any_cast<bool>(value.data);
             if (v == true) cout << "true";
@@ -621,7 +620,7 @@ struct NodeBaseOutLn : public Node { NO_EVAL
     }
 
     void print(Value value) {
-        cout << setprecision(10);
+        
         if (value.type == STANDART_TYPE::INT)
             cout << any_cast<int64_t>(value.data);
         if (value.type == STANDART_TYPE::DOUBLE) {
@@ -703,23 +702,25 @@ struct NodeVariableEqual : public Node { NO_EVAL
         Memory target_memory = target.first;
         string target_var_name = target.second;
 
+       
+
         if (!target_memory.check_literal(target_var_name))
             ERROR::UndefinedLeftVariable(start_left_value_token, end_left_value_token, target_var_name);
-
+         
         // Проверяем константность
         if (target_memory.is_const(target_var_name)) {
             ERROR::ConstRedefinition(start_left_value_token, end_value_token, target_var_name);
         }
-
+        
         // Проверяем типизацию для статических переменных
         if (target_memory.is_static(target_var_name)) {
             auto wait_type = target_memory.get_wait_type(target_var_name);
             auto value_type = right_value.type;
             if (!IsTypeCompatible(wait_type, value_type)) {
-                exit(-1);
+                ERROR::StaticTypesMisMatch(start_left_value_token, end_value_token, wait_type, value_type);
             }
         }
-
+        
         // Выполняем присваивание
         target_memory.set_object_value(target_var_name, right_value);
     }
@@ -1263,10 +1264,12 @@ struct NodeDelete : public Node { NO_EVAL
             auto value = ((NodeDereference*)(target.get()))->expr->eval_from(_memory);
             if (value.type.is_pointer()) {
                 auto address = any_cast<int>(value.data);
-                if (STATIC_MEMORY.is_registered(address))
+                if (STATIC_MEMORY.is_registered(address)) {
                     STATIC_MEMORY.unregister_object(address);
+                    return;
+                }
             }
-
+            ERROR::CanNotDeleteUndereferencedValue(start_token, end_token);
         } else {
             pair<Memory&, string> target_info = resolveDeleteTargetMemory(target.get(), _memory);
             
@@ -1631,28 +1634,43 @@ struct NodeCall : public Node { NO_EXEC
         }
         if (value.type.is_func()) {
             auto func = any_cast<Function*>(value.data);
+            func->memory->add_object_in_func(func->name, value, false, false, false, true);
             Memory saved_mem = *func->memory;
 
             if (func->arguments.size() != args.size()) {
-                cout << "ERR" << endl; exit(-1);
+                ERROR::InvalidFuncArgumentCount(start_callable, end_callable,
+                    func->start_args_token, func->end_args_token, func->arguments.size(), args.size());
             }
             
             for (size_t i = 0; i < args.size(); i++) {
                 auto settable_value = args[i]->eval_from(_memory);
                 if (func->arguments[i]->type_expr) {
                     auto super_type_value = func->arguments[i]->type_expr->eval_from(*func->memory);
+                    
                     if (!settable_value.type.is_sub_type(any_cast<Type>(super_type_value.data))) {
-                        cout << "ERR" << endl; exit(-1);
+                        ERROR::InvalidFuncArgumentType(start_callable, end_callable, func->start_args_token, func->end_args_token, 
+                            any_cast<Type>(super_type_value.data), settable_value.type, func->arguments[i]->name);
                     }
+                    
                 }
 
-                func->memory->add_object_in_lambda(func->arguments[i]->name, settable_value);
+                
+                func->memory->add_object_in_func(func->arguments[i]->name, settable_value, func->arguments[i]->is_const, func->arguments[i]->is_static, func->arguments[i]->is_final, true);
             }
+            
 
             try {
                 ((Node*)(func->body.get()))->exec_from(*func->memory);
                 return NewNull();
             } catch (Return _value) {
+                if (func->return_type) {
+                    auto super_type_value = func->return_type->eval_from(*func->memory);
+                    if (!_value.value.type.is_sub_type(any_cast<Type>(super_type_value.data))) {
+                        ERROR::InvalidLambdaReturnType(start_callable, end_callable, func->start_return_type_token, func->end_return_type_token, 
+                            any_cast<Type>(super_type_value.data), _value.value.type);
+                    }
+                }
+                *func->memory = saved_mem;
                 return _value.value;
             }
             
@@ -1748,8 +1766,6 @@ struct NodeNewFuncType : public Node { NO_EXEC
             if (value.type != STANDART_TYPE::TYPE) 
                 ERROR::WaitedFuncTypeArgumentTypeSpecifier(start_token_args, end_token_args, i);
             args_types.push_back(any_cast<Type>(value.data));
-                
-            
         }
 
 
@@ -1780,33 +1796,47 @@ struct NodeFuncDecl : public Node { NO_EVAL
     bool is_final = false;
     bool is_const = false;
     bool is_global = false;
+
+    Token start_args_token;
+    Token end_args_token;
+    Token start_return_token;
+    Token end_return_token;
     
 
-    NodeFuncDecl(string name, vector<Arg*> args, unique_ptr<Node> return_type, unique_ptr<Node> body) : 
-        name(name), args(std::move(args)), return_type(std::move(return_type)), body(std::move(body)) {
+    NodeFuncDecl(string name, vector<Arg*> args, unique_ptr<Node> return_type, unique_ptr<Node> body,
+                Token start_args_token, Token end_args_token, Token start_return_token, Token end_return_token) : 
+        name(name), args(std::move(args)), return_type(std::move(return_type)), body(std::move(body)),
+        start_args_token(start_args_token), end_args_token(end_args_token), start_return_token(start_return_token), end_return_token(end_return_token) {
         this->NAME = "FuncDecl";
     }
 
     Type construct_type(Memory& _memory) {
-        auto value = return_type->eval_from(_memory);
+        if (return_type) {
+            auto value = return_type->eval_from(_memory);
 
-        if (value.type != STANDART_TYPE::TYPE) 
-            // ERROR::WaitedFuncTypeReturnTypeSpecifier(return_type->start, return_type->end);
-            cout << "ERR" << endl;
-            
-        Type return_type = any_cast<Type>(value.data);
-            
-        vector<Type> args_types;
-        for (int i = 0; i < args.size(); i++) {
-            auto value = args[i]->type_expr->eval_from(_memory);
             if (value.type != STANDART_TYPE::TYPE) 
-                // ERROR::WaitedFuncTypeArgumentTypeSpecifier(args[i]->type_start_token, args[i]->type_end_token);
-                cout << "ERR" << endl;
+                ERROR::WaitedFuncTypeReturnTypeSpecifier(start_return_token, end_return_token);
                 
-            args_types.push_back(any_cast<Type>(value.data));
+            Type return_type = any_cast<Type>(value.data);
+                
+            vector<Type> args_types;
+            for (int i = 0; i < args.size(); i++) {
+                auto value = args[i]->type_expr->eval_from(_memory);
+                if (value.type != STANDART_TYPE::TYPE) 
+                    ERROR::WaitedFuncTypeArgumentTypeSpecifier(start_args_token, end_args_token, args[i]->name);
+                args_types.push_back(any_cast<Type>(value.data));
+            }
+            return create_function_type(return_type, args_types);
+        } else {
+            vector<Type> args_types;
+            for (int i = 0; i < args.size(); i++) {
+                auto value = args[i]->type_expr->eval_from(_memory);
+                if (value.type != STANDART_TYPE::TYPE) 
+                    ERROR::WaitedFuncTypeArgumentTypeSpecifier(start_args_token, end_args_token, args[i]->name);
+                args_types.push_back(any_cast<Type>(value.data));
+            }
+            return create_function_type(args_types);
         }
-        return create_function_type(return_type, args_types);
-        
     }
 
     void exec_from(Memory& _memory) override {
@@ -1815,7 +1845,7 @@ struct NodeFuncDecl : public Node { NO_EVAL
         auto new_function_memory = make_shared<Memory>();
         _memory.link_objects(*new_function_memory);
 
-        auto func = NewFunction(new_function_memory, std::move(body), args, std::move(return_type), function_type);
+        auto func = NewFunction(name, new_function_memory, std::move(body), args, std::move(return_type), function_type, start_args_token, end_args_token, start_return_token, end_return_token);
         auto object = CreateMemoryObject(func, function_type, is_const, is_static, is_final, is_global, &new_function_memory);
         _memory.add_object(name, object);
         STATIC_MEMORY.register_object(object);
@@ -2403,6 +2433,32 @@ unique_ptr<Node> ASTGenerator::ParseFuncDecl(Memory& memory) {
             walker.next();
             break;
         }
+
+        bool arg_is_const = false;
+        bool arg_is_static = false;
+        bool arg_is_final = false;
+        while (true) {
+            if (walker.CheckValue("const")) {
+                arg_is_const = true;
+                walker.next();
+                continue;
+            }
+            if (walker.CheckValue("static")) {
+                arg_is_static = true;
+                walker.next();
+                continue;
+            }
+            if (walker.CheckValue("final")) {
+                arg_is_final = true;
+                walker.next();
+                continue;
+            }
+            break;
+        }
+        
+            
+        
+
         if (!walker.CheckType(TokenType::LITERAL))
             ERROR::UnexpectedToken(*walker.get(), "variable name");
         string arg_name = walker.get()->value;
@@ -2434,6 +2490,10 @@ unique_ptr<Node> ASTGenerator::ParseFuncDecl(Memory& memory) {
         auto arg = new Arg(arg_name);
         arg->type_expr = std::move(type_expr);
         arg->default_parameter = std::move(default_expr);
+        arg->is_const = arg_is_const;
+        arg->is_static = arg_is_static;
+        arg->is_final = arg_is_final;
+        
         arguments.push_back(arg);
         
         if (!walker.CheckValue(",") && !walker.CheckValue(")")) {
@@ -2443,14 +2503,16 @@ unique_ptr<Node> ASTGenerator::ParseFuncDecl(Memory& memory) {
     }
 
     Token end_args_token = *walker.get(-1);
-
+    Token start_return_token = *walker.get();
     unique_ptr<Node> return_type_expr = nullptr;
-    if (!walker.CheckValue("->")) 
-        ERROR::UnexpectedToken(*walker.get(), "'->'");
-    walker.next();
-    return_type_expr = parse_expression(memory);
-    if (!return_type_expr)
-        ERROR::UnexpectedToken(*walker.get(), "return type expression");
+    if (walker.CheckValue("->")) {
+        walker.next();
+        start_return_token = *walker.get();
+        return_type_expr = parse_expression(memory);
+        if (!return_type_expr)
+            ERROR::UnexpectedToken(*walker.get(), "return type expression");
+    }
+    Token end_return_token = *walker.get(-1);
     
     
     auto statement = parse_statement(memory);
@@ -2458,7 +2520,7 @@ unique_ptr<Node> ASTGenerator::ParseFuncDecl(Memory& memory) {
     
     
     
-    return make_unique<NodeFuncDecl>(name, std::move(arguments), std::move(return_type_expr), std::move(statement));
+    return make_unique<NodeFuncDecl>(name, std::move(arguments), std::move(return_type_expr), std::move(statement), start_args_token, end_args_token, start_return_token, end_return_token);
         
     
 }

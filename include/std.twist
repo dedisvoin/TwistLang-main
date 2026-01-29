@@ -59,6 +59,8 @@ global func allocate(T: Type) -> *auto {
     if (T == Char) ret new<static> (0);
     if (T == String) ret new<static> ("");
     if (T == Bool) ret new<static> (false);
+    if (T == Lambda) ret new<static> (lambda(){});
+    if (T == auto) ret new (null);
     outln "Error basic type: ", T;
     exit -1;
 }
@@ -92,6 +94,11 @@ global func reallocate_vec(O: VecT, size: Int) -> Namespace {
 
     ret new_ptr;
 }
+
+global func new_vec(T: Type) -> VecT {
+    ret allocate_vec(T, 1);
+}
+
 
 global func set(O: VecT, index: Int, value: auto) -> auto {
     *(O::_start_ptr + index) = value;

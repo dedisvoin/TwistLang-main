@@ -58,9 +58,14 @@ struct Lexer {
     inline void next_in_line() { this->pos_in_line++; }
     inline void next_line() { 
         this->line++; 
-        this->global_line++;
-        if (!(pos == this->main_file_size)) 
+        
+        if (!(pos == this->main_file_size))  {
             this->pos_in_line = 0; 
+            
+        }
+        this->global_line++;
+        
+            
         
     }
     inline char get(const int offset = 0) { return this->file_data[this->pos + offset]; }
@@ -402,7 +407,7 @@ struct Lexer {
                 parse_comment();
             }
         }
-        add_token("EOF", TokenType::END_OF_FILE, PosInFile{.file_name = this->this_file, .line = this->line - 1, .index = this->pos_in_line, .lenght = 1});
+        add_token("EOF", TokenType::END_OF_FILE, PosInFile{.file_name = this->this_file, .line = this->line - 1, .global_line = this->global_line - 1, .index = this->pos_in_line, .lenght = 1});
     }
 
 };

@@ -1,7 +1,13 @@
+global let Number = Int | Double;
 
 
-let n = new<static(Double | Int)> 10;
+func create() -> Func(Number, Number) -> Number {
+    func sum(a: Int, b: Number) -> Int {
+        ret a + b;
+    }
+    ret sum;
+}
 
 
-
-outln n;
+let sum = create();
+outln sum(1, 3.14);

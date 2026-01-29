@@ -11,6 +11,7 @@ struct Arg {
     string name;
     bool is_const = false;
     bool is_final = false;
+    bool is_static = false;
 
     Arg(string name) : name(name) {
         
