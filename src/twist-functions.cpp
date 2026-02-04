@@ -18,6 +18,8 @@ struct Function {
     Token start_return_type_token;
     Token end_return_type_token;
 
+
+
     string name;
     
     Function(string name,shared_ptr<Memory> memory, unique_ptr<Node> body, vector<Arg*> args, 
@@ -33,3 +35,5 @@ Value NewFunction(string name, shared_ptr<Memory> memory, unique_ptr<Node> body,
     Function* func = new Function(name, memory, std::move(body), std::move(args), std::move(return_type), start_args_token, end_args_token, start_return_type_token, end_return_type_token);
     return Value(func_type, func);
 }
+
+

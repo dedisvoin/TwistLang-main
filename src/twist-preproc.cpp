@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include <cctype>
 #include <cstring>
 #include <stdexcept>
@@ -14,6 +15,7 @@ class Preprocessor {
 private:
     struct Macro {
         std::vector<std::string> params;
+        std::set<std::string> wildcard_params; // Параметры с * для нестрогой замены
         std::string body;
     };
     
@@ -23,12 +25,51 @@ private:
     
     struct LineInfo {
         std::string content;
-        bool isDirective;      // @define или @macro
-        bool isIncludeMarker;  // Маркер include (<start ...> или <end ...>)
-        bool isIncludeDirective; // Строка с @include (должна быть удалена)
+        bool isDirective;
+        bool isIncludeMarker;
+        bool isIncludeDirective;
+        bool isMultilineMacro;
         std::string filename;
         int originalLine;
+        int lineCount;  // Количество строк, занимаемых директивой
     };
+    
+    // Структура для хранения контекста ошибки
+    struct ErrorContext {
+        std::string filename;
+        int line;
+        std::string lineContent;
+        std::string message;
+        
+        ErrorContext(const std::string& f, int l, const std::string& lc, const std::string& m)
+            : filename(f), line(l), lineContent(lc), message(m) {}
+    };
+    
+    // Функция для красивого вывода ошибки
+    void printError(const ErrorContext& err) const {
+        std::cerr << ".- [ err ] >> syntax >> '" << err.filename << "':" << err.line << std::endl;
+        std::cerr << "|" << std::endl;
+        
+        // Добавляем пробелы для выравнивания номера строки
+        std::string lineNumStr = std::to_string(err.line);
+        int lineNumPadding = lineNumStr.length();
+        
+        std::cerr << "| " << err.line << " | " << err.lineContent << std::endl;
+        
+        // Вычисляем позицию для каретки (^)
+        std::cerr << "| " << std::string(lineNumPadding, ' ') << "   " 
+                  << std::string(err.lineContent.length(), ' ') << "^ " << err.message << std::endl;
+        
+        std::cerr << "`---------------------------'" << std::endl << std::endl;
+    }
+    
+    // Функция для вывода ошибки без контекста строки
+    void printSimpleError(const std::string& filename, const std::string& message) const {
+        std::cerr << ".- [ err ] >> syntax >> '" << filename << "'" << std::endl;
+        std::cerr << "|" << std::endl;
+        std::cerr << "| " << message << std::endl;
+        std::cerr << "`---------------------------'" << std::endl << std::endl;
+    }
     
     static std::string trim(const std::string& s) {
         size_t start = 0, end = s.length() - 1;
@@ -48,16 +89,13 @@ private:
         return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
     }
     
-    // НОВАЯ ФУНКЦИЯ: Заменяет только целые слова
     static void replaceWholeWord(std::string& str, const std::string& from, const std::string& to) {
         if (from.empty()) return;
         
         size_t pos = 0;
         while ((pos = str.find(from, pos)) != std::string::npos) {
-            // Проверяем границы слова
             bool isWordBoundary = true;
             
-            // Проверяем символ перед словом
             if (pos > 0) {
                 char before = str[pos - 1];
                 if (std::isalnum(before) || before == '_') {
@@ -65,7 +103,6 @@ private:
                 }
             }
             
-            // Проверяем символ после слова
             if (pos + from.length() < str.length()) {
                 char after = str[pos + from.length()];
                 if (std::isalnum(after) || after == '_') {
@@ -82,7 +119,6 @@ private:
         }
     }
     
-    // Старая функция для полной замены (используется в других местах)
     static void replaceAll(std::string& str, const std::string& from, const std::string& to) {
         if (from.empty()) return;
         size_t pos = 0;
@@ -94,7 +130,9 @@ private:
     
     std::string readFile(const std::string& filename) {
         std::ifstream file(filename);
-        if (!file) throw std::runtime_error("Cannot open file: " + filename);
+        if (!file) {
+            throw std::runtime_error("Cannot open file: " + filename);
+        }
         std::stringstream buffer;
         buffer << file.rdbuf();
         return buffer.str();
@@ -116,35 +154,104 @@ private:
             }
         }
         
+        printSimpleError(filename, "Include file not found: " + filename);
         throw std::runtime_error("Include file not found: " + filename);
     }
     
     void collectIncludes(const std::string& source, 
-                        const std::string& filename,
-                        int outerLine,
-                        std::vector<LineInfo>& lines) {
-        std::stringstream input(source);
-        std::string line;
-        int lineNum = 0;
+                    const std::string& filename,
+                    int outerLine,
+                    std::vector<LineInfo>& lines) {
+    std::stringstream input(source);
+    std::string line;
+    int lineNum = 0;
+    
+    while (std::getline(input, line)) {
+        lineNum++;
+        std::string trimmed = trim(line);
         
-        while (std::getline(input, line)) {
-            lineNum++;
-            std::string trimmed = trim(line);
+        if (startsWith(trimmed, "@macro")) {
+            std::string macroContent = line;
+            bool hasOpeningBrace = (line.find('{') != std::string::npos);
+            
+            if (hasOpeningBrace) {
+                int braceCount = 0;
+                bool inQuotes = false;
+                char quoteChar = '\0';
+                
+                // Подсчитываем скобки в первой строке
+                for (char c : macroContent) {
+                    if (!inQuotes && (c == '\'' || c == '"')) {
+                        inQuotes = !inQuotes;
+                        quoteChar = c;
+                    } else if (inQuotes && c == quoteChar) {
+                        inQuotes = false;
+                    } else if (!inQuotes) {
+                        if (c == '{') braceCount++;
+                        else if (c == '}') braceCount--;
+                    }
+                }
+                
+                // Собираем последующие строки, пока не скомпенсируем все скобки
+                while (braceCount > 0 && std::getline(input, line)) {
+                    lineNum++;
+                    macroContent += "\n" + line;
+                    
+                    for (char c : line) {
+                        if (!inQuotes && (c == '\'' || c == '"')) {
+                            inQuotes = !inQuotes;
+                            quoteChar = c;
+                        } else if (inQuotes && c == quoteChar) {
+                            inQuotes = false;
+                        } else if (!inQuotes) {
+                            if (c == '{') braceCount++;
+                            else if (c == '}') braceCount--;
+                        }
+                    }
+                }
+                
+                if (braceCount > 0) {
+                    printError(ErrorContext(filename, lineNum, macroContent, 
+                                           "Unbalanced braces in macro definition"));
+                    throw std::runtime_error("Unbalanced braces in macro definition");
+                }
+            }
             
             LineInfo info;
-            info.content = trimRight(line);
+            info.content = macroContent;
+            info.isDirective = true;
+            info.isIncludeMarker = false;
+            info.isIncludeDirective = false;
+            info.isMultilineMacro = true;
             info.filename = filename;
             info.originalLine = lineNum;
+            // Подсчитываем количество строк в макросе
+            info.lineCount = std::count(macroContent.begin(), macroContent.end(), '\n') + 1;
+            lines.push_back(info);
             
-            if (startsWith(trimmed, "@include")) {
+       
+            } else if (startsWith(trimmed, "@include")) {
                 int includeLine = outerLine + lineNum - 1;
                 
+                LineInfo info;
+                info.content = line;
                 info.isDirective = true;
                 info.isIncludeMarker = false;
                 info.isIncludeDirective = true;
+                info.isMultilineMacro = false;
+                info.filename = filename;
+                info.originalLine = lineNum;
+                info.lineCount = 1;
                 lines.push_back(info);
                 
-                std::string includeFile = extractIncludeFilename(line);
+                std::string includeFile;
+                try {
+                    includeFile = extractIncludeFilename(line);
+                } catch (const std::runtime_error& e) {
+                    printError(ErrorContext(filename, lineNum, line, e.what()));
+                    throw;
+                }
+                
                 std::string fullPath = findIncludeFile(includeFile);
                 
                 LineInfo startMarker;
@@ -153,8 +260,10 @@ private:
                 startMarker.isDirective = false;
                 startMarker.isIncludeMarker = true;
                 startMarker.isIncludeDirective = false;
+                startMarker.isMultilineMacro = false;
                 startMarker.filename = filename;
                 startMarker.originalLine = lineNum;
+                startMarker.lineCount = 1;
                 lines.push_back(startMarker);
                 
                 std::string includedContent = readFile(fullPath);
@@ -166,19 +275,34 @@ private:
                 endMarker.isDirective = false;
                 endMarker.isIncludeMarker = true;
                 endMarker.isIncludeDirective = false;
+                endMarker.isMultilineMacro = false;
                 endMarker.filename = filename;
                 endMarker.originalLine = lineNum;
+                endMarker.lineCount = 1;
                 lines.push_back(endMarker);
                 
-            } else if (startsWith(trimmed, "@define") || startsWith(trimmed, "@macro")) {
+            } else if (startsWith(trimmed, "@define")) {
+                LineInfo info;
+                info.content = line;
                 info.isDirective = true;
                 info.isIncludeMarker = false;
                 info.isIncludeDirective = false;
+                info.isMultilineMacro = false;
+                info.filename = filename;
+                info.originalLine = lineNum;
+                info.lineCount = 1;
                 lines.push_back(info);
+                
             } else {
+                LineInfo info;
+                info.content = line;
                 info.isDirective = false;
                 info.isIncludeMarker = false;
                 info.isIncludeDirective = false;
+                info.isMultilineMacro = false;
+                info.filename = filename;
+                info.originalLine = lineNum;
+                info.lineCount = 1;
                 lines.push_back(info);
             }
         }
@@ -186,21 +310,14 @@ private:
     
     std::string extractIncludeFilename(const std::string& line) {
         size_t start = line.find('"');
-        if (start == std::string::npos) 
-            throw std::runtime_error("Invalid include syntax");
+        if (start == std::string::npos) {
+            throw std::runtime_error("Invalid include syntax - missing opening quote");
+        }
         size_t end = line.find('"', start + 1);
-        if (end == std::string::npos)
-            throw std::runtime_error("Invalid include syntax");
+        if (end == std::string::npos) {
+            throw std::runtime_error("Invalid include syntax - missing closing quote");
+        }
         return line.substr(start + 1, end - start - 1);
-    }
-    
-    std::string extractFilenameFromMarker(const std::string& marker) {
-        size_t fileStart = marker.find("file=\"");
-        if (fileStart == std::string::npos) return "";
-        fileStart += 6;
-        size_t fileEnd = marker.find('"', fileStart);
-        if (fileEnd == std::string::npos) return "";
-        return marker.substr(fileStart, fileEnd - fileStart);
     }
     
     void processAllDirectives(const std::vector<LineInfo>& lines) {
@@ -211,32 +328,55 @@ private:
             if (info.isDirective && !info.isIncludeDirective) {
                 std::string trimmed = trim(info.content);
                 if (startsWith(trimmed, "@define")) {
-                    processDefineDirective(trimmed);
+                    try {
+                        processDefineDirective(info);
+                    } catch (const std::runtime_error& e) {
+                        printError(ErrorContext(info.filename, info.originalLine, 
+                                               info.content, e.what()));
+                        throw;
+                    }
                 } else if (startsWith(trimmed, "@macro")) {
-                    processMacroDirective(trimmed);
+                    try {
+                        processMacroDirective(info);
+                    } catch (const std::runtime_error& e) {
+                        printError(ErrorContext(info.filename, info.originalLine, 
+                                               info.content, e.what()));
+                        throw;
+                    }
                 }
             }
         }
     }
     
-    void processDefineDirective(const std::string& line) {
+    void processDefineDirective(const LineInfo& info) {
+        const std::string& line = info.content;
         size_t eqPos = line.find('=');
-        if (eqPos == std::string::npos) return;
+        if (eqPos == std::string::npos) {
+            throw std::runtime_error("Invalid @define syntax - missing '='");
+        }
         
         std::string left = trim(line.substr(7, eqPos - 7));
         std::string right = trim(line.substr(eqPos + 1));
         
+        if (left.empty()) {
+            throw std::runtime_error("Invalid @define syntax - empty identifier");
+        }
+        
+        for (char c : left) {
+            if (!std::isalnum(c) && c != '_') {
+                throw std::runtime_error("Invalid character in define name: '" + std::string(1, c) + "'");
+            }
+        }
+        
         if (!left.empty()) {
             std::string value = right;
             
-            // Циклически подставляем дефайны в значение другого дефайна
             bool changed;
             do {
                 changed = false;
                 std::string oldValue = value;
                 
                 for (const auto& def : defines) {
-                    // Используем replaceWholeWord для дефайнов
                     std::string temp = value;
                     replaceWholeWord(temp, def.first, def.second);
                     if (temp != value) {
@@ -251,45 +391,124 @@ private:
         }
     }
     
-    void processMacroDirective(const std::string& line) {
-        size_t parenStart = line.find('(');
-        if (parenStart == std::string::npos) return;
+    void processMacroDirective(const LineInfo& info) {
+        const std::string& line = info.content;
         
-        std::string name = trim(line.substr(6, parenStart - 6));
-        
-        size_t parenEnd = line.find(')', parenStart);
-        if (parenEnd == std::string::npos) return;
-        
-        std::string paramsStr = line.substr(parenStart + 1, parenEnd - parenStart - 1);
-        std::vector<std::string> params;
-        std::stringstream paramStream(paramsStr);
-        std::string param;
-        while (std::getline(paramStream, param, ',')) {
-            params.push_back(trim(param));
+        size_t macroPos = line.find("@macro");
+        if (macroPos == std::string::npos) {
+            throw std::runtime_error("Invalid macro directive");
         }
         
-        size_t eqPos = line.find('=', parenEnd);
-        if (eqPos == std::string::npos) return;
+        size_t pos = macroPos + 6;
+        while (pos < line.size() && std::isspace(line[pos])) pos++;
         
-        std::string body = trim(line.substr(eqPos + 1));
+        size_t nameStart = pos;
+        while (pos < line.size() && (std::isalnum(line[pos]) || line[pos] == '_')) pos++;
         
+        if (pos == nameStart) {
+            throw std::runtime_error("Missing macro name");
+        }
+        
+        std::string name = line.substr(nameStart, pos - nameStart);
+        
+        for (char c : name) {
+            if (!std::isalnum(c) && c != '_') {
+                throw std::runtime_error("Invalid character in macro name: '" + std::string(1, c) + "'");
+            }
+        }
+        
+        while (pos < line.size() && std::isspace(line[pos])) pos++;
+        if (pos >= line.size() || line[pos] != '(') {
+            throw std::runtime_error("Missing '(' in macro definition");
+        }
+        
+        size_t paramStart = pos + 1;
+        int parenDepth = 1;
+        pos++;
+        
+        while (pos < line.size() && parenDepth > 0) {
+            if (line[pos] == '(') parenDepth++;
+            else if (line[pos] == ')') parenDepth--;
+            pos++;
+        }
+        
+        if (parenDepth != 0) {
+            throw std::runtime_error("Unmatched parentheses in macro definition");
+        }
+        
+        std::string paramsStr = line.substr(paramStart, pos - paramStart - 1);
+        std::vector<std::string> raw_params; // Параметры как есть (возможно с *)
+        std::vector<std::string> processed_params; // Параметры без *
+        std::set<std::string> wildcard_params; // Имена параметров с * (без звездочки)
+        
+        if (!paramsStr.empty()) {
+            std::stringstream paramStream(paramsStr);
+            std::string param;
+            while (std::getline(paramStream, param, ',')) {
+                std::string trimmedParam = trim(param);
+                if (!trimmedParam.empty()) {
+                    // Проверяем, является ли параметр "wildcard" параметром (начинается с *)
+                    bool is_wildcard = false;
+                    std::string param_name = trimmedParam;
+                    
+                    if (trimmedParam[0] == '*') {
+                        is_wildcard = true;
+                        param_name = trim(trimmedParam.substr(1));
+                        
+                        if (param_name.empty()) {
+                            throw std::runtime_error("Invalid wildcard parameter - missing name after '*'");
+                        }
+                    }
+                    
+                    // Проверка на корректность имени параметра
+                    for (char c : param_name) {
+                        if (!std::isalnum(c) && c != '_') {
+                            throw std::runtime_error("Invalid character in parameter name: '" + 
+                                                   std::string(1, c) + "'");
+                        }
+                    }
+                    
+                    raw_params.push_back(trimmedParam);
+                    processed_params.push_back(param_name);
+                    
+                    if (is_wildcard) {
+                        wildcard_params.insert(param_name);
+                    }
+                }
+            }
+        }
+        
+        while (pos < line.size() && std::isspace(line[pos])) pos++;
+        if (pos >= line.size() || line[pos] != '=') {
+            throw std::runtime_error("Missing '=' in macro definition");
+        }
+        pos++;
+        
+        while (pos < line.size() && std::isspace(line[pos])) pos++;
+        
+        if (pos >= line.size()) {
+            throw std::runtime_error("Missing macro body");
+        }
+        
+        std::string body = line.substr(pos);
+        
+        // Обрабатываем тело макроса: подставляем дефайны
         std::string processedBody = body;
-        
-        // Подставляем дефайны в тело макроса (только целые слова)
         for (const auto& def : defines) {
             replaceWholeWord(processedBody, def.first, def.second);
         }
         
         Macro macro;
-        macro.params = params;
+        macro.params = processed_params; // Без звездочек
+        macro.wildcard_params = wildcard_params; // Какие параметры являются wildcard
         macro.body = processedBody;
         macros[name] = macro;
     }
     
-    std::string expandInString(const std::string& str) {
+    std::string expandInString(const std::string& str, const LineInfo& context) {
         std::string result = str;
         
-        // Сначала подставляем дефайны (только целые слова)
+        // Сначала подставляем дефайны
         for (const auto& def : defines) {
             replaceWholeWord(result, def.first, def.second);
         }
@@ -301,11 +520,17 @@ private:
             std::string old = result;
             
             for (const auto& mac : macros) {
-                std::string expanded = expandMacroCall(old, mac.first, mac.second);
-                if (expanded != old) {
-                    result = expanded;
-                    changed = true;
-                    break;
+                try {
+                    std::string expanded = expandMacroCall(old, mac.first, mac.second, context);
+                    if (expanded != old) {
+                        result = expanded;
+                        changed = true;
+                        break;
+                    }
+                } catch (const std::runtime_error& e) {
+                    printError(ErrorContext(context.filename, context.originalLine, 
+                                           str, e.what()));
+                    throw;
                 }
             }
         } while (changed);
@@ -313,7 +538,44 @@ private:
         return result;
     }
     
-    std::string expandMacroCall(const std::string& str, const std::string& name, const Macro& macro) {
+    std::string removeOuterBraces(const std::string& str) {
+        std::string trimmed = trim(str);
+        
+        if (trimmed.size() >= 2 && trimmed[0] == '{' && trimmed[trimmed.size() - 1] == '}') {
+            int braceCount = 0;
+            bool inQuotes = false;
+            char quoteChar = '\0';
+            
+            for (size_t i = 0; i < trimmed.size(); i++) {
+                char c = trimmed[i];
+                
+                if (!inQuotes && (c == '\'' || c == '"')) {
+                    inQuotes = !inQuotes;
+                    quoteChar = c;
+                } else if (inQuotes && c == quoteChar) {
+                    inQuotes = false;
+                } else if (!inQuotes) {
+                    if (c == '{') {
+                        braceCount++;
+                        if (braceCount == 1 && i == 0) {
+                            continue;
+                        }
+                    } else if (c == '}') {
+                        braceCount--;
+                        if (braceCount == 0 && i == trimmed.size() - 1) {
+                            std::string inner = trimmed.substr(1, trimmed.size() - 2);
+                            return trim(inner);
+                        }
+                    }
+                }
+            }
+        }
+        
+        return str;
+    }
+
+    std::string expandMacroCall(const std::string& str, const std::string& name, 
+                                const Macro& macro, const LineInfo& context) {
         std::string result = str;
         size_t pos = 0;
         
@@ -323,7 +585,6 @@ private:
             
             bool isValid = true;
             
-            // Проверяем границы слова для имени макроса
             if (namePos > 0) {
                 char before = result[namePos - 1];
                 if (std::isalnum(before) || before == '_') {
@@ -352,24 +613,51 @@ private:
             }
             
             if (parenDepth != 0) {
-                throw std::runtime_error("Unmatched parentheses in macro call");
+                throw std::runtime_error("Unmatched parentheses in macro call to '" + name + "'");
             }
             
             argEnd--;
             
             std::string argsStr = result.substr(argStart, argEnd - argStart);
             std::vector<std::string> args;
-            splitArguments(argsStr, args);
+            
+            try {
+                splitArguments(argsStr, args);
+            } catch (const std::runtime_error& e) {
+                throw std::runtime_error("Error parsing arguments for macro '" + name + "': " + e.what());
+            }
             
             if (args.size() != macro.params.size()) {
-                throw std::runtime_error("Wrong number of arguments for macro " + name);
+                std::string msg = "Wrong number of arguments for macro '" + name + "' - expected " +
+                                 std::to_string(macro.params.size()) + ", got " + std::to_string(args.size());
+                throw std::runtime_error(msg);
+            }
+            
+            // Разворачиваем аргументы (подставляем дефайны)
+            for (size_t i = 0; i < args.size(); i++) {
+                LineInfo argContext = context;
+                argContext.content = args[i];
+                args[i] = expandInString(args[i], argContext);
             }
             
             std::string expanded = macro.body;
+            
+            // Подставляем аргументы в тело макроса
             for (size_t i = 0; i < args.size(); i++) {
-                // Для подстановки аргументов в тело макроса используем полную замену
-                replaceAll(expanded, macro.params[i], args[i]);
+                const std::string& param_name = macro.params[i];
+                const std::string& arg_value = args[i];
+                
+                // Если параметр помечен как wildcard (*), используем replaceAll
+                if (macro.wildcard_params.find(param_name) != macro.wildcard_params.end()) {
+                    replaceAll(expanded, param_name, arg_value);
+                } else {
+                    // Иначе используем replaceWholeWord для строгой замены
+                    replaceWholeWord(expanded, param_name, arg_value);
+                }
             }
+            
+            // Удаляем внешние фигурные скобки, если они есть
+            expanded = removeOuterBraces(expanded);
             
             result.replace(namePos, argEnd - namePos + 1, expanded);
             pos = namePos + expanded.size();
@@ -382,20 +670,60 @@ private:
         args.clear();
         std::string current;
         int parenDepth = 0;
+        int braceDepth = 0;
+        bool inQuotes = false;
+        char quoteChar = '\0';
         
-        for (char c : argsStr) {
-            if (c == '(') {
-                parenDepth++;
+        for (size_t i = 0; i < argsStr.size(); i++) {
+            char c = argsStr[i];
+            
+            if (!inQuotes && (c == '\'' || c == '"')) {
+                inQuotes = true;
+                quoteChar = c;
                 current += c;
-            } else if (c == ')') {
-                parenDepth--;
+            } else if (inQuotes && c == quoteChar) {
+                inQuotes = false;
                 current += c;
-            } else if (c == ',' && parenDepth == 0) {
-                args.push_back(trim(current));
-                current.clear();
+            } else if (!inQuotes) {
+                if (c == '(') {
+                    parenDepth++;
+                    current += c;
+                } else if (c == ')') {
+                    if (parenDepth == 0) {
+                        throw std::runtime_error("Unmatched ')' in arguments");
+                    }
+                    parenDepth--;
+                    current += c;
+                } else if (c == '{') {
+                    braceDepth++;
+                    current += c;
+                } else if (c == '}') {
+                    if (braceDepth == 0) {
+                        throw std::runtime_error("Unmatched '}' in arguments");
+                    }
+                    braceDepth--;
+                    current += c;
+                } else if (c == ',' && parenDepth == 0 && braceDepth == 0) {
+                    args.push_back(trim(current));
+                    current.clear();
+                } else {
+                    current += c;
+                }
             } else {
                 current += c;
             }
+        }
+        
+        if (parenDepth != 0) {
+            throw std::runtime_error("Unmatched '(' in arguments");
+        }
+        
+        if (braceDepth != 0) {
+            throw std::runtime_error("Unmatched '{' in arguments");
+        }
+        
+        if (inQuotes) {
+            throw std::runtime_error("Unclosed string literal in arguments");
         }
         
         if (!current.empty()) {
@@ -404,29 +732,46 @@ private:
     }
     
     std::string processDirectives(std::vector<LineInfo>& lines) {
-        std::stringstream output;
-        
+    std::stringstream output;
+    
+    try {
         processAllDirectives(lines);
+    } catch (const std::runtime_error& e) {
+        throw;
+    }
+    
+    for (size_t i = 0; i < lines.size(); i++) {
+        const LineInfo& info = lines[i];
         
-        for (size_t i = 0; i < lines.size(); i++) {
-            const LineInfo& info = lines[i];
-            
-            if (info.isIncludeMarker) {
-                output << info.content << "\n";
-            } else if (info.isDirective) {
-                if (info.isIncludeDirective) {
-                    continue;
+        if (info.isIncludeMarker) {
+            output << info.content << "\n";
+        } else if (info.isDirective) {
+            if (info.isIncludeDirective) {
+                continue;
+            } else {
+                // Для директив макросов (@macro) заменяем на соответствующее количество пустых строк
+                if (startsWith(trim(info.content), "@macro")) {
+                    // Выводим пустые строки вместо декларации макроса
+                    for (int j = 0; j < info.lineCount; j++) {
+                        output << "\n";
+                    }
                 } else {
+                    // Для обычных директив (@define) оставляем одну пустую строку
                     output << "\n";
                 }
-            } else {
-                std::string processed = expandInString(info.content);
+            }
+        } else {
+            try {
+                std::string processed = expandInString(info.content, info);
                 output << processed << "\n";
+            } catch (const std::runtime_error& e) {
+                throw;
             }
         }
-        
-        return output.str();
     }
+    
+    return output.str();
+}
     
 public:
     Preprocessor() {
@@ -440,9 +785,17 @@ public:
     
     std::string process(const std::string& source, const std::string& filename) {
         std::vector<LineInfo> lines;
-        collectIncludes(source, filename, 1, lines);
         
-        return processDirectives(lines);
+        try {
+            collectIncludes(source, filename, 1, lines);
+        } catch (const std::runtime_error& e) {
+            throw;
+        }
+        
+        try {
+            return processDirectives(lines);
+        } catch (const std::runtime_error& e) {
+            throw;
+        }
     }
 };
-

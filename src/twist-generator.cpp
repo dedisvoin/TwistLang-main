@@ -569,49 +569,40 @@ struct NodeBaseOut : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_OUT;
     }
 
-    void print(Value value) {
-        if (value.type == STANDART_TYPE::INT)
-            cout << any_cast<int64_t>(value.data);
-        if (value.type == STANDART_TYPE::DOUBLE)
-            cout << any_cast<float>(value.data);
-        if (value.type == STANDART_TYPE::BOOL) {
-            auto v = any_cast<bool>(value.data);
-            if (v == true) cout << "true";
-            if (v == false) cout << "false";
-        }
-        if (value.type == STANDART_TYPE::TYPE) {
-            cout << any_cast<Type>(value.data).pool;
-        }
-        if (value.type == STANDART_TYPE::NULL_T) {
-            cout << "null";
-        }
-        if (value.type == STANDART_TYPE::NAMESPACE) {
-            cout << any_cast<Namespace>(value.data).name;
-        }
-        if (value.type == STANDART_TYPE::STRING) {
-            cout << any_cast<string>(value.data);
-        }
-        if (value.type == STANDART_TYPE::CHAR) {
-            cout << any_cast<char>(value.data);
-        }
-        if (value.type == STANDART_TYPE::LAMBDA) {
-            cout << "Lambda(";
+    void print(std::ostream& buf, Value value) {
+        if (value.type == STANDART_TYPE::INT) {
+            buf << any_cast<int64_t>(value.data);
+        } else if (value.type == STANDART_TYPE::DOUBLE) {
+            buf << any_cast<float>(value.data);
+        } else if (value.type == STANDART_TYPE::BOOL) {
+            buf << (any_cast<bool>(value.data) ? "true" : "false");
+        } else if (value.type == STANDART_TYPE::TYPE) {
+            buf << any_cast<Type>(value.data).pool;
+        } else if (value.type == STANDART_TYPE::NULL_T) {
+            buf << "null";
+        } else if (value.type == STANDART_TYPE::NAMESPACE) {
+            buf << any_cast<Namespace>(value.data).name;
+        } else if (value.type == STANDART_TYPE::STRING) {
+            buf << any_cast<string>(value.data);
+        } else if (value.type == STANDART_TYPE::CHAR) {
+            buf << any_cast<char>(value.data);
+        } else if (value.type == STANDART_TYPE::LAMBDA) {
+            buf << "Lambda(";
             auto lambda = any_cast<Lambda*>(value.data);
             for (int i = 0; i < lambda->arguments.size(); i++) {
-                cout << lambda->arguments[i]->name;
-                if (i != lambda->arguments.size() - 1) cout << ", ";
+                buf << lambda->arguments[i]->name;
+                if (i != lambda->arguments.size() - 1) buf << ", ";
             }
-            cout << ")";
-        }
-        if (value.type.is_pointer()) {
-            cout << value.type.pool << "[0x" + to_string(any_cast<int>(value.data)) << "]";
+            buf << ")";
+        } else if (value.type.is_pointer()) {
+            buf << value.type.pool << "[0x" << any_cast<int>(value.data) << "]";
         }
     }
 
     void exec_from(Memory& _memory) override {
         for (auto& expr : expression) {
             auto value = expr->eval_from(_memory);
-            print(value);
+            print(std::cout, value);
         }
     }
 };
@@ -623,52 +614,43 @@ struct NodeBaseOutLn : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_OUTLN;
     }
 
-    void print(Value value) {
-        
-        if (value.type == STANDART_TYPE::INT)
-            cout << any_cast<int64_t>(value.data);
-        if (value.type == STANDART_TYPE::DOUBLE) {
-            cout << any_cast<float>(value.data);
-        }
-        if (value.type == STANDART_TYPE::BOOL) {
-            auto v = any_cast<bool>(value.data);
-            if (v == true) cout << "true";
-            if (v == false) cout << "false";
-        }
-        if (value.type == STANDART_TYPE::TYPE) {
-            cout << any_cast<Type>(value.data).pool;
-        }
-        if (value.type == STANDART_TYPE::NULL_T) {
-            cout << "null";
-        }
-        if (value.type == STANDART_TYPE::NAMESPACE) {
-            cout << any_cast<Namespace>(value.data).name;
-        }
-        if (value.type == STANDART_TYPE::STRING) {
-            cout << any_cast<string>(value.data);
-        }
-        if (value.type == STANDART_TYPE::CHAR) {
-            cout << any_cast<char>(value.data);
-        }
-        if (value.type == STANDART_TYPE::LAMBDA) {
-            cout << "Lambda(";
+    void print(std::ostream& buf, Value value) {
+        if (value.type == STANDART_TYPE::INT) {
+            buf << any_cast<int64_t>(value.data);
+        } else if (value.type == STANDART_TYPE::DOUBLE) {
+            buf << any_cast<float>(value.data);
+        } else if (value.type == STANDART_TYPE::BOOL) {
+            buf << (any_cast<bool>(value.data) ? "true" : "false");
+        } else if (value.type == STANDART_TYPE::TYPE) {
+            buf << any_cast<Type>(value.data).pool;
+        } else if (value.type == STANDART_TYPE::NULL_T) {
+            buf << "null";
+        } else if (value.type == STANDART_TYPE::NAMESPACE) {
+            buf << any_cast<Namespace>(value.data).name;
+        } else if (value.type == STANDART_TYPE::STRING) {
+            buf << any_cast<string>(value.data);
+        } else if (value.type == STANDART_TYPE::CHAR) {
+            buf << any_cast<char>(value.data);
+        } else if (value.type == STANDART_TYPE::LAMBDA) {
+            buf << "Lambda(";
             auto lambda = any_cast<Lambda*>(value.data);
             for (int i = 0; i < lambda->arguments.size(); i++) {
-                cout << lambda->arguments[i]->name;
-                if (i != lambda->arguments.size() - 1) cout << ", ";
+                buf << lambda->arguments[i]->name;
+                if (i != lambda->arguments.size() - 1) buf << ", ";
             }
-            cout << ")";
-        }
-        if (value.type.is_pointer()) {
-            cout << value.type.pool << "[0x" + to_string(any_cast<int>(value.data)) << "]";
+            buf << ")";
+        } else if (value.type.is_pointer()) {
+            buf << value.type.pool << "[0x" << any_cast<int>(value.data) << "]";
         }
     }
 
     void exec_from(Memory& _memory) override {
         for (auto& expr : expression) {
             auto value = expr->eval_from(_memory);
-            print(value);
-        } cout << endl;
+            print(std::cout, value);
+        }
+        std::cout << '\n';
+        std::cout.flush();
     }
 };
 
@@ -1291,28 +1273,27 @@ struct NodeDelete : public Node { NO_EVAL
             }
             ERROR::CanNotDeleteUndereferencedValue(start_token, end_token);
         } else {
-            pair<Memory&, string> target_info = resolveDeleteTargetMemory(target.get(), _memory);
-            
-            Memory& target_memory = target_info.first;
+            pair<Memory*, string> target_info = resolveDeleteTargetMemory(target.get(), _memory);
+            Memory* target_memory = target_info.first;
             string target_name = target_info.second;
 
-            if (!target_memory.check_literal(target_name)) {
+            if (!target_memory->check_literal(target_name)) {
                 ERROR::UndefinedVariable(start_token);
             }
+
             // Выполняем удаление
-            auto object = target_memory.get_variable(target_name);
-            target_memory.delete_variable(target_name, object->address);
-            
+            auto object = target_memory->get_variable(target_name);
+            target_memory->delete_variable(target_name);
             STATIC_MEMORY.unregister_object(object->address);
         }
     }
 
-    pair<Memory&, string> resolveDeleteTargetMemory(Node* node, Memory& _memory) {
+    pair<Memory*, string> resolveDeleteTargetMemory(Node* node, Memory& _memory) {
         if (node->NODE_TYPE == NodeTypes::NODE_LITERAL) {
             if (!_memory.check_literal(((NodeLiteral*)node)->name)) {
                 ERROR::UndefinedVariable(start_token);
             }
-            return {_memory, ((NodeLiteral*)node)->name};
+            return {&_memory, ((NodeLiteral*)node)->name};
         }
         else if (node->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
             NodeNameResolution* resolution = (NodeNameResolution*)node;
@@ -1325,7 +1306,7 @@ struct NodeDelete : public Node { NO_EVAL
                 exit(0);
             }
 
-            auto ns = any_cast<Namespace>(ns_value.data);
+            auto& ns = any_cast<Namespace&>(ns_value.data);  // Получаем ссылку на Namespace
 
             // Если есть цепочка, идем по ней
             vector<string> full_chain = resolution->remaining_chain;
@@ -1333,37 +1314,37 @@ struct NodeDelete : public Node { NO_EVAL
 
             if (full_chain.size() > 1) {
                 // Ищем конечный namespace через цепочку
-                Memory current_memory = ns.memory;
+                Memory* current_memory = &ns.memory;
 
                 // Проходим по всем промежуточным namespace кроме последнего
                 for (size_t i = 0; i < full_chain.size() - 1; i++) {
                     const string& ns_name = full_chain[i];
 
-                    if (!current_memory.check_literal(ns_name)) {
+                    if (!current_memory->check_literal(ns_name)) {
                         ERROR::UndefinedVariableInNamespace(ns_name, "current namespace");
                     }
 
-                    Value next_ns_value = current_memory.get_variable(ns_name)->value;
+                    Value next_ns_value = current_memory->get_variable(ns_name)->value;
 
                     if (next_ns_value.type != STANDART_TYPE::NAMESPACE) {
                         cout << "ERROR TYPE" << endl;
                         exit(0);
                     }
 
-                    current_memory = any_cast<Namespace>(next_ns_value.data).memory;
+                    auto& next_ns = any_cast<Namespace&>(next_ns_value.data);  // Получаем ссылку
+                    current_memory = &next_ns.memory;
                 }
 
                 return {current_memory, full_chain.back()};
             }
 
             // Если цепочки нет, возвращаем текущий namespace и имя
-            return {ns.memory, resolution->current_name};
+            return {&ns.memory, resolution->current_name};
         }
 
         // Ошибка для неизвестного типа ноды
         cout << "ERROR TYPE" << endl;
         exit(0);
-
     }
 };
 
@@ -1870,6 +1851,7 @@ struct NodeFuncDecl : public Node { NO_EVAL
     }
 };
 
+
 struct NodeExit : public Node { NO_EVAL
     unique_ptr<Node> expr;
 
@@ -1888,6 +1870,7 @@ struct NodeExit : public Node { NO_EVAL
         exit(any_cast<int64_t>(value.data));
     }
 };
+
 
 struct Context {
     Memory memory;
@@ -1927,6 +1910,7 @@ struct Context {
         memory = std::move(new_memory);  // Используем move
     }
 };
+
 
 struct ASTGenerator {
     vector<unique_ptr<Node>> nodes;
@@ -2381,6 +2365,7 @@ struct ASTGenerator {
         return Context(std::move(nodes), std::move(memory_copy));
     }
 };
+
 
 struct ContextExecutor {
     Context context;

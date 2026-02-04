@@ -1,5 +1,6 @@
 #include "string"
 #include "twist-nodetemp.cpp"
+#include "twist-values.cpp"
 
 #pragma once
 
@@ -12,8 +13,12 @@ struct Arg {
     bool is_const = false;
     bool is_final = false;
     bool is_static = false;
+    Type default_type = STANDART_TYPE::NULL_T;
+    Value default_value = NewNull();
 
     Arg(string name) : name(name) {
         
     }
 };
+
+

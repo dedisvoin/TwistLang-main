@@ -2,164 +2,115 @@ let a = 10; # create variable a with value 10 and type Int
 
 let p = Int; # create variable p with value Int and type Type (Int type alias)
 
-let Number = Int | Double; # create variable Number with value Int | Double (union type) and type Type
+let union = Int | Double; # create variable union with value Int | Double (union type) and type Type
 
-# instruction `outln` output value to console and add new line
-outln Int >> Number; # true, because Int is a subtype of Number
+outln Int >> union; # true, because Int is a subtype of union
 
-# instruction `out` output value to console and not add new line in the end
-out 10, 20, 30; # output 102030 to console
+let name = input("Enter name: "); # create variable name with value input from console and type String
+# input instruction automatically detect type of input value and return it
+# 3.14 - Double
+# 3.14sadf - String
+# 10 - Int
 
-# create const value;
-const let name = "Ivan";
-name = 10; # error
+const let a = 10; # create const variable a with value 10 and type Int
+a = 10; # error, because a is const variable
 
-final let age = 19;
-age = 10; # true
-let age = 10; # error because age is final (cannot be redefined)
-
-
-static let i: auto = 10; # create static variable i with value 10 and type Int
-i = 2000; # true
-i = 3.14; # error because i is static type (Int)
-
-static let i: Int | Double; # error, because this valiable waited Int or Double, 
-                            # but if not be initialized, it will be initialized as null value
-                            # which type Null
-                            # use ? to create nullable type
-
-static let i: Int | Double?; # create static variable i with value null and type Int | Double | Null
+final let b = "Ivan"; # create final variable b with value "Ivan" and type String
+b = "Petr"; # true, because b is not const variable
+let b = 10; # error, because b is final variable
 
 
-####################################
-
-let a = 10; # create valiable in this memory
-del a; # delete valiable a
 
 
-let b = 10;
-let ptr = &b; # create pointer to variable b (save address of variable b)
 
-outln *ptr; # output 10
+static let a: Int = 10; # create static variable a with value 10 and type Int
+a = 2000; # true
+a = 3.14; # error, because a is static variable
 
-del ptr; # delete pointer
-del *ptr; # delete value, which pointer point and pointer not be deleted
+static let test: Int | Double = 2.3445; # create static variable test with value 2.3445 and type Int | Double
+test = 3.14; # true
+
+static let test2: Int?; # create value with type Int | Null and set value null
+test2 = null; # true
+test2 = 10; # true
 
 
-let a = new 10; # create variable a with value 10 and type Int in heap memory
-                # a is pointer to value 10 in heap memory
+let max = lambda(a: Int, b: Int) -> Int { # create lambda function with parameters a and b and return type Int
+    if (a > b) { a } else { b } # if expression
+};
 
-del *a; # delete value 10 in heap memory and pointer a not be deleted
-
-#################################################
-
-static const namespace std { # equal to `const static let std = namespace { ... }`
-    let a = 10;
-    let b = 20;
-    let c = 30;
+let fib = lambda[fib](N: Int) -> Int { # create recursive lambda function with parameter N and return type Int
+    if (N == 0) { 0 } else {
+        if (N == 1) { 1 } else {
+            fib(N - 1) + fib(N - 2)
+        }
+    }
 }
-
-outln std::a;
-
-std::b = null;
-
-outln std::b; # output null
-
-let std = namespace {
-    let a = 10;
-    let b = 20;
-    let c = 30;
-} # equal to `namespace std { ... }`
+# in the [...] set name of lambda function that set lambda object in lambda memory
 
 
-
-const {
-    let a = 10;
-    let b = 20;
-    let c = 30;
-} # multi modifier declaration
-
-static const {
-    let a = 10;
-    let b = 20;
-    let c = 30;
-} # multi modifier declaration
-
-
-########################################
-
-let sum = lambda(a, b) {a + b}; # create lambda function with two arguments and return sum of arguments
-
-let sum = lambda(a: Int, b: Int) -> Int {a + b}; # create typed lambda function with two arguments and return sum of arguments
-
-outln sum(10, 20); # output 30
-
-
-if (true) { # if statement
-    outln "true";
-} else {
-    outln "false";
-}
-
-
-let value = if (true) {10} else {20}; # create variable with value 10
-
-let value = if (false) {10} else {20}; # create variable with value 20
-
-
-
-
-############################################
-
-let a = 10;
 namespace std {
-    let b = a; # error, because a is not in std namespace
+    let a = 10; # create variable a with value 10 and type Int
+}
+
+outln std::a; # output 10
+
+# dynamic namespace declararation
+let std = namespace { # equal to `namespace std { ... }`
+    let a = 10; # create variable a with value 10 and type Int
 }
 
 
-# how fix
-global let a = 10; # create global variable a with value 10 and type Int
+global let a = 10; # set global that copyable variable in namespaces and local memoryes
 namespace std {
-    let b = a; # create variable b with value 10 and type Int
+    let b = a * a; # a set as global variable
 }
 
 
-#############################################
-
-
-let create = lambda(name: String) {
-    namespace {}
-}; # create namespace with variable name, because vaiable name automatically receive to namespace 
-   # how static final const variable
-
-let A = create("Ivan");
-outln A::name; # output Ivan
-let B = create("Petr");
-outln B::name; # output Petr
+let Person = lambda(name: String, age: Int) -> Namespace { # create class Person with parameters name and age
+    namespace {} # name and age arguments automatically copy to namespace
+};
 
 
 
-let move = lambda(_value) { new<static, const> _value }; 
-# this lambda function create new variable with value _value in heap memory (pointer to value in heap memory)
-# new create value in heap memory, be a final and const variable
+let var = 10;
+let ptr = &var; # get pointer to var
 
+outln *var; # output 10
 
-#############################################
-
-let a = true;
-outln !a; # output false
-
-let a = 10;
-outln typeof(a); # output Int
-
-let a = 10.0;
-outln typeof(a); # output Double
-
-let a = input; # waited input from user, and automatically convert to String or Char or Int or Double
-
-let a = input("Enter value: "); # waited input from user, and automatically convert to String or Char or Int or Double
-# printed message "Enter value: " and waited input from user, and automatically convert to String or Char or Int or Double
+*var = 20; # set value 20 to var
 
 
 
-assert 1 == 2; # error, because 1 != 2
+let ptr = new 10; # create variable with value 10 and type Int in heap
+
+let ptr = new<const> 10; # create const variable with value 10 and type Int in heap
+
+let ptr = new<static(Int)>; # create static variable with value null and type Int in heap
+
+let ptr = new<static(Int), const> 10 * 2;
+
+
+func sum(a: Int, b: Int) -> Int { 
+    ret a + b;
+};
+
+
+let callable = Func(Int, Int) -> Int; # create function type with parameters Int, Int and return type Int
+
+outln typeof(sum) == callable; # true
+
+outln typeof(callable); # output: Type
+
+for (let i = 0; i < 10; i = i + 1) {
+    outln i, i * i;
+    if (i == 6) continue;
+}
+
+
+let a = 0;
+while (true) {
+    a = a + 1;
+    if (a > 10) break;
+    outln a;
+}

@@ -1,8 +1,7 @@
-func sum(a: Int, b: Int) -> Int {
-    ret a + b;
+func get() -> auto {
+    ret &Int;
 }
 
-func sum2(a: String, b: String) -> Int {
-    ret a + b;
-}
+let a = *get();
 
+outln a;

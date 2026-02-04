@@ -6,6 +6,9 @@
 			"include": "#preprocessor"
 		},
 		{
+			"include": "#struct-declaration"
+		},
+		{
 			"include": "#function-declaration"
 		},
 		{
@@ -59,6 +62,85 @@
 				},
 				{
 					"include": "#include-directive"
+				}
+			]
+		},
+		
+		"struct-declaration": {
+			"name": "meta.struct.declaration.twist",
+			"begin": "\\b(struct)\\b\\s+",
+			"beginCaptures": {
+				"1": {
+					"name": "keyword.control.twist"
+				}
+			},
+			"end": "(?=\\}|\\r|\\n|$)",
+			"patterns": [
+				{
+					"name": "entity.name.struct.twist",
+					"match": "[a-zA-Z_][a-zA-Z0-9_]*"
+				},
+				{
+					"begin": "\\{",
+					"end": "\\}",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.curly.open.twist"
+						}
+					},
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.curly.close.twist"
+						}
+					},
+					"contentName": "meta.struct.body.twist",
+					"patterns": [
+						{
+							"include": "#preprocessor"
+						},
+						{
+							"include": "#function-declaration"
+						},
+						{
+							"include": "#keywords"
+						},
+						{
+							"include": "#input-keyword"
+						},
+						{
+							"include": "#namespace-declaration"
+						},
+						{
+							"include": "#namespace-resolution"
+						},
+						{
+							"include": "#modifiers"
+						},
+						{
+							"include": "#types"
+						},
+						{
+							"include": "#literals"
+						},
+						{
+							"include": "#function-call"
+						},
+						{
+							"include": "#function-arguments"
+						},
+						{
+							"include": "#operators"
+						},
+						{
+							"include": "#numbers"
+						},
+						{
+							"include": "#strings"
+						},
+						{
+							"include": "#comments"
+						}
+					]
 				}
 			]
 		},
@@ -278,14 +360,14 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.twist",
-				"match": "\\b(for|while|let|in|and|or|if|else|ret|auto|assert|lambda|break|continue)\\b"
+				"match": "\\b(for|while|let|in|and|or|if|else|ret|auto|assert|lambda|break|continue|out|outln|struct)\\b"
 			}]
 		},
 		
 		"input-keyword": {
 			"patterns": [{
 				"name": "support.function.input.twist",
-				"match": "\\b(input|out|outln|typeof|sizeof|new|exit)\\b"
+				"match": "\\b(input|typeof|sizeof|new|exit)\\b"
 			}]
 		},
 		

@@ -72,7 +72,7 @@ inline MemoryObject* CreateMemoryObjectWithAddress(Value value, Type wait_type, 
 struct Memory {
     unordered_map<string, MemoryObject*> string_pool;
 
-    void clear() {
+    inline void clear() {
         string_pool.clear();
     }
 
@@ -147,13 +147,13 @@ struct Memory {
         return it != string_pool.end() ? it->second : nullptr;
     }
 
-    void set_object_value(const string& literal, Value new_value) {
+    inline void set_object_value(const string& literal, Value new_value) {
         get_variable(literal)->value = new_value;
     }
 
     void link_objects(Memory& target_memory) {
         // Копируем все объекты из этой памяти в target_memory
-        for (auto& pair : string_pool) {
+        for (auto pair : string_pool) {
             if (!pair.second->modifiers.is_global)
                 continue;
             
@@ -171,25 +171,12 @@ struct Memory {
         }
     }
 
-    unique_ptr<Memory> clone() const {
-        auto new_memory = make_unique<Memory>();
-        
-        // Копируем все переменные
-        for (const auto& [name, obj] : string_pool) {
-            new_memory->add_object(name, obj->value, obj->wait_type,
-                                  obj->modifiers.is_const, obj->modifiers.is_static,
-                                  obj->modifiers.is_final, obj->modifiers.is_global);
-        }
-        
-        return new_memory;
-    }
-
-    Type get_wait_type(const string& literal) {
+    inline Type get_wait_type(const string& literal) {
         return string_pool.find(literal)->second->wait_type;
     }
 
 
-    bool check_literal(const string& literal) {
+    inline bool check_literal(const string& literal) {
         return string_pool.find(literal) != string_pool.end();
     }
 
@@ -222,14 +209,11 @@ struct Memory {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    void delete_variable(const string& name, Address addr) {
+    void delete_variable(const string& name) {
         string_pool.erase(name);
     }
 
-    void delete_variable(const string& name) {
-        auto object = get_variable(name);
-        string_pool.erase(name);
-    }
+
 
 
 
