@@ -138,43 +138,134 @@ inline auto GetTimePoint() {
 }
 
 void TimeIt(string name, function<void()> func) {
-    auto start = GetTimePoint();
+    using namespace std::chrono;
+    
+    auto start = high_resolution_clock::now();
     func();
-    auto end = GetTimePoint();
+    auto end = high_resolution_clock::now();
     
-    auto duration_ns = chrono::duration_cast<chrono::nanoseconds>(end - start);
-    long long ns = duration_ns.count();
+    auto duration_ns = duration_cast<nanoseconds>(end - start);
     
-    // Разбиваем на единицы времени
-    long long minutes = ns / (1000000000LL * 60);
-    long long seconds = (ns / 1000000000LL) % 60;
-    long long milliseconds = (ns / 1000000LL) % 1000;
-    long long microseconds = (ns / 1000LL) % 1000;
-    long long nanoseconds = ns % 1000;
+    // Разбиваем на единицы времени с помощью chrono
+    auto minutes = duration_cast<chrono::minutes>(duration_ns);
+    duration_ns -= minutes;
+    
+    auto seconds = duration_cast<chrono::seconds>(duration_ns);
+    duration_ns -= seconds;
+    
+    auto milliseconds = duration_cast<chrono::milliseconds>(duration_ns);
+    duration_ns -= milliseconds;
+    
+    auto microseconds = duration_cast<chrono::microseconds>(duration_ns);
+    duration_ns -= microseconds;
+    
+    auto nanoseconds_remain = duration_ns;
     
     cout << MT::INFO << name << TERMINAL_COLORS::BLACK;
     
     bool printed = false;
     
-    if (minutes > 0) {
-        cout << minutes << "m ";
+    if (minutes.count() > 0) {
+        cout << minutes.count() << "m ";
         printed = true;
     }
-    if (seconds > 0 || minutes > 0) {
-        cout << seconds << "s ";
+    if (seconds.count() > 0 || printed) {
+        cout << seconds.count() << "s ";
         printed = true;
     }
-    if (milliseconds > 0 || printed) {
-        cout << milliseconds << "ms ";
+    if (milliseconds.count() > 0 || printed) {
+        cout << milliseconds.count() << "ms ";
+        printed = true;
     }
-    if (microseconds > 0 && ns < 1000000) { // показываем микросекунды только для коротких операций
-        cout << microseconds << "mcs ";
+    if (microseconds.count() > 0 || (duration_cast<nanoseconds>(end - start).count() < 1000000 && !printed)) {
+        cout << microseconds.count() << "mcs ";
+        printed = true;
     }
-    if (nanoseconds > 0 && ns < 1000) { // показываем наносекунды только для очень коротких
-        cout << nanoseconds << "ns";
+    if (nanoseconds_remain.count() > 0 || !printed) {
+        cout << nanoseconds_remain.count() << "ns";
     }
     
     cout << TERMINAL_COLORS::RESET << endl;
+}
+
+// Вспомогательная функция для форматированного вывода времени
+void printDuration(chrono::nanoseconds duration_ns) {
+    using namespace std::chrono;
+    
+    // Сохраняем оригинальное время для расчета процентов
+    auto total_ns = duration_ns;
+    
+    // Разбиваем на единицы времени
+    auto minutes = duration_cast<chrono::minutes>(duration_ns);
+    duration_ns -= minutes;
+    
+    auto seconds = duration_cast<chrono::seconds>(duration_ns);
+    duration_ns -= seconds;
+    
+    auto milliseconds = duration_cast<chrono::milliseconds>(duration_ns);
+    duration_ns -= milliseconds;
+    
+    auto microseconds = duration_cast<chrono::microseconds>(duration_ns);
+    duration_ns -= microseconds;
+    
+    auto nanoseconds_remain = duration_ns;
+    
+    bool printed = false;
+    
+    if (minutes.count() > 0) {
+        cout << minutes.count() << "m ";
+        printed = true;
+    }
+    if (seconds.count() > 0 || printed) {
+        cout << seconds.count() << "s ";
+        printed = true;
+    }
+    if (milliseconds.count() > 0 || printed) {
+        cout << milliseconds.count() << "ms ";
+        printed = true;
+    }
+    if (microseconds.count() > 0 || printed) {
+        cout << microseconds.count() << "mcs ";
+        printed = true;
+    }
+    if (nanoseconds_remain.count() > 0 || !printed) {
+        cout << nanoseconds_remain.count() << "ns";
+    }
+}
+
+void middleTimeIt(string name, function<void()> func, int count) {
+    using namespace std::chrono;
+    
+    nanoseconds total_duration = nanoseconds(0);
+    
+    cout << MT::INFO << "Starting " << name << " (" << count << " iterations)" 
+         << TERMINAL_COLORS::RESET << endl;
+    
+    for (int i = 0; i < count; i++) { 
+        auto start = high_resolution_clock::now();
+        func();
+        auto end = high_resolution_clock::now();
+        
+        auto iteration_duration = duration_cast<nanoseconds>(end - start);
+        total_duration += iteration_duration;
+        
+        // Вывод времени текущей итерации
+        cout << ">>>" << TERMINAL_COLORS::BLUE << " Iteration " << (i+1) << "/" << count << ": ";
+        printDuration(iteration_duration);
+        cout << TERMINAL_COLORS::RESET << "\n";
+    }
+    
+    // Вывод среднего времени
+    nanoseconds avg_duration = total_duration / count;
+
+    // Дополнительная статистика 
+    cout << MT::INFO << "Total time: " << TERMINAL_COLORS::BLACK;
+    printDuration(total_duration);
+    cout << TERMINAL_COLORS::RESET << endl;
+    
+    cout << MT::INFO << "Average for " << name << ": " << TERMINAL_COLORS::UNDERLINE << TERMINAL_COLORS::GREEN;
+    printDuration(avg_duration);
+    cout << TERMINAL_COLORS::RESET << endl; 
 }
 
 
@@ -283,6 +374,7 @@ struct ArgsParser {
     bool interp_time = false;
     bool compile_mod = false;
     bool delete_precompiled = true;
+    bool math_middle_run_time = false;
 
     ArgsParser(vector<string> args) : args(args) {}
 
@@ -303,7 +395,7 @@ struct ArgsParser {
                     save_token = true;
                     continue;
                 }
-                if (args[i] == "-run-time") {
+                if (args[i] == "-rt") {
                     interp_time = true;
                     continue;
                 }
@@ -311,9 +403,12 @@ struct ArgsParser {
                     compile_mod = true;
                     continue;
                 }
-
                 if (args[i] == "-no-del") {
                     delete_precompiled = false;
+                    continue;
+                }
+                if (args[i] == "-mrt") {
+                    math_middle_run_time = true;
                     continue;
                 }
             }

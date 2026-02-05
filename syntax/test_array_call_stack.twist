@@ -1,0 +1,14 @@
+// Test array index error with call stack
+
+func get_element(Array<Int> arr, Int index) -> Int {
+    // This will error if index is not Int or out of range
+    return arr[index];
+}
+
+func process_array(Array<Int> data) {
+    let Int value = get_element(data, 10);
+}
+
+// Create a small array and try to access out of bounds
+let Array<Int> numbers = array Int[3];
+process_array(numbers);

@@ -1,0 +1,13 @@
+.- trace >> "filename and pos"
+|
+| 7 | let a = sum(10, 0);
+|             ^^^^^^^^^^ Error in function 'sum' 
+ >-------------'
+`
+.- [ wrn ] >> exec >> 'main.twist':2:16 >> Unsupported operator: '/'
+|
+|                     .---- Ivalid operator: '/'
+|                     v
+| 2 |     let res = a / {b};
+|                   ^^~^^^^ `Int` and `[Int, ~]` types are not support this binary operator
+`-------------------'

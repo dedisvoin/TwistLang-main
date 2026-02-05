@@ -23,242 +23,242 @@ struct Type {
     }
 
     bool is_sub_type(const Type& other) const {
-    // Если типы равны
-    if (pool == other.pool) return true;
-    
-    // Специальные случаи
-    if (other.pool == "auto") return true;
-    if (other.pool == "*auto") return true;
-    
-    // Разбиваем на компоненты union
-    vector<string> current_components = split_union_components();
-    vector<string> other_components = other.split_union_components();
-    
-    // Если текущий тип - union (T1 | T2 | ...)
-    if (current_components.size() > 1) {
-        // Union тип является подтипом другого типа, если
-        // КАЖДЫЙ его компонент является подтипом другого типа
-        for (const string& comp : current_components) {
-            Type comp_type(comp);
-            if (!comp_type.is_sub_type(other)) {
+        // Если типы равны
+        if (pool == other.pool) return true;
+        
+        // Специальные случаи
+        if (other.pool == "auto") return true;
+        if (other.pool == "*auto") return true;
+        
+        // Разбиваем на компоненты union
+        vector<string> current_components = split_union_components();
+        vector<string> other_components = other.split_union_components();
+        
+        // Если текущий тип - union (T1 | T2 | ...)
+        if (current_components.size() > 1) {
+            // Union тип является подтипом другого типа, если
+            // КАЖДЫЙ его компонент является подтипом другого типа
+            for (const string& comp : current_components) {
+                Type comp_type(comp);
+                if (!comp_type.is_sub_type(other)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        // Если other - union (O1 | O2 | ...)
+        if (other_components.size() > 1) {
+            // Тип является подтипом union типа, если
+            // он является подтипом ХОТЯ БЫ ОДНОГО компонента union
+            for (const string& other_comp : other_components) {
+                Type other_comp_type(other_comp);
+                if (this->is_sub_type(other_comp_type)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // Оба типа - базовые (не union)
+        
+        // Проверяем функциональные типы
+        if (is_func() && other.is_func()) {
+            return is_func_sub_type(other);
+        }
+        
+        // Проверяем указатели
+        if (is_pointer() && other.is_pointer()) {
+            // *T1 ⊆ *T2 если T1 ⊆ T2
+            string t1 = pool.substr(1);
+            string t2 = other.pool.substr(1);
+            Type base1(t1);
+            Type base2(t2);
+            return base1.is_sub_type(base2);
+        }
+        
+        // Базовые типы должны совпадать
+        return pool == other.pool;
+    }
+
+    bool is_func_sub_type(const Type& other) const {
+        // Парсим текущий функциональный тип
+        pair<vector<Type>, Type> current = parse_func_type();
+        pair<vector<Type>, Type> other_pair = other.parse_func_type();
+        
+        // Проверяем, что оба успешно распарсились как функции
+        if (current.first.empty() && !is_func()) return false;
+        if (other_pair.first.empty() && !other.is_func()) return false;
+        
+        // Количество аргументов должно совпадать
+        if (current.first.size() != other_pair.first.size()) {
+            return false;
+        }
+        
+        // Проверяем КОНТРАвариантность аргументов:
+        // Для всех i, other_args[i] ⊆ current_args[i]
+        for (size_t i = 0; i < current.first.size(); i++) {
+            if (!current.first[i].is_sub_type(other_pair.first[i])) {
                 return false;
             }
         }
-        return true;
+        
+        // Проверяем КОвариантность возвращаемого типа:
+        // current_ret ⊆ other_ret
+        return current.second.is_sub_type(other_pair.second);
     }
-    
-    // Если other - union (O1 | O2 | ...)
-    if (other_components.size() > 1) {
-        // Тип является подтипом union типа, если
-        // он является подтипом ХОТЯ БЫ ОДНОГО компонента union
-        for (const string& other_comp : other_components) {
-            Type other_comp_type(other_comp);
-            if (this->is_sub_type(other_comp_type)) {
-                return true;
+
+    // Парсинг функционального типа: возвращает (аргументы, возвращаемый_тип)
+    pair<vector<Type>, Type> parse_func_type() const {
+        vector<Type> args;
+        Type ret_type("Void");
+        
+        if (!is_func()) {
+            return make_pair(args, ret_type);
+        }
+        
+        string str = pool;
+        
+        // Убираем внешние скобки, если есть
+        if (str[0] == '(' && str[str.length()-1] == ')') {
+            // Проверяем, что это действительно функция в скобках
+            if (str.substr(1, 4) == "Func") {
+                str = str.substr(1, str.length() - 2);
             }
         }
-        return false;
-    }
-    
-    // Оба типа - базовые (не union)
-    
-    // Проверяем функциональные типы
-    if (is_func() && other.is_func()) {
-        return is_func_sub_type(other);
-    }
-    
-    // Проверяем указатели
-    if (is_pointer() && other.is_pointer()) {
-        // *T1 ⊆ *T2 если T1 ⊆ T2
-        string t1 = pool.substr(1);
-        string t2 = other.pool.substr(1);
-        Type base1(t1);
-        Type base2(t2);
-        return base1.is_sub_type(base2);
-    }
-    
-    // Базовые типы должны совпадать
-    return pool == other.pool;
-}
-
-bool is_func_sub_type(const Type& other) const {
-    // Парсим текущий функциональный тип
-    pair<vector<Type>, Type> current = parse_func_type();
-    pair<vector<Type>, Type> other_pair = other.parse_func_type();
-    
-    // Проверяем, что оба успешно распарсились как функции
-    if (current.first.empty() && !is_func()) return false;
-    if (other_pair.first.empty() && !other.is_func()) return false;
-    
-    // Количество аргументов должно совпадать
-    if (current.first.size() != other_pair.first.size()) {
-        return false;
-    }
-    
-    // Проверяем КОНТРАвариантность аргументов:
-    // Для всех i, other_args[i] ⊆ current_args[i]
-    for (size_t i = 0; i < current.first.size(); i++) {
-        if (!current.first[i].is_sub_type(other_pair.first[i])) {
-            return false;
+        
+        // Убираем "Func"
+        size_t func_pos = str.find("Func");
+        if (func_pos != string::npos) {
+            str = str.substr(func_pos + 4);
         }
-    }
-    
-    // Проверяем КОвариантность возвращаемого типа:
-    // current_ret ⊆ other_ret
-    return current.second.is_sub_type(other_pair.second);
-}
-
-// Парсинг функционального типа: возвращает (аргументы, возвращаемый_тип)
-pair<vector<Type>, Type> parse_func_type() const {
-    vector<Type> args;
-    Type ret_type("Void");
-    
-    if (!is_func()) {
+        
+        // Находим начало списка аргументов
+        if (str[0] == '(') {
+            // Ищем закрывающую скобку для списка аргументов
+            int balance = 1;
+            size_t i = 1;
+            for (; i < str.length(); i++) {
+                if (str[i] == '(') balance++;
+                else if (str[i] == ')') {
+                    balance--;
+                    if (balance == 0) break;
+                }
+            }
+            
+            string args_str = str.substr(1, i - 1);
+            string rest = (i + 1 < str.length()) ? str.substr(i + 1) : "";
+            
+            // Парсим аргументы
+            args = parse_type_list(args_str);
+            
+            // Парсим возвращаемый тип, если есть
+            size_t arrow_pos = rest.find("->");
+            if (arrow_pos != string::npos) {
+                string ret_str = rest.substr(arrow_pos + 2);
+                // Убираем пробелы
+                size_t start = ret_str.find_first_not_of(" \t");
+                size_t end = ret_str.find_last_not_of(" \t");
+                if (start != string::npos) {
+                    ret_str = ret_str.substr(start, end - start + 1);
+                }
+                ret_type = Type(ret_str);
+            }
+        } else {
+            // Нет скобок вокруг аргументов
+            size_t arrow_pos = str.find("->");
+            if (arrow_pos != string::npos) {
+                string args_str = str.substr(0, arrow_pos);
+                string ret_str = str.substr(arrow_pos + 2);
+                
+                // Убираем пробелы
+                args_str.erase(args_str.find_last_not_of(" \t") + 1);
+                ret_str.erase(0, ret_str.find_first_not_of(" \t"));
+                ret_str.erase(ret_str.find_last_not_of(" \t") + 1);
+                
+                args = parse_type_list(args_str);
+                ret_type = Type(ret_str);
+            } else {
+                // Нет стрелки -> все это аргументы
+                args = parse_type_list(str);
+            }
+        }
+        
         return make_pair(args, ret_type);
     }
-    
-    string str = pool;
-    
-    // Убираем внешние скобки, если есть
-    if (str[0] == '(' && str[str.length()-1] == ')') {
-        // Проверяем, что это действительно функция в скобках
-        if (str.substr(1, 4) == "Func") {
-            str = str.substr(1, str.length() - 2);
-        }
-    }
-    
-    // Убираем "Func"
-    size_t func_pos = str.find("Func");
-    if (func_pos != string::npos) {
-        str = str.substr(func_pos + 4);
-    }
-    
-    // Находим начало списка аргументов
-    if (str[0] == '(') {
-        // Ищем закрывающую скобку для списка аргументов
-        int balance = 1;
-        size_t i = 1;
-        for (; i < str.length(); i++) {
-            if (str[i] == '(') balance++;
-            else if (str[i] == ')') {
+
+    vector<Type> parse_type_list(const string& str) const {
+        vector<Type> types;
+        if (str.empty()) return types;
+        
+        string current;
+        int balance = 0;
+        
+        for (size_t i = 0; i < str.length(); i++) {
+            char c = str[i];
+            
+            if (c == '(') {
+                balance++;
+                current += c;
+            } else if (c == ')') {
                 balance--;
-                if (balance == 0) break;
-            }
-        }
-        
-        string args_str = str.substr(1, i - 1);
-        string rest = (i + 1 < str.length()) ? str.substr(i + 1) : "";
-        
-        // Парсим аргументы
-        args = parse_type_list(args_str);
-        
-        // Парсим возвращаемый тип, если есть
-        size_t arrow_pos = rest.find("->");
-        if (arrow_pos != string::npos) {
-            string ret_str = rest.substr(arrow_pos + 2);
-            // Убираем пробелы
-            size_t start = ret_str.find_first_not_of(" \t");
-            size_t end = ret_str.find_last_not_of(" \t");
-            if (start != string::npos) {
-                ret_str = ret_str.substr(start, end - start + 1);
-            }
-            ret_type = Type(ret_str);
-        }
-    } else {
-        // Нет скобок вокруг аргументов
-        size_t arrow_pos = str.find("->");
-        if (arrow_pos != string::npos) {
-            string args_str = str.substr(0, arrow_pos);
-            string ret_str = str.substr(arrow_pos + 2);
-            
-            // Убираем пробелы
-            args_str.erase(args_str.find_last_not_of(" \t") + 1);
-            ret_str.erase(0, ret_str.find_first_not_of(" \t"));
-            ret_str.erase(ret_str.find_last_not_of(" \t") + 1);
-            
-            args = parse_type_list(args_str);
-            ret_type = Type(ret_str);
-        } else {
-            // Нет стрелки -> все это аргументы
-            args = parse_type_list(str);
-        }
-    }
-    
-    return make_pair(args, ret_type);
-}
-
-vector<Type> parse_type_list(const string& str) const {
-    vector<Type> types;
-    if (str.empty()) return types;
-    
-    string current;
-    int balance = 0;
-    
-    for (size_t i = 0; i < str.length(); i++) {
-        char c = str[i];
-        
-        if (c == '(') {
-            balance++;
-            current += c;
-        } else if (c == ')') {
-            balance--;
-            current += c;
-        } else if (c == ',' && balance == 0) {
-            // Нашли разделитель между типами
-            if (!current.empty()) {
-                // Убираем пробелы
-                size_t start = current.find_first_not_of(" \t");
-                size_t end = current.find_last_not_of(" \t");
-                if (start != string::npos && end != string::npos) {
-                    types.push_back(Type(current.substr(start, end - start + 1)));
+                current += c;
+            } else if (c == ',' && balance == 0) {
+                // Нашли разделитель между типами
+                if (!current.empty()) {
+                    // Убираем пробелы
+                    size_t start = current.find_first_not_of(" \t");
+                    size_t end = current.find_last_not_of(" \t");
+                    if (start != string::npos && end != string::npos) {
+                        types.push_back(Type(current.substr(start, end - start + 1)));
+                    }
+                    current.clear();
                 }
-                current.clear();
+            } else {
+                current += c;
             }
-        } else {
-            current += c;
         }
-    }
-    
-    // Добавляем последний тип
-    if (!current.empty()) {
-        size_t start = current.find_first_not_of(" \t");
-        size_t end = current.find_last_not_of(" \t");
-        if (start != string::npos && end != string::npos) {
-            types.push_back(Type(current.substr(start, end - start + 1)));
-        }
-    }
-    
-    return types;
-}
-
-// Находит конец типа (с учетом вложенных скобок)
-size_t find_type_end(const string& str, size_t start) const {
-    int balance = 0;
-    bool in_func = false;
-    int func_depth = 0;
-    
-    for (size_t i = start; i < str.length(); i++) {
-        char c = str[i];
         
-        if (c == '(') {
-            balance++;
-            // Проверяем, не начинается ли это с "Func"
-            if (i >= 4 && str.substr(i-4, 4) == "Func") {
-                in_func = true;
-                func_depth = balance;
+        // Добавляем последний тип
+        if (!current.empty()) {
+            size_t start = current.find_first_not_of(" \t");
+            size_t end = current.find_last_not_of(" \t");
+            if (start != string::npos && end != string::npos) {
+                types.push_back(Type(current.substr(start, end - start + 1)));
             }
-        } else if (c == ')') {
-            balance--;
-            if (in_func && balance < func_depth) {
-                in_func = false;
-            }
-        } else if (c == ',' && balance == 0 && !in_func) {
-            return i;
         }
+        
+        return types;
     }
-    
-    return string::npos;
-}
+
+    // Находит конец типа (с учетом вложенных скобок)
+    size_t find_type_end(const string& str, size_t start) const {
+        int balance = 0;
+        bool in_func = false;
+        int func_depth = 0;
+        
+        for (size_t i = start; i < str.length(); i++) {
+            char c = str[i];
+            
+            if (c == '(') {
+                balance++;
+                // Проверяем, не начинается ли это с "Func"
+                if (i >= 4 && str.substr(i-4, 4) == "Func") {
+                    in_func = true;
+                    func_depth = balance;
+                }
+            } else if (c == ')') {
+                balance--;
+                if (in_func && balance < func_depth) {
+                    in_func = false;
+                }
+            } else if (c == ',' && balance == 0 && !in_func) {
+                return i;
+            }
+        }
+        
+        return string::npos;
+    }
 
     bool is_union_type() const {
         // Проверяем, является ли тип union type
@@ -280,6 +280,11 @@ size_t find_type_end(const string& str, size_t start) const {
             }
         }
         return false;
+    }
+
+    bool is_array_type() const {
+        if (!is_base_type()) return false;
+        return pool.substr(0,1) == "[";
     }
 
     bool is_base_type() const {
@@ -330,8 +335,8 @@ size_t find_type_end(const string& str, size_t start) const {
                 balance--;
                 current += c;
             } else if (c == '|' && balance == 0 && 
-                      i > 0 && pool[i-1] == ' ' && 
-                      i + 1 < pool.length() && pool[i+1] == ' ') {
+                    i > 0 && pool[i-1] == ' ' && 
+                    i + 1 < pool.length() && pool[i+1] == ' ') {
                 // Нашли разделитель union
                 if (!current.empty()) {
                     // Удаляем пробелы в начале и конце

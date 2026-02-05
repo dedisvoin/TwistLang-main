@@ -9,7 +9,6 @@
 #include <fstream>
 
 
-
 Preprocessor preprocessor;
 
 const ArgsParser GenerateArgsParser(const int argc, char** const argv) noexcept {
@@ -62,7 +61,12 @@ int main(int argc, char** argv) {
         ASTGenerator generator = ASTGenerator(walker, args_parser.file_path);
         auto context = generator.run();
         static ContextExecutor executor = ContextExecutor(std::move(context));
-
+        if (args_parser.math_middle_run_time) {
+            middleTimeIt("Middle interpretation time compute", [](){
+                executor.run();
+            }, 5000);
+            exit(0);
+        }
         if (args_parser.interp_time)
             TimeIt("Interpretation finished in ", [](){
             executor.run();

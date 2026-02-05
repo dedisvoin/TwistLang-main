@@ -205,6 +205,19 @@ namespace ERROR {
         exit(0);
     }
 
+    // GOOD
+    void PrivateVariableAccess(const Token& start, const Token& end, string name) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+
+        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Private variable access" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::YELLOW << "|" << TM::RESET << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::YELLOW << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Variable '" << name << "' is private" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        
+    }
+
 
     // GOOD
     void InvalidLambdaArgumentCount(const Token& start, const Token& end, const Token& start_args, const Token& end_args, int wait_count, int found_count) {
@@ -261,8 +274,7 @@ namespace ERROR {
         string file_lines = PREPROCESSOR_OUTPUT;
         vector<string> lines = SplitString(file_lines, '\n');
 
-        
-
+    
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << "+ " << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid call" << endl;
         cout << TM::RED << "|" << TM::RESET << endl;
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
@@ -537,5 +549,83 @@ namespace ERROR {
     static void InvalidType(const string& expected, const string& actual) {
         cout << MT::ERROR + "Invalid type. Expected " + expected + ", got " + actual << endl;
         exit(1);
+    }
+
+    // Ошибка: неверный тип массива для операции push
+    void InvalidArrayPushType(const Token& start, const Token& end, const string& actual_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid array push" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Cannot use '<-' operator on non-array type `" << actual_type << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << endl;
+        exit(0);
+    }
+
+    // Ошибка: неверный индекс (не целое число)
+    void InvalidArrayIndex(const Token& index_token, const string& actual_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << index_token.pif << " >> Invalid array index" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << index_token.pif.line << " | " << TM::RESET << lines[index_token.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(index_token.pif.line).length() + 3, ' ') << string(index_token.pif.index, ' ') << TM::RED << string(index_token.pif.lenght, '^') << " Array index must be of type `Int`, got `" << actual_type << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(index_token.pif.line).length() + 4, '-') << string(index_token.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << endl;
+        exit(0);
+    }
+
+    // Ошибка: индекс выходит за границы массива
+    void ArrayIndexOutOfRange(const Token& index_token, int64_t index, int64_t size) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << index_token.pif << " >> Array index out of range" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << index_token.pif.line << " | " << TM::RESET << lines[index_token.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(index_token.pif.line).length() + 3, ' ') << string(index_token.pif.index, ' ') << TM::RED << string(index_token.pif.lenght, '^') << " Index " << index << " is out of bounds for array of size " << size << endl;
+        cout << TM::RED << "`" << string(to_string(index_token.pif.line).length() + 4, '-') << string(index_token.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << endl;
+        exit(0);
+    }
+
+    // Ошибка: неверный тип для exit
+    void InvalidExitType(const Token& start, const Token& end, const string& actual_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid exit type" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " 'exit' expects `Int` type, got `" << actual_type << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << endl;
+        exit(0);
+    }
+
+    // Ошибка: неверный тип для array type
+    void InvalidArrayTypeExpression(const Token& start, const Token& end) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid array type" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Expected type expression in array type declaration" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << endl;
+        exit(0);
+    }
+
+    // Ошибка: неверный размер массива
+    void InvalidArraySize(const Token& size_token) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << size_token.pif << " >> Invalid array size" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << size_token.pif.line << " | " << TM::RESET << lines[size_token.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(size_token.pif.line).length() + 3, ' ') << string(size_token.pif.index, ' ') << TM::RED << string(size_token.pif.lenght, '^') << " Array size must be of type `Int`" << endl;
+        cout << TM::RED << "`" << string(to_string(size_token.pif.line).length() + 4, '-') << string(size_token.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << endl;
+        exit(0);
     }
 }

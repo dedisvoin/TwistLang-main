@@ -1,7 +1,0 @@
-func get() -> auto {
-    ret &Int;
-}
-
-let a = *get();
-
-outln a;

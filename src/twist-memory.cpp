@@ -38,6 +38,7 @@ struct Modifiers {
     bool is_static;
     bool is_final;
     bool is_global;
+    bool is_private;
 };
 
 // memory object
@@ -51,22 +52,21 @@ struct MemoryObject {
     void* memory_pointer;
     Address address;
 
-    MemoryObject(Value value, Type wait_type,
-                 bool is_const, bool is_static, bool is_final, bool is_global,
-                 void* memory, Address address
-    ) : value(value), wait_type(wait_type), modifiers({is_const, is_static, is_final, is_global}), memory_pointer(memory), address(address) {
+    MemoryObject(Value value, Type wait_type, void* memory, Address address,
+                 bool is_const, bool is_static, bool is_final, bool is_global, bool is_private         
+    ) : value(value), wait_type(wait_type), modifiers({is_const, is_static, is_final, is_global, is_private}), memory_pointer(memory), address(address) {
         
     }
 
 };
 
-inline MemoryObject* CreateMemoryObject(Value value, Type wait_type, bool is_const, bool is_static, bool is_final, bool is_global, void* memory) {
+inline MemoryObject* CreateMemoryObject(Value value, Type wait_type, void* memory, bool is_const, bool is_static, bool is_final, bool is_global, bool is_private) {
     int address = AddressManager::get_next_address();
-    return new MemoryObject(value, wait_type, is_const, is_static, is_final, is_global, memory, address);
+    return new MemoryObject(value, wait_type,memory, address,  is_const, is_static, is_final, is_global, is_private);
 }
 
-inline MemoryObject* CreateMemoryObjectWithAddress(Value value, Type wait_type, bool is_const, bool is_static, bool is_final, bool is_global, void* memory, Address address) {
-    return new MemoryObject(value, wait_type, is_const, is_static, is_final, is_global, memory, address);
+inline MemoryObject* CreateMemoryObjectWithAddress(Value value, Type wait_type, void* memory, Address address,bool is_const, bool is_static, bool is_final, bool is_global, bool is_private) {
+    return new MemoryObject(value, wait_type, memory, address, is_const, is_static, is_final, is_global, is_private);
 }
 
 struct Memory {
@@ -87,9 +87,9 @@ struct Memory {
     }
 
     // add memory object in all pools
-    bool add_object(const string& literal, Value value, Type wait_type, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false) {
+    bool add_object(const string& literal, Value value, Type wait_type, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false, bool is_private = false) {
         try {
-            auto object = CreateMemoryObject(value, wait_type, is_const, is_static, is_final, is_global, this);
+            auto object = CreateMemoryObject(value, wait_type, this, is_const, is_static, is_final, is_global, is_private);
             string_pool.emplace(literal, object);
 
         } catch (...) {
@@ -107,9 +107,9 @@ struct Memory {
         return true;
     }
 
-    bool copy_object(const string& literal, Value value, Type wait_type, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false, Address address = 0) {
+    bool copy_object(const string& literal, Value value, Type wait_type, Address address = 0, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false, bool is_private = false) {
         try {
-            auto object = CreateMemoryObjectWithAddress(value, wait_type, is_const, is_static, is_final, is_global, this, address);
+            auto object = CreateMemoryObjectWithAddress(value, wait_type,this, address, is_const, is_static, is_final, is_global, is_private);
             string_pool.emplace(literal, object);
 
         } catch (...) {
@@ -120,7 +120,7 @@ struct Memory {
 
     bool add_object_in_lambda(const string& literal, Value value) {
 
-        auto object = new MemoryObject(value, value.type, false, true, false, true, this, 0);
+        auto object = new MemoryObject(value, value.type, this, 0, false, true, false, true, false);
         if (check_literal(literal)) delete_variable(literal);
         try {
             string_pool.emplace(literal, object);
@@ -130,9 +130,9 @@ struct Memory {
         return true;
     }
 
-    bool add_object_in_func(const string& literal, Value value, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false) {
+    bool add_object_in_func(const string& literal, Value value, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false, bool is_private = false) {
 
-        auto object = new MemoryObject(value, value.type, is_const, is_static, is_final, is_global, this, 0);
+        auto object = new MemoryObject(value, value.type, this, 0, is_const, is_static, is_final, is_global, is_private);
         if (check_literal(literal)) delete_variable(literal);
         try {
             string_pool.emplace(literal, object);
@@ -167,7 +167,7 @@ struct Memory {
             // Копируем ВСЕ объекты, не только глобальные
             target_memory.add_object(pair.first, pair.second->value, pair.second->wait_type,
                                     pair.second->modifiers.is_const, pair.second->modifiers.is_static,
-                                    pair.second->modifiers.is_final, pair.second->modifiers.is_global);
+                                    pair.second->modifiers.is_final, pair.second->modifiers.is_global, pair.second->modifiers.is_private);
         }
     }
 
@@ -183,6 +183,11 @@ struct Memory {
     ///////////////////////////////////////////////////////////////////////////
     inline bool is_final(const string& literal) {
         return string_pool.find(literal)->second->modifiers.is_final;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    inline bool is_private(const string& literal) {
+        return string_pool.find(literal)->second->modifiers.is_private;
     }
 
     ///////////////////////////////////////////////////////////////////////////

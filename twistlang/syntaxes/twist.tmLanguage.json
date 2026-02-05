@@ -367,7 +367,7 @@
 		"input-keyword": {
 			"patterns": [{
 				"name": "support.function.input.twist",
-				"match": "\\b(input|typeof|sizeof|new|exit)\\b"
+				"match": "\\b(input|typeof|sizeof|exit)\\b"
 			}]
 		},
 		
@@ -406,7 +406,7 @@
 		
 		"modifiers": {
 			"name": "storage.modifier.twist",
-			"match": "\\b(global|static|const|final|del)\\b"
+			"match": "\\b(global|static|const|final|private)\\b"
 		},
 		
 		"types": {
@@ -421,7 +421,7 @@
 		"literals": {
 			"patterns": [{
 				"name": "constant.language.twist",
-				"match": "\\b(true|false|null)\\b"
+				"match": "\\b(true|false|null|new|del)\\b"
 			}]
 		},
 		

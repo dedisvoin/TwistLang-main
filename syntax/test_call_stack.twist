@@ -1,0 +1,17 @@
+// Test call stack tracing
+
+func divide(Int a, Int b) -> Int {
+    if (b == 0) {
+        // This error should show the call stack
+        // showing: divide -> main_caller -> test
+        exit(1);
+    }
+    return a / b;
+}
+
+func main_caller() {
+    let Int result = divide(10, 0);
+}
+
+// Call the function that will error
+main_caller();

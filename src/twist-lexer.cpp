@@ -29,7 +29,7 @@ vector<string> KEYWORDS = { "if", "else", "for", "while",
     "do", "break", "continue", "let", 
     "static", "final", "const", "global", "typeof", "sizeof",
      "del", "new" ,"true", "false", "null", "ret",
-    "out", "outln", "input", "in" , "and", "or", "namespace", "assert", "lambda",  "func", "Func", "exit"};
+    "out", "outln", "input", "in" , "and", "or", "namespace", "assert", "lambda",  "func", "Func", "exit", "private"};
 
 struct Lexer {
     int line = 1;
