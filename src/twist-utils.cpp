@@ -375,6 +375,7 @@ struct ArgsParser {
     bool compile_mod = false;
     bool delete_precompiled = true;
     bool math_middle_run_time = false;
+    bool print_ast = false;
 
     ArgsParser(vector<string> args) : args(args) {}
 
@@ -409,6 +410,10 @@ struct ArgsParser {
                 }
                 if (args[i] == "-mrt") {
                     math_middle_run_time = true;
+                    continue;
+                }
+                if (args[i] == "-print-ast") {
+                    print_ast = true;
                     continue;
                 }
             }

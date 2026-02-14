@@ -1,8 +1,10 @@
+#include "src/twist-ast-printer.cpp"
 #include "src/twist-preproc.cpp"
 #include "src/twist-lexer.cpp"
 #include "src/twist-utils.cpp"
 #include "src/twist-tokenwalker.cpp"
 #include "src/twist-generator.cpp"
+
 
 #include "fstream"
 #include <filesystem>
@@ -59,12 +61,20 @@ int main(int argc, char** argv) {
 
         TokenWalker walker = TokenWalker(&parser.tokens);
         ASTGenerator generator = ASTGenerator(walker, args_parser.file_path);
+        
         auto context = generator.run();
+        if (args_parser.print_ast) {
+            debug_print_ast(context);
+            return 0;
+        }
+        
         static ContextExecutor executor = ContextExecutor(std::move(context));
+
+        
         if (args_parser.math_middle_run_time) {
             middleTimeIt("Middle interpretation time compute", [](){
                 executor.run();
-            }, 5000);
+            }, 100);
             exit(0);
         }
         if (args_parser.interp_time)

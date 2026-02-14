@@ -2,55 +2,74 @@
 #include "twist-values.cpp"
 #include "twist-memory.cpp"
 
+// В одном макросе генерируем все
+#define GENERATE_NODE_TYPES \
+    _(NODE_NUMBER) \
+    _(NODE_STRING) \
+    _(NODE_CHAR) \
+    _(NODE_BOOL) \
+    _(NODE_NULL) \
+    _(NODE_LITERAL) \
+    _(NODE_VALUE_HOLDER) \
+    _(NODE_NAME_RESOLUTION) \
+    _(NODE_SCOPES) \
+    _(NODE_UNARY) \
+    _(NODE_BINARY) \
+    _(NODE_VARIABLE_DECLARATION) \
+    _(NODE_OUT) \
+    _(NODE_OUTLN) \
+    _(NODE_VARIABLE_EQUAL) \
+    _(NODE_BLOCK_OF_NODES) \
+    _(NODE_IF) \
+    _(NODE_NAMESPACE_DECLARATION) \
+    _(NODE_BREAK) \
+    _(NODE_CONTINUE) \
+    _(NODE_WHILE) \
+    _(NODE_DO_WHILE) \
+    _(NODE_FOR) \
+    _(NODE_BLOCK_OF_DECLARATIONS) \
+    _(NODE_ADDRESS_OF) \
+    _(NODE_DEREFERENCE) \
+    _(NODE_LEFT_DEREFERENCE) \
+    _(NODE_TYPEOF) \
+    _(NODE_SIZEOF) \
+    _(NODE_DELETE) \
+    _(NODE_IF_EXPRESSION) \
+    _(NODE_INPUT) \
+    _(NODE_NAMESPACE_EXPRESSION) \
+    _(NODE_ASSERT) \
+    _(NODE_EXPRESSION_STATEMENT) \
+    _(NODE_LAMBDA) \
+    _(NODE_RETURN) \
+    _(NODE_CALL) \
+    _(NODE_NEW) \
+    _(NODE_FUNCTION_TYPE) \
+    _(NODE_FUNCTION_DECLARATION) \
+    _(NODE_EXIT) \
+    _(NODE_ARRAY_TYPE) \
+    _(NODE_ARRAY) \
+    _(NODE_GET_BY_INDEX) \
+    _(NODE_ARRAY_PUSH)
+
+// Enum
 enum NodeTypes {
-    NODE_NUMBER,
-    NODE_STRING,
-    NODE_CHAR,
-    NODE_BOOL,
-    NODE_NULL,
-    NODE_LITERAL,
-    NODE_VALUE_HOLDER,
-    NODE_NAME_RESOLUTION,
-    NODE_SCOPES,
-    NODE_UNARY,
-    NODE_BINARY,
-    NODE_VARIABLE_DECLARATION,
-    NODE_OUT,
-    NODE_OUTLN,
-    NODE_VARIABLE_EQUAL,
-    NODE_BLOCK_OF_NODES,
-    NODE_IF,
-    NODE_NAMESPACE_DECLARATION,
-    NODE_BREAK,
-    NODE_CONTINUE,
-    NODE_WHILE,
-    NODE_DO_WHILE,
-    NODE_FOR,
-    NODE_BLOCK_OF_DECLARATIONS,
-    NODE_ADDRESS_OF,
-    NODE_DEREFERENCE,
-    NODE_LEFT_DEREFERENCE,
-    NODE_TYPEOF,
-    NODE_SIZEOF,
-    NODE_DELETE,
-    NODE_IF_EXPRESSION,
-    NODE_INPUT,
-    NODE_NAMESPACE_EXPRESSION,
-    NODE_ASSERT,
-    NODE_EXPRESSION_STATEMENT,
-    NODE_LAMBDA,
-    NODE_RETURN,
-    NODE_CALL,
-    NODE_NEW,
-    NODE_FUNCTION_TYPE,
-    NODE_FUNCTION_DECLARATION,
-    NODE_EXIT,
-    NODE_ARRAY_TYPE,
-    NODE_ARRAY,
-    NODE_GET_BY_INDEX,
-    NODE_ARRAY_PUSH
+    #define _(x) x,
+    GENERATE_NODE_TYPES
+    #undef _
+    NODE_COUNT
 };
 
+// Массив имен
+static const char* node_type_names[] = {
+    #define _(x) #x,
+    GENERATE_NODE_TYPES
+    #undef _
+};
+
+// Функция
+inline const char* get_node_type_name(NodeTypes type) {
+    return (type >= 0 && type < NODE_COUNT) ? node_type_names[type] : "NODE_UNKNOWN";
+}
 
 struct Node {
     NodeTypes NODE_TYPE;                    // Node name

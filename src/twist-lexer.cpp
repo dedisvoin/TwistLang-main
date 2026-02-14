@@ -158,7 +158,45 @@ struct Lexer {
         C = this->get();
 
         while (C != SC) { 
-            V += C;
+            if (C == '\\') {
+                // Handle escape sequences
+                next();
+                next_in_line();
+                C = this->get();
+                
+                switch (C) {
+                    case 'n':  V += '\n'; break;
+                    case 't':  V += '\t'; break;
+                    case 'r':  V += '\r'; break;
+                    case '\\': V += '\\'; break;
+                    case '"':  V += '"'; break;
+                    case '\'': V += '\''; break;
+                    case '0':  V += '\0'; break;
+                    case 'x': {
+                        // Hex escape: \xHH
+                        next();
+                        next_in_line();
+                        char hex1 = this->get();
+                        next();
+                        next_in_line();
+                        char hex2 = this->get();
+                        
+                        string hexStr;
+                        hexStr += hex1;
+                        hexStr += hex2;
+                        int hexVal = stoi(hexStr, nullptr, 16);
+                        V += (char)hexVal;
+                        break;
+                    }
+                    default: 
+                        V += '\\';
+                        V += C;
+                        break;
+                }
+            } else {
+                V += C;
+            }
+            
             next();
             next_in_line();
             C = this->get();

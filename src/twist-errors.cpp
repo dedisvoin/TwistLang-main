@@ -628,4 +628,74 @@ namespace ERROR {
         cout << endl;
         exit(0);
     }
+
+    // GOOD
+    // Ошибка: попытка использовать оператор :: на не-namespace типе
+    void InvalidAccessorType(const Token& start, const Token& end, const string& actual_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid accessor operator" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Cannot use '::' accessor on type `" << actual_type << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        MSG("The '::' operator can only be used to access members of a namespace.");
+        MSG("Valid syntax: namespace::member");
+        exit(0);
+    }
+
+    // GOOD
+    // Ошибка: попытка доступа к несуществующему свойству в namespace
+    void UndefinedProperty(const Token& start, const Token& end, const string& property_name, const string& namespace_name) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Undefined property" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Property '" << property_name << "' not found in namespace '" << namespace_name << "'" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << endl;
+        exit(0);
+    }
+
+    // GOOD
+    // Ошибка: попытка доступа к приватному свойству через оператор ::
+    void PrivatePropertyAccess(const Token& start, const Token& end, const string& property_name) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Private property access" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::YELLOW << "|" << TM::RESET << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::YELLOW << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Property '" << property_name << "' is private and cannot be accessed" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        WRN("Private members can only be accessed from within the same namespace scope.");
+    }
+
+    // GOOD
+    // Ошибка: неверный тип в цепочке доступа к namespace
+    void InvalidNamespaceChainType(const Token& start, const Token& end, const string& chain_element, const string& actual_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid namespace chain" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Error in namespace chain at '" << chain_element << "': expected namespace, but found `" << actual_type << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        MSG("Each element in namespace chain (A::B::C) must be a namespace.");
+        exit(0);
+    }
+
+    // GOOD
+    // Ошибка: неверный тип выражения для операции delete
+    void InvalidDeleteTarget(const Token& start, const Token& end) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid delete target" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid target for delete operation" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        MSG("Delete operation expects a variable name, namespace property (var::prop), or dereferenced pointer (*ptr).");
+        exit(0);
+    }
 }

@@ -14,7 +14,7 @@ typedef int Address;
 class AddressManager {
 private:
     static int next_address;
-    
+
 public:
     static int get_next_address() {
         return ++next_address;
@@ -23,7 +23,7 @@ public:
     static int get_current_address() {
         return next_address;
     }
-    
+
     static void reset() {
         next_address = 0;
     }
@@ -46,16 +46,16 @@ struct MemoryObject {
     Value value;
     Type wait_type;
 
-    
+
     Modifiers modifiers;
 
     void* memory_pointer;
     Address address;
 
     MemoryObject(Value value, Type wait_type, void* memory, Address address,
-                 bool is_const, bool is_static, bool is_final, bool is_global, bool is_private         
+                 bool is_const, bool is_static, bool is_final, bool is_global, bool is_private
     ) : value(value), wait_type(wait_type), modifiers({is_const, is_static, is_final, is_global, is_private}), memory_pointer(memory), address(address) {
-        
+
     }
 
 };
@@ -131,7 +131,6 @@ struct Memory {
     }
 
     bool add_object_in_func(const string& literal, Value value, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false, bool is_private = false) {
-
         auto object = new MemoryObject(value, value.type, this, 0, is_const, is_static, is_final, is_global, is_private);
         if (check_literal(literal)) delete_variable(literal);
         try {
@@ -151,23 +150,29 @@ struct Memory {
         get_variable(literal)->value = new_value;
     }
 
-    void link_objects(Memory& target_memory) {
+    inline void link_objects(Memory& target_memory) {
         // Копируем все объекты из этой памяти в target_memory
         for (auto pair : string_pool) {
             if (!pair.second->modifiers.is_global)
                 continue;
-            
             target_memory.string_pool[pair.first] = pair.second;
         }
     }
 
+    // Copy all non-global (local) objects into target memory as separate copies.
+    inline void copy_locals_to(Memory& target_memory) {
+        for (auto pair : string_pool) {
+            if (pair.second->modifiers.is_global)
+                continue;
+            target_memory.string_pool[pair.first] = new MemoryObject(*pair.second);
+        }
+    }
 
-    void copy_objects(Memory& target_memory) {
-        for (auto& pair : string_pool) {
-            // Копируем ВСЕ объекты, не только глобальные
-            target_memory.add_object(pair.first, pair.second->value, pair.second->wait_type,
-                                    pair.second->modifiers.is_const, pair.second->modifiers.is_static,
-                                    pair.second->modifiers.is_final, pair.second->modifiers.is_global, pair.second->modifiers.is_private);
+    inline void copy_objects(Memory& target_memory) {
+        for (auto pair : string_pool) {
+            if (!pair.second->modifiers.is_global)
+                continue;
+            target_memory.string_pool[pair.first] = new MemoryObject(*pair.second);
         }
     }
 
@@ -236,8 +241,8 @@ struct Memory {
                 } else if (obj->value.type.pool == STANDART_TYPE::STRING.pool) {
                     cout << ", Value: " << any_cast<string>(obj->value.data);
                 }
-            } catch (const std::bad_any_cast& e) {
-                cout << ", Value: <bad cast: " << e.what() << ">";
+            } catch (...) {
+                cout << ", Value: <bad cast: "  << ">";
             }
             cout << endl;
         }
@@ -252,7 +257,7 @@ struct GlobalMemory {
             cout << pair.first << ": " << pair.second->value.type.pool << endl;
         }
     }
-    
+
     static void register_object(MemoryObject* obj) {
         all_objects[obj->address] = obj;
     }
@@ -260,11 +265,11 @@ struct GlobalMemory {
     static bool is_registered(int address) {
         return all_objects.find(address) != all_objects.end();
     }
-    
+
     static void unregister_object(int address) {
         all_objects.erase(address);
     }
-    
+
     static MemoryObject* get_by_address(int address) {
         auto it = all_objects.find(address);
         return it != all_objects.end() ? it->second : nullptr;
