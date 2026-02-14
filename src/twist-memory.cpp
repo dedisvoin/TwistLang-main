@@ -1,7 +1,6 @@
 // memory.cpp
 #include "twist-values.cpp"
 #include "twist-utils.cpp"
-#include <map>
 #include <string>
 #include <iostream>
 #include <unordered_map>
@@ -250,7 +249,7 @@ struct Memory {
 };
 
 struct GlobalMemory {
-    static map<int, MemoryObject*> all_objects;
+    static unordered_map<int, MemoryObject*> all_objects;
 
     static void debug_print() {
         for (auto& pair : all_objects) {
@@ -285,6 +284,6 @@ struct GlobalMemory {
 };
 
 // ДОБАВЬТЕ ЭТОТ КОД - определение статической переменной
-map<int, MemoryObject*> GlobalMemory::all_objects;
+unordered_map<int, MemoryObject*> GlobalMemory::all_objects;
 
 static GlobalMemory STATIC_MEMORY;

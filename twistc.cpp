@@ -62,13 +62,16 @@ int main(int argc, char** argv) {
         TokenWalker walker = TokenWalker(&parser.tokens);
         ASTGenerator generator = ASTGenerator(walker, args_parser.file_path);
         
-        auto context = generator.run();
+        auto ctx = generator.run();
+        if (args_parser.save_ast) {
+            save_ast_to_file(ctx, "ast.txt");
+        }
         if (args_parser.print_ast) {
-            debug_print_ast(context);
+            debug_print_ast(ctx);
             return 0;
         }
         
-        static ContextExecutor executor = ContextExecutor(std::move(context));
+        static ContextExecutor executor = ContextExecutor(std::move(ctx));
 
         
         if (args_parser.math_middle_run_time) {

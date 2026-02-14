@@ -56,7 +56,43 @@ class ASTPrinter {
 private:
     std::stringstream output;
     bool use_colors = true;
-    
+
+    // Внутри класса ASTPrinter (после метода print_to_console)
+public:
+    /**
+    * Сохраняет AST в файл.
+    * @param nodes Вектор корневых узлов AST.
+    * @param filename Имя файла для сохранения.
+    * @param use_colors_in_file Если true, в файл будут записаны ANSI-коды цветов (по умолчанию false).
+    * @return true при успешной записи, false в случае ошибки.
+    */
+    bool save_to_file(const std::vector<std::unique_ptr<Node>>& nodes, 
+                    const std::string& filename, 
+                    bool use_colors_in_file = false) {
+        // Сохраняем текущее состояние цветов
+        bool old_colors = use_colors;
+        use_colors = use_colors_in_file;
+        
+        // Генерируем текстовое представление AST
+        print_ast(nodes);
+        std::string ast_text = get_output();
+        
+        // Восстанавливаем состояние цветов
+        use_colors = old_colors;
+        
+        // Запись в файл
+        std::ofstream file(filename);
+        if (!file.is_open()) {
+            std::cerr << "Error: Cannot open file '" << filename << "' for writing." << std::endl;
+            return false;
+        }
+        file << ast_text;
+        file.close();
+        return true;
+    }
+
+
+        
     std::string colorize(const std::string& text, const std::string& color) {
         if (!use_colors) return text;
         return color + text + Colors::RESET;
@@ -96,7 +132,7 @@ private:
                     output << colorize(std::to_string(any_cast<int64_t>(n->value.data)), Colors::VALUE_COLOR);
                 } else if (n->value.type == STANDART_TYPE::DOUBLE) {
                     std::stringstream ss;
-                    ss << any_cast<long double>(n->value.data);
+                    ss << any_cast<float>(n->value.data);
                     output << colorize(ss.str(), Colors::VALUE_COLOR);
                 }
                 output << " (" << colorize(n->value.type.pool, Colors::TYPE_COLOR) << ")";
@@ -184,7 +220,7 @@ private:
                 
                 std::string new_prefix = prefix + (is_last ? "    " : "│   ");
                 print_node(n->left.get(), new_prefix, false);
-                output << new_prefix << colorize("└── Right:", Colors::STRUCTURE_COLOR) << std::endl;
+                output << new_prefix << "└──" << colorize(" Right:", Colors::STRUCTURE_COLOR) << std::endl;
                 print_node(n->right.get(), new_prefix + "    ", true);
                 return;
             }
@@ -206,11 +242,11 @@ private:
                 std::string new_prefix = prefix + (is_last ? "    " : "│   ");
                 
                 if (n->type_expr) {
-                    output << new_prefix << colorize("├── TypeExpr:", Colors::STRUCTURE_COLOR) << std::endl;
+                    output << new_prefix << "├──" << colorize(" TypeExpr:", Colors::STRUCTURE_COLOR) << std::endl;
                     print_node(n->type_expr.get(), new_prefix + "│   ", true);
                 }
                 
-                output << new_prefix << colorize("└── ValueExpr:", Colors::STRUCTURE_COLOR) << std::endl;
+                output << new_prefix << "└──" << colorize(" ValueExpr:", Colors::STRUCTURE_COLOR) << std::endl;
                 print_node(n->value_expr.get(), new_prefix + "    ", true);
                 return;
             }
@@ -796,34 +832,60 @@ private:
                 output << std::endl;
                 
                 std::string new_prefix = prefix + (is_last ? "    " : "│   ");
+                
+                // Печать ElementType
                 output << new_prefix;
-                if (n->size_expr) {
-                    output << colorize("├── ", Colors::STRUCTURE_COLOR);
-                } else {
-                    output << colorize("└── ", Colors::STRUCTURE_COLOR);
-                }
+                
+                output << "├── ";
+                
                 output << colorize("ElementType:", Colors::STRUCTURE_COLOR) << std::endl;
                 print_node(n->type_expr.get(), 
-                          new_prefix + (n->size_expr ? "│   " : "    "), 
-                          true);
+                        new_prefix + (n->size_expr ? "│   " : "│   "), 
+                        true);
                 
+                // Печать Size (если есть)
                 if (n->size_expr) {
-                    output << new_prefix << colorize("└── Size:", Colors::STRUCTURE_COLOR) << std::endl;
+                    output << new_prefix << "└──" << colorize(" Size:", Colors::STRUCTURE_COLOR) << std::endl;
                     print_node(n->size_expr.get(), new_prefix + "    ", true);
                 } else {
-                    output << new_prefix << colorize("└── Size: dynamic", Colors::GRAY) << std::endl;
+                    output << new_prefix << "└──" <<colorize(" Size: dynamic", Colors::GRAY) << std::endl;
                 }
                 return;
             }
             
             case NodeTypes::NODE_ARRAY: {
                 auto* n = static_cast<NodeArray*>(node);
-                output << colorize("Array", Colors::STRUCTURE_COLOR)
-                       << colorize(" (", Colors::GRAY) 
-                       << colorize(std::to_string(n->elements.size()), Colors::NUMBER_COLOR)
-                       << colorize(" elements)", Colors::GRAY);
-                output << std::endl;
-                print_children(n->elements, "elements", prefix + (is_last ? "    " : "│   "), true);
+                output << colorize("Array", Colors::STRUCTURE_COLOR);
+                if (n->is_static) {
+                    output << " " << colorize("static", Colors::MODIFIER_COLOR);
+                }
+                output << colorize(" (", Colors::GRAY) 
+                    << colorize(std::to_string(n->elements.size()), Colors::NUMBER_COLOR)
+                    << colorize(" elements)", Colors::GRAY);
+                
+                std::string new_prefix = prefix + (is_last ? "    " : "│   ");
+                
+                // Если есть статический тип, выводим его
+                if (n->static_type) {
+                    output << std::endl;
+                    output << new_prefix << colorize("├── StaticType:", Colors::STRUCTURE_COLOR) << std::endl;
+                    print_node(n->static_type.get(), new_prefix + "│   ", true);
+                    output << new_prefix << colorize("└── Elements:", Colors::STRUCTURE_COLOR) << std::endl;
+                    std::string elem_prefix = new_prefix + "    ";
+                    for (size_t i = 0; i < n->elements.size(); i++) {
+                        bool elem_last = (i == n->elements.size() - 1);
+                        // Берём сырой указатель из кортежа
+                        print_node(std::get<0>(n->elements[i]).get(), elem_prefix, elem_last);
+                    }
+                } else {
+                    output << std::endl;
+                    output << new_prefix << colorize("└── Elements:", Colors::STRUCTURE_COLOR) << std::endl;
+                    std::string elem_prefix = new_prefix + "    ";
+                    for (size_t i = 0; i < n->elements.size(); i++) {
+                        bool elem_last = (i == n->elements.size() - 1);
+                        print_node(std::get<0>(n->elements[i]).get(), elem_prefix, elem_last);
+                    }
+                }
                 return;
             }
             
@@ -938,4 +1000,9 @@ void debug_print_ast(Context& generator, bool use_colors = true) {
         printer.disable_colors();
     }
     printer.print_to_console(generator.nodes, "Twist Language AST");
+}
+
+inline void save_ast_to_file(Context& generator, const std::string& filename, bool use_colors = false) {
+    ASTPrinter printer;
+    printer.save_to_file(generator.nodes, filename, use_colors);
 }

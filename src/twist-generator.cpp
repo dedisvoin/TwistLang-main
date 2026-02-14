@@ -569,14 +569,34 @@ struct NodeBinary : public Node { NO_EXEC
 
                     if (var_obj && var_obj->value.type.is_array_type()) {
                         // Модифицируем массив напрямую в памяти
-                        any_cast<Array&>(var_obj->value.data).values.emplace_back(right_val);
+                        auto& arr = any_cast<Array&>(var_obj->value.data);
+                        auto arr_type_pair = arr.type.parse_array_type();
+                        string elem_type_str = arr_type_pair.first;
+                        if (elem_type_str != "") {
+                            Type expected(elem_type_str);
+                            if (!IsTypeCompatible(expected, right_val.type)) {
+                                ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_val.type.pool);
+                            }
+                        }
+                        arr.values.emplace_back(right_val);
                         // Возвращаем ссылку из памяти
                         return var_obj->value;
                     }
                 }
 
                 // Fallback для других случаев (например, если левая часть - выражение)
-                any_cast<Array&>(left_val.data).values.emplace_back(right_val);
+                {
+                    auto& arr = any_cast<Array&>(left_val.data);
+                    auto arr_type_pair = arr.type.parse_array_type();
+                    string elem_type_str = arr_type_pair.first;
+                    if (elem_type_str != "") {
+                        Type expected(elem_type_str);
+                        if (!IsTypeCompatible(expected, right_val.type)) {
+                            ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_val.type.pool);
+                        }
+                    }
+                    arr.values.emplace_back(right_val);
+                }
                 return left_val;
             }
         } else
@@ -1305,7 +1325,7 @@ struct NodeDereference : public Node { NO_EXEC
             //if (any_cast<Type>(value.data).is_union_type()) {
             //    ERROR::InvalidDereferenceType(start, end);
             //}
-            return NewType(PointerType(any_cast<Type>(value.data)));
+            return NewType(MakePointerType(any_cast<Type>(value.data)));
         }
         ERROR::InvalidDereferenceValue(start, end, value.type);
     }
@@ -1424,6 +1444,9 @@ struct NodeSizeof : public Node { NO_EXEC
             return NewInt(sizeof(Namespace));
         if (value.type == STANDART_TYPE::NULL_T)
             return NewInt(sizeof(Null));
+        if (value.type.is_array_type()) {
+            return NewInt(any_cast<Array&>(value.data).values.size());
+        }
 
         return NewInt(sizeof(std::any));
     }
@@ -2157,28 +2180,44 @@ struct NodeNewArrayType : public Node { NO_EXEC
 // массивa и самим массивом.
 struct NodeArray : public Node { NO_EXEC
 
-    vector<unique_ptr<Node>> elements;
+    vector<tuple<unique_ptr<Node>, Token, Token>> elements;
+    unique_ptr<Node> static_type;
+    bool is_static = false;
 
-    NodeArray(vector<unique_ptr<Node>> elements) : elements(std::move(elements)) {
+    NodeArray(vector<tuple<unique_ptr<Node>, Token, Token>> elements, unique_ptr<Node> static_type = nullptr) : 
+        elements(std::move(elements)), static_type(std::move(static_type)) {
         this->NODE_TYPE = NodeTypes::NODE_ARRAY;
     }
 
     Array construct_array(Memory& _memory) {
         vector<Value> evaled_elements;
-
-        Type T = Type("");
-
-        for (int i = 0; i < elements.size(); i++) {
-            auto value = elements[i]->eval_from(_memory);
-            T = T | value.type;
-            evaled_elements.push_back(value);
+        Type T = Type();
+        if (!is_static) {
+            if (elements.empty()) {
+                T = Type("[, ~]"); // пустой массив
+            } else {
+                auto first = get<0>(elements[0])->eval_from(_memory);
+                T = first.type;
+                evaled_elements.push_back(first);
+                for (size_t i = 1; i < elements.size(); ++i) {
+                    auto value = get<0>(elements[i])->eval_from(_memory);
+                    T = T | value.type;
+                    evaled_elements.push_back(value);
+                }
+                T = Type("[" + T.pool + ", ~]");
+            }
+          
+        } else {
+            T = any_cast<Type>(static_type->eval_from(_memory).data);
+            for (int i = 0; i < elements.size(); i++) {
+                auto value = get<0>(elements[i])->eval_from(_memory);
+                if (!IsTypeCompatible(T.parse_array_type().first, value.type)) {
+                    ERROR::InvalidArrayElementType(get<1>(elements[i]), get<2>(elements[i]), T.pool, value.type.pool, i);
+                }
+                evaled_elements.push_back(value);
+            }
         }
-
-        T = Type("[" + T.pool + ", ~]");
-
-        auto arr = Array(T, std::move(evaled_elements));
-
-        return arr;
+        return Array(T, std::move(evaled_elements));
     }
 
     Value eval_from(Memory& _memory) override {
@@ -2299,8 +2338,18 @@ struct NodeArrayPush : public Node { NO_EXEC
 
             if (var_obj && var_obj->value.type.is_array_type()) {
                 auto right_value = right_expr->eval_from(_memory);
+                // Проверка типа элемента массива
+                auto& arr = any_cast<Array&>(var_obj->value.data);
+                auto arr_type_pair = arr.type.parse_array_type();
+                string elem_type_str = arr_type_pair.first;
+                if (elem_type_str != "") {
+                    Type expected(elem_type_str);
+                    if (!IsTypeCompatible(expected, right_value.type)) {
+                        ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_value.type.pool);
+                    }
+                }
                 // Модифицируем массив ПРЯМО в памяти БЕЗ копирования
-                any_cast<Array&>(var_obj->value.data).values.emplace_back(right_value);
+                arr.values.emplace_back(right_value);
                 return var_obj->value;
             }
         }
@@ -2317,7 +2366,16 @@ struct NodeArrayPush : public Node { NO_EXEC
                     MemoryObject* var_obj = ns.memory->get_variable(var_name);
                     if (var_obj && var_obj->value.type.is_array_type()) {
                         auto right_value = right_expr->eval_from(_memory);
-                        any_cast<Array&>(var_obj->value.data).values.emplace_back(right_value);
+                        auto& arr = any_cast<Array&>(var_obj->value.data);
+                        auto arr_type_pair = arr.type.parse_array_type();
+                        string elem_type_str = arr_type_pair.first;
+                        if (elem_type_str != "") {
+                            Type expected(elem_type_str);
+                            if (!IsTypeCompatible(expected, right_value.type)) {
+                                ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_value.type.pool);
+                            }
+                        }
+                        arr.values.emplace_back(right_value);
                         return var_obj->value;
                     }
                 }
@@ -2348,7 +2406,16 @@ struct NodeArrayPush : public Node { NO_EXEC
             }
 
             auto right_value = right_expr->eval_from(_memory);
-            any_cast<Array&>(obj->value.data).values.emplace_back(right_value);
+            auto& arr = any_cast<Array&>(obj->value.data);
+            auto arr_type_pair = arr.type.parse_array_type();
+            string elem_type_str = arr_type_pair.first;
+            if (elem_type_str != "") {
+                Type expected(elem_type_str);
+                if (!IsTypeCompatible(expected, right_value.type)) {
+                    ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_value.type.pool);
+                }
+            }
+            arr.values.emplace_back(right_value);
 
             // Возвращаем значение из памяти (не копию)
             return obj->value;
@@ -2362,8 +2429,16 @@ struct NodeArrayPush : public Node { NO_EXEC
             if (!left_value.type.is_array_type()) {
                 ERROR::InvalidArrayPushType(start_token, end_token, left_value.type.pool);
             }
-
-            any_cast<Array&>(left_value.data).values.emplace_back(right_value);
+            auto& arr = any_cast<Array&>(left_value.data);
+            auto arr_type_pair = arr.type.parse_array_type();
+            string elem_type_str = arr_type_pair.first;
+            if (elem_type_str != "") {
+                Type expected(elem_type_str);
+                if (!IsTypeCompatible(expected, right_value.type)) {
+                    ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_value.type.pool);
+                }
+            }
+            arr.values.emplace_back(right_value);
             return left_value;
         }
         
@@ -2376,7 +2451,18 @@ struct NodeArrayPush : public Node { NO_EXEC
         }
 
         // Модифицируем копию и возвращаем её
-        any_cast<Array&>(left_value.data).values.emplace_back(right_value);
+        {
+            auto& arr = any_cast<Array&>(left_value.data);
+            auto arr_type_pair = arr.type.parse_array_type();
+            string elem_type_str = arr_type_pair.first;
+            if (elem_type_str != "") {
+                Type expected(elem_type_str);
+                if (!IsTypeCompatible(expected, right_value.type)) {
+                    ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_value.type.pool);
+                }
+            }
+            arr.values.emplace_back(right_value);
+        }
         return left_value;
     }
 
@@ -3356,8 +3442,8 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
             ERROR::UnexpectedToken(*walker.get(), "return type expression");
     }
 
-    if (!walker.CheckValue("{"))
-        ERROR::UnexpectedToken(*walker.get(), "'{'");
+    if (!walker.CheckValue(":"))
+        ERROR::UnexpectedToken(*walker.get(), "':'");
     walker.next();
 
 
@@ -3369,10 +3455,6 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
     auto block = parse_expression();
 
     lambda_node->body = std::move(block);
-
-    if (!walker.CheckValue("}"))
-        ERROR::UnexpectedToken(*walker.get(), "'}'");
-    walker.next();
 
     return lambda_node;
 }
@@ -4203,23 +4285,37 @@ unique_ptr<Node> ASTGenerator::ParseNewArrayType() {
     Token end = *walker.get();
     walker.next();
 
+    // Если после объявления типа массива идет '{', 
+    // то это объявление массива с статическим типом
+    if (walker.CheckValue("{")) {
+        auto type_node = make_unique<NodeNewArrayType>(std::move(type_expr), std::move(size_expr), start, end);
+        auto array = ParseArray();
+        if (!array) {
+            ERROR::UnexpectedToken(*walker.get(), "array");
+        }
+        ((NodeArray*)array.get())->static_type = std::move(type_node);
+        ((NodeArray*)array.get())->is_static = true;
+        return array;
+    }
 
     return make_unique<NodeNewArrayType>(std::move(type_expr), std::move(size_expr), start, end);
 }
 
 unique_ptr<Node> ASTGenerator::ParseArray() {
     walker.next(); // pass '{'
-    vector<unique_ptr<Node>> values;
+    vector<tuple<unique_ptr<Node>, Token, Token>> values;
     if (walker.CheckValue("}")) {
         walker.next(); // pass '}' token
         return make_unique<NodeArray>(std::move(values));
     }
     while (true) {
+        Token start_value = *walker.get();
         auto expr = parse_expression();
+        Token end_value = *walker.get(-1);
         if (!expr) {
             ERROR::UnexpectedToken(*walker.get(), "expression");
         }
-        values.push_back(std::move(expr));
+        values.push_back(std::make_tuple(std::move(expr), start_value, end_value));
         if (walker.CheckValue(",")) {
             walker.next(); // pass ',' token
             continue;

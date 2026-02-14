@@ -1,483 +1,638 @@
-#include "string"
-#include <ostream>
-#include <vcruntime_typeinfo.h>
-#include "any"
-#include "iostream"
+#include <string>
 #include <vector>
+#include <memory>
+#include <variant>
+#include <optional>
+#include <ostream>
+#include <any>
+#include <iostream>
+#include <cassert>
 #pragma once
-
 
 using namespace std;
 
+// Предварительные объявления
+struct Type;
+using TypePtr = shared_ptr<const Type>;
+
+// Внутренние структуры для представления типов
+struct PrimitiveType {
+    string name;
+};
+
+struct PointerType {
+    TypePtr pointee;
+};
+
+struct ArrayType {
+    TypePtr element_type;
+    optional<size_t> size;  // nullopt означает динамический размер
+};
+
+struct FunctionType {
+    vector<TypePtr> arg_types;
+    TypePtr return_type;  // может быть nullptr для функций без возвращаемого типа
+};
+
+struct UnionType {
+    vector<TypePtr> components;
+};
+
+struct AutoType {};        // для "auto"
+struct PointerAutoType {}; // для "*auto"
+
+// Вспомогательная функция для создания shared_ptr<Type>
+inline TypePtr make_type_ptr(const Type& t);
+
+
+// Основной класс Type
 struct Type {
+    // Публичное поле (для совместимости)
     string pool;
+
+    // Конструкторы
+    Type() : m_data(monostate{}) {}
     
-    Type(string pool) : pool(pool) {}
-
-    bool operator==(const Type& other) const {
-        return pool == other.pool;
+    // Конструктор из строки (парсинг)
+    Type(const string& str) {
+        parse_from_string(str);
     }
+    
+    // Конструкторы из внутренних представлений
+    explicit Type(PrimitiveType pt) : m_data(std::move(pt)) { update_pool(); }
+    explicit Type(PointerType pt) : m_data(std::move(pt)) { update_pool(); }
+    explicit Type(ArrayType at) : m_data(std::move(at)) { update_pool(); }
+    explicit Type(FunctionType ft) : m_data(std::move(ft)) { update_pool(); }
+    explicit Type(UnionType ut) : m_data(std::move(ut)) { update_pool(); }
 
+    // Копирование и перемещение
+    Type(const Type&) = default;
+    Type(Type&&) = default;
+    Type& operator=(const Type&) = default;
+    Type& operator=(Type&&) = default;
+
+    // Операторы сравнения
+    bool operator==(const Type& other) const {
+        return compare(*this, other);
+    }
     bool operator!=(const Type& other) const {
         return !(*this == other);
     }
 
-    bool is_sub_type(const Type& other) const {
-        // Если типы равны
-        if (pool == other.pool) return true;
-        
-        // Специальные случаи
-        if (other.pool == "auto") return true;
-        if (other.pool == "*auto") return true;
-        
-        // Разбиваем на компоненты union
-        vector<string> current_components = split_union_components();
-        vector<string> other_components = other.split_union_components();
-        
-        // Если текущий тип - union (T1 | T2 | ...)
-        if (current_components.size() > 1) {
-            // Union тип является подтипом другого типа, если
-            // КАЖДЫЙ его компонент является подтипом другого типа
-            for (const string& comp : current_components) {
-                Type comp_type(comp);
-                if (!comp_type.is_sub_type(other)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        
-        // Если other - union (O1 | O2 | ...)
-        if (other_components.size() > 1) {
-            // Тип является подтипом union типа, если
-            // он является подтипом ХОТЯ БЫ ОДНОГО компонента union
-            for (const string& other_comp : other_components) {
-                Type other_comp_type(other_comp);
-                if (this->is_sub_type(other_comp_type)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        
-        // Оба типа - базовые (не union)
-        
-        // Проверяем функциональные типы
-        if (is_func() && other.is_func()) {
-            return is_func_sub_type(other);
-        }
-        
-        // Проверяем указатели
-        if (is_pointer() && other.is_pointer()) {
-            // *T1 ⊆ *T2 если T1 ⊆ T2
-            string t1 = pool.substr(1);
-            string t2 = other.pool.substr(1);
-            Type base1(t1);
-            Type base2(t2);
-            return base1.is_sub_type(base2);
-        }
-        
-        // Базовые типы должны совпадать
-        return pool == other.pool;
-    }
+    // Основные методы (сохраняем сигнатуры)
+    bool is_sub_type(const Type& other) const;
+    bool is_union_type() const;
+    bool is_array_type() const;
+    bool is_func() const;
+    bool is_pointer() const;
+    
+    // Парсинг массива (возвращает строки)
+    pair<string, string> parse_array_type() const;
+    
+    // Парсинг функции (возвращает строки)
+    pair<vector<Type>, Type> parse_func_type() const;
+    
+    // Разбиение union на компоненты (возвращает строки)
+    vector<string> split_union_components() const;
+    
+    // Оператор объединения
+    Type operator|(const Type& other) const;
 
-    bool is_func_sub_type(const Type& other) const {
-        // Парсим текущий функциональный тип
-        pair<vector<Type>, Type> current = parse_func_type();
-        pair<vector<Type>, Type> other_pair = other.parse_func_type();
+    // Вспомогательные методы для внутреннего использования
+    const auto& data() const { return m_data; }
+
+public:
+    // Внутреннее представление
+    using Data = variant<
+        PrimitiveType,
+        PointerType,
+        ArrayType,
+        FunctionType,
+        UnionType,
+        AutoType,
+        PointerAutoType,
+        monostate
+    >;
+    Data m_data;
+
+    // Парсинг строки и заполнение m_data
+    void parse_from_string(const string& str);
+
+    // Обновление строки pool на основе m_data
+    void update_pool();
+
+    // Сравнение двух типов (рекурсивное)
+    static bool compare(const Type& a, const Type& b);
+    
+    // Вспомогательная для is_sub_type
+    bool is_sub_type_impl(const Type& other, const UnionType* other_union = nullptr) const;
+    
+    // Получение компонентов union в виде TypePtr
+    vector<TypePtr> get_union_components() const;
+};
+
+bool Type::compare(const Type& a, const Type& b) {
+    return std::visit([](const auto& lhs, const auto& rhs) -> bool {
+        using L = std::decay_t<decltype(lhs)>;
+        using R = std::decay_t<decltype(rhs)>;
         
-        // Проверяем, что оба успешно распарсились как функции
-        if (current.first.empty() && !is_func()) return false;
-        if (other_pair.first.empty() && !other.is_func()) return false;
-        
-        // Количество аргументов должно совпадать
-        if (current.first.size() != other_pair.first.size()) {
+        if constexpr (!std::is_same_v<L, R>) {
             return false;
-        }
-        
-        // Проверяем КОНТРАвариантность аргументов:
-        // Для всех i, other_args[i] ⊆ current_args[i]
-        for (size_t i = 0; i < current.first.size(); i++) {
-            if (!current.first[i].is_sub_type(other_pair.first[i])) {
+        } else {
+            if constexpr (std::is_same_v<L, std::monostate>) {
+                return true;
+            }
+            else if constexpr (std::is_same_v<L, PrimitiveType>) {
+                return lhs.name == rhs.name;
+            }
+            else if constexpr (std::is_same_v<L, PointerType>) {
+                return compare(*lhs.pointee, *rhs.pointee);
+            }
+            else if constexpr (std::is_same_v<L, ArrayType>) {
+                if (!compare(*lhs.element_type, *rhs.element_type)) return false;
+                if (lhs.size.has_value() != rhs.size.has_value()) return false;
+                if (lhs.size && *lhs.size != *rhs.size) return false;
+                return true;
+            }
+            else if constexpr (std::is_same_v<L, FunctionType>) {
+                if (lhs.arg_types.size() != rhs.arg_types.size()) return false;
+                for (size_t i = 0; i < lhs.arg_types.size(); ++i) {
+                    if (!compare(*lhs.arg_types[i], *rhs.arg_types[i])) return false;
+                }
+                if (lhs.return_type && rhs.return_type) {
+                    return compare(*lhs.return_type, *rhs.return_type);
+                } else {
+                    return !lhs.return_type && !rhs.return_type;
+                }
+            }
+            else if constexpr (std::is_same_v<L, UnionType>) {
+                if (lhs.components.size() != rhs.components.size()) return false;
+                for (size_t i = 0; i < lhs.components.size(); ++i) {
+                    if (!compare(*lhs.components[i], *rhs.components[i])) return false;
+                }
+                return true;
+            }
+            else {
                 return false;
             }
         }
-        
-        // Проверяем КОвариантность возвращаемого типа:
-        // current_ret ⊆ other_ret
-        return current.second.is_sub_type(other_pair.second);
-    }
+    }, a.m_data, b.m_data);
+}
 
-    // Парсинг функционального типа: возвращает (аргументы, возвращаемый_тип)
-    pair<vector<Type>, Type> parse_func_type() const {
-        vector<Type> args;
-        Type ret_type("Void");
-        
-        if (!is_func()) {
-            return make_pair(args, ret_type);
-        }
-        
-        string str = pool;
-        
-        // Убираем внешние скобки, если есть
-        if (str[0] == '(' && str[str.length()-1] == ')') {
-            // Проверяем, что это действительно функция в скобках
-            if (str.substr(1, 4) == "Func") {
-                str = str.substr(1, str.length() - 2);
+// ---------------------------------------------------------------------
+// Реализация методов
+// ---------------------------------------------------------------------
+
+// Вспомогательная функция для создания shared_ptr<Type>
+inline TypePtr make_type_ptr(const Type& t) {
+    return make_shared<Type>(t);
+}
+
+void Type::update_pool() {
+    struct Visitor {
+        string operator()(AutoType) const { return "auto"; }
+        string operator()(PointerAutoType) const { return "*auto"; }
+        string operator()(monostate) const { return ""; }
+        string operator()(const PrimitiveType& pt) const { return pt.name; }
+        string operator()(const PointerType& pt) const { return "*" + pt.pointee->pool; }
+        string operator()(const ArrayType& at) const {
+            string elem = at.element_type ? at.element_type->pool : "";
+            if (at.size) {
+                return "[" + elem + ", " + to_string(*at.size) + "]";
+            } else {
+                return "[" + elem + ", ~]";
             }
         }
-        
-        // Убираем "Func"
-        size_t func_pos = str.find("Func");
-        if (func_pos != string::npos) {
-            str = str.substr(func_pos + 4);
+        string operator()(const FunctionType& ft) const {
+            string args;
+            for (size_t i = 0; i < ft.arg_types.size(); ++i) {
+                if (i > 0) args += ", ";
+                args += ft.arg_types[i]->pool;
+            }
+            if (ft.return_type) {
+                return "(Func(" + args + ") -> " + ft.return_type->pool + ")";
+            } else {
+                return "Func(" + args + ")";
+            }
         }
+        string operator()(const UnionType& ut) const {
+            string res;
+            for (size_t i = 0; i < ut.components.size(); ++i) {
+                if (i > 0) res += " | ";
+                res += ut.components[i]->pool;
+            }
+            return res;
+        }
+    };
+    pool = visit(Visitor(), m_data);
+}
+
+static bool compare(const Type& a, const Type& b) {
+    return std::visit([](const auto& lhs, const auto& rhs) -> bool {
+        using L = std::decay_t<decltype(lhs)>;
+        using R = std::decay_t<decltype(rhs)>;
         
-        // Находим начало списка аргументов
-        if (str[0] == '(') {
-            // Ищем закрывающую скобку для списка аргументов
-            int balance = 1;
-            size_t i = 1;
-            for (; i < str.length(); i++) {
-                if (str[i] == '(') balance++;
-                else if (str[i] == ')') {
-                    balance--;
-                    if (balance == 0) break;
-                }
-            }
-            
-            string args_str = str.substr(1, i - 1);
-            string rest = (i + 1 < str.length()) ? str.substr(i + 1) : "";
-            
-            // Парсим аргументы
-            args = parse_type_list(args_str);
-            
-            // Парсим возвращаемый тип, если есть
-            size_t arrow_pos = rest.find("->");
-            if (arrow_pos != string::npos) {
-                string ret_str = rest.substr(arrow_pos + 2);
-                // Убираем пробелы
-                size_t start = ret_str.find_first_not_of(" \t");
-                size_t end = ret_str.find_last_not_of(" \t");
-                if (start != string::npos) {
-                    ret_str = ret_str.substr(start, end - start + 1);
-                }
-                ret_type = Type(ret_str);
-            }
+        if constexpr (!std::is_same_v<L, R>) {
+            return false;
         } else {
-            // Нет скобок вокруг аргументов
-            size_t arrow_pos = str.find("->");
-            if (arrow_pos != string::npos) {
-                string args_str = str.substr(0, arrow_pos);
-                string ret_str = str.substr(arrow_pos + 2);
-                
-                // Убираем пробелы
-                args_str.erase(args_str.find_last_not_of(" \t") + 1);
-                ret_str.erase(0, ret_str.find_first_not_of(" \t"));
-                ret_str.erase(ret_str.find_last_not_of(" \t") + 1);
-                
-                args = parse_type_list(args_str);
-                ret_type = Type(ret_str);
-            } else {
-                // Нет стрелки -> все это аргументы
-                args = parse_type_list(str);
+            if constexpr (std::is_same_v<L, std::monostate>) {
+                return true;
             }
-        }
-        
-        return make_pair(args, ret_type);
-    }
-
-    vector<Type> parse_type_list(const string& str) const {
-        vector<Type> types;
-        if (str.empty()) return types;
-        
-        string current;
-        int balance = 0;
-        
-        for (size_t i = 0; i < str.length(); i++) {
-            char c = str[i];
-            
-            if (c == '(') {
-                balance++;
-                current += c;
-            } else if (c == ')') {
-                balance--;
-                current += c;
-            } else if (c == ',' && balance == 0) {
-                // Нашли разделитель между типами
-                if (!current.empty()) {
-                    // Убираем пробелы
-                    size_t start = current.find_first_not_of(" \t");
-                    size_t end = current.find_last_not_of(" \t");
-                    if (start != string::npos && end != string::npos) {
-                        types.push_back(Type(current.substr(start, end - start + 1)));
-                    }
-                    current.clear();
+            else if constexpr (std::is_same_v<L, PrimitiveType>) {
+                return lhs.name == rhs.name;
+            }
+            else if constexpr (std::is_same_v<L, AutoType>) {
+                return true; // два AutoType всегда равны
+            }
+            else if constexpr (std::is_same_v<L, PointerAutoType>) {
+                return true;
+            }
+            else if constexpr (std::is_same_v<L, PointerType>) {
+                // pointee никогда не должен быть nullptr
+                return compare(*lhs.pointee, *rhs.pointee);
+            }
+            else if constexpr (std::is_same_v<L, ArrayType>) {
+                if (!compare(*lhs.element_type, *rhs.element_type)) return false;
+                if (lhs.size.has_value() != rhs.size.has_value()) return false;
+                if (lhs.size && *lhs.size != *rhs.size) return false;
+                return true;
+            }
+            else if constexpr (std::is_same_v<L, FunctionType>) {
+                if (lhs.arg_types.size() != rhs.arg_types.size()) return false;
+                for (size_t i = 0; i < lhs.arg_types.size(); ++i) {
+                    if (!compare(*lhs.arg_types[i], *rhs.arg_types[i])) return false;
                 }
-            } else {
-                current += c;
-            }
-        }
-        
-        // Добавляем последний тип
-        if (!current.empty()) {
-            size_t start = current.find_first_not_of(" \t");
-            size_t end = current.find_last_not_of(" \t");
-            if (start != string::npos && end != string::npos) {
-                types.push_back(Type(current.substr(start, end - start + 1)));
-            }
-        }
-        
-        return types;
-    }
-
-    // Находит конец типа (с учетом вложенных скобок)
-    size_t find_type_end(const string& str, size_t start) const {
-        int balance = 0;
-        bool in_func = false;
-        int func_depth = 0;
-        
-        for (size_t i = start; i < str.length(); i++) {
-            char c = str[i];
-            
-            if (c == '(') {
-                balance++;
-                // Проверяем, не начинается ли это с "Func"
-                if (i >= 4 && str.substr(i-4, 4) == "Func") {
-                    in_func = true;
-                    func_depth = balance;
-                }
-            } else if (c == ')') {
-                balance--;
-                if (in_func && balance < func_depth) {
-                    in_func = false;
-                }
-            } else if (c == ',' && balance == 0 && !in_func) {
-                return i;
-            }
-        }
-        
-        return string::npos;
-    }
-
-    bool is_union_type() const {
-        // Проверяем, является ли тип union type
-        // Union type имеет " | " на верхнем уровне (не внутри скобок)
-        int balance = 0;
-        for (size_t i = 0; i < pool.length(); i++) {
-            if (pool[i] == '(') {
-                balance++;
-            } else if (pool[i] == ')') {
-                balance--;
-            } else if (pool[i] == '|') {
-                // Если нашли '|' и balance == 0, значит это разделитель union type
-                // Проверяем, что перед и после '|' есть пробелы (формат " | ")
-                if (balance == 0 && 
-                    i > 0 && pool[i-1] == ' ' && 
-                    i + 1 < pool.length() && pool[i+1] == ' ') {
-                    return true;
+                // Обработка return_type (может быть nullptr)
+                if (lhs.return_type && rhs.return_type) {
+                    return compare(*lhs.return_type, *rhs.return_type);
+                } else {
+                    return !lhs.return_type && !rhs.return_type;
                 }
             }
-        }
-        return false;
-    }
-
-    bool is_array_type() const {
-        if (!is_base_type()) return false;
-        return pool.substr(0,1) == "[";
-    }
-
-    bool is_base_type() const {
-        // Базовый тип - без '|' на верхнем уровне
-        return !is_union_type();
-    }
-
-    bool is_func() const {
-        // Проверяем, является ли тип функцией
-        // Функция должна быть базовым типом и начинаться с '('
-        if (pool.substr(0,5) == "(Func") return true;
-        if (pool.substr(0,4) == "Func") return true;
-        return false;
-    }
-
-    bool is_pointer() const {
-        // Проверяем, является ли тип указателем
-        // Указатель должен быть базовым типом и начинаться с '*'
-        vector<string> components = split_union_components();
-        int is_p = 0;
-        for (const string& comp : components) {
-            if (comp.substr(0,1) == "*") {
-                is_p++;
-            }
-        }
-        return is_p == components.size();
-    }
-
-    // Вспомогательная функция для разбора union типа на компоненты
-    vector<string> split_union_components() const {
-        vector<string> components;
-        
-        if (!is_union_type()) {
-            components.push_back(pool);
-            return components;
-        }
-        
-        int balance = 0;
-        string current;
-        
-        for (size_t i = 0; i < pool.length(); i++) {
-            char c = pool[i];
-            
-            if (c == '(') {
-                balance++;
-                current += c;
-            } else if (c == ')') {
-                balance--;
-                current += c;
-            } else if (c == '|' && balance == 0 && 
-                    i > 0 && pool[i-1] == ' ' && 
-                    i + 1 < pool.length() && pool[i+1] == ' ') {
-                // Нашли разделитель union
-                if (!current.empty()) {
-                    // Удаляем пробелы в начале и конце
-                    size_t start = current.find_first_not_of(" \t");
-                    size_t end = current.find_last_not_of(" \t");
-                    if (start != string::npos && end != string::npos) {
-                        components.push_back(current.substr(start, end - start + 1));
-                    }
-                    current.clear();
+            else if constexpr (std::is_same_v<L, UnionType>) {
+                if (lhs.components.size() != rhs.components.size()) return false;
+                for (size_t i = 0; i < lhs.components.size(); ++i) {
+                    if (!compare(*lhs.components[i], *rhs.components[i])) return false;
                 }
-                i++; // Пропускаем пробел после '|'
-            } else {
-                current += c;
+                return true;
+            }
+            else {
+                return false; // Неизвестный тип
             }
         }
-        
-        // Добавляем последний компонент
-        if (!current.empty()) {
-            size_t start = current.find_first_not_of(" \t");
-            size_t end = current.find_last_not_of(" \t");
-            if (start != string::npos && end != string::npos) {
-                components.push_back(current.substr(start, end - start + 1));
-            }
-        }
-        
-        return components;
-    }
+    }, a.m_data, b.m_data);
+}
 
-    Type operator|(const Type& other) const {
-        // Если текущий тип пустой, возвращаем other
-        if (pool.empty()) {
-            return other;
-        }
-        
-        // Если other пустой, возвращаем текущий
-        if (other.pool.empty()) {
-            return *this;
-        }
-        
-        // Если типы одинаковые, возвращаем тот же
-        if (pool == other.pool) {
-            return *this;
-        }
-        
-        // Получаем компоненты текущего типа
-        vector<string> current_components = split_union_components();
-        
-        // Получаем компоненты другого типа
-        vector<string> other_components = other.split_union_components();
-        
-        // Объединяем компоненты без дублирования
-        vector<string> result_components = current_components;
-        
-        for (const string& other_comp : other_components) {
-            bool found = false;
-            
-            // Проверяем, есть ли уже такой компонент
-            for (const string& current_comp : current_components) {
-                if (current_comp == other_comp) {
-                    found = true;
-                    break;
-                }
-            }
-            
-            // Если не нашли, добавляем
-            if (!found) {
-                result_components.push_back(other_comp);
-            }
-        }
-        
-        // Если остался только один компонент, возвращаем его
-        if (result_components.size() == 1) {
-            return Type(result_components[0]);
-        }
-        
-        // Собираем union строку
-        string result;
-        for (size_t i = 0; i < result_components.size(); i++) {
-            result += result_components[i];
-            if (i != result_components.size() - 1) {
-                result += " | ";
-            }
-        }
-        
-        return Type(result);
-    }
-};
+bool Type::is_union_type() const {
+    return holds_alternative<UnionType>(m_data);
+}
 
-// Создание типа указателя
-Type create_pointer_type(const Type& type) {
-    // Проверяем, является ли тип union
-    if (type.is_union_type()) {
-        // Для union типов применяем указатель к каждому компоненту
-        vector<string> components = type.split_union_components();
-        string result;
-        
-        for (size_t i = 0; i < components.size(); i++) {
-            Type component_type(components[i]);
-            result += "*" + component_type.pool;
-            if (i != components.size() - 1) {
-                result += " | ";
-            }
-        }
-        
-        return Type(result);
+bool Type::is_array_type() const {
+    return holds_alternative<ArrayType>(m_data);
+}
+
+bool Type::is_func() const {
+    return holds_alternative<FunctionType>(m_data);
+}
+
+bool Type::is_pointer() const {
+    return holds_alternative<PointerType>(m_data);
+}
+
+pair<string, string> Type::parse_array_type() const {
+    if (!is_array_type()) return {"", ""};
+    const auto& arr = get<ArrayType>(m_data);
+    string elem = arr.element_type ? arr.element_type->pool : "";
+    string size = arr.size ? to_string(*arr.size) : "~";
+    return {elem, size};
+}
+
+pair<vector<Type>, Type> Type::parse_func_type() const {
+    vector<Type> args;
+    Type ret;
+    if (!is_func()) return {args, ret};
+    const auto& func = get<FunctionType>(m_data);
+    for (const auto& a : func.arg_types) {
+        args.push_back(*a);
+    }
+    if (func.return_type) {
+        ret = *func.return_type;
+    }
+    return {args, ret};
+}
+
+vector<string> Type::split_union_components() const {
+    vector<string> result;
+    if (!is_union_type()) {
+        result.push_back(pool);
+        return result;
+    }
+    const auto& u = get<UnionType>(m_data);
+    for (const auto& comp : u.components) {
+        result.push_back(comp->pool);
+    }
+    return result;
+}
+
+vector<TypePtr> Type::get_union_components() const {
+    if (is_union_type()) {
+        return get<UnionType>(m_data).components;
     } else {
-        // Для базовых типов просто добавляем '*'
-        return Type("*" + type.pool);
+        return {make_type_ptr(*this)};
     }
 }
 
-// Создание функционального типа
-Type create_function_type(Type return_type, vector<Type> argument_types) {
-    string func_str = "(Func(";
-    
-    for (size_t i = 0; i < argument_types.size(); i++) {
-        func_str += argument_types[i].pool;
-        if (i != argument_types.size() - 1) {
-            func_str += ", ";
+#include <type_traits> // нужно добавить в начало файла
+
+bool Type::is_sub_type_impl(const Type& other, const UnionType* other_union) const {
+    // Если other - union, проверяем, является ли this подтипом любого компонента
+    if (other_union) {
+        for (const auto& comp : other_union->components) {
+            if (is_sub_type_impl(*comp, nullptr)) return true;
         }
+        return false;
     }
     
-    func_str += ") -> " + return_type.pool + ")";
-    return Type(func_str);
+    // Если this - union
+    if (is_union_type()) {
+        const auto& this_union = get<UnionType>(m_data);
+        for (const auto& comp : this_union.components) {
+            if (!comp->is_sub_type_impl(other, nullptr)) return false;
+        }
+        return true;
+    }
+    
+    // Оба не union
+    if (m_data.index() != other.m_data.index()) {
+        // Проверка на auto
+        if (holds_alternative<AutoType>(other.m_data)) return true;
+        if (holds_alternative<PointerAutoType>(other.m_data) && is_pointer()) return true;
+        return false;
+    }
+    
+    bool result = false;
+    std::visit([&](const auto& lhs, const auto& rhs) {
+        using L = std::decay_t<decltype(lhs)>;
+        using R = std::decay_t<decltype(rhs)>;
+        
+        if constexpr (!std::is_same_v<L, R>) {
+            result = false;
+        } else {
+            if constexpr (std::is_same_v<L, PrimitiveType>) {
+                result = (lhs.name == rhs.name);
+            }
+            else if constexpr (std::is_same_v<L, PointerType>) {
+                result = lhs.pointee->is_sub_type(*rhs.pointee);
+            }
+            else if constexpr (std::is_same_v<L, ArrayType>) {
+                result = lhs.element_type->is_sub_type(*rhs.element_type);
+            }
+            else if constexpr (std::is_same_v<L, FunctionType>) {
+                if (lhs.arg_types.size() != rhs.arg_types.size()) {
+                    result = false;
+                    return;
+                }
+                for (size_t i = 0; i < lhs.arg_types.size(); ++i) {
+                    // Контравариантность: rhs.arg_types[i] должен быть подтипом lhs.arg_types[i]
+                    if (!rhs.arg_types[i]->is_sub_type(*lhs.arg_types[i])) {
+                        result = false;
+                        return;
+                    }
+                }
+                // Обработка возвращаемого типа (может быть nullptr)
+                if (lhs.return_type && rhs.return_type) {
+                    result = lhs.return_type->is_sub_type(*rhs.return_type);
+                } else {
+                    result = (!lhs.return_type && !rhs.return_type);
+                }
+            }
+            else {
+                result = false; // Не должно произойти
+            }
+        }
+    }, m_data, other.m_data);
+    return result;
+}
+
+bool Type::is_sub_type(const Type& other) const {
+    // Обработка other как union
+    if (other.is_union_type()) {
+        return is_sub_type_impl(other, &get<UnionType>(other.m_data));
+    }
+    return is_sub_type_impl(other, nullptr);
+}
+
+Type Type::operator|(const Type& other) const {
+    // Получаем компоненты обоих типов
+    auto comps1 = get_union_components();
+    auto comps2 = other.get_union_components();
+    
+    // Объединяем, убирая дубликаты
+    vector<TypePtr> result;
+    for (const auto& c : comps1) {
+        bool found = false;
+        for (const auto& r : result) {
+            if (compare(*c, *r)) { found = true; break; }
+        }
+        if (!found) result.push_back(c);
+    }
+    for (const auto& c : comps2) {
+        bool found = false;
+        for (const auto& r : result) {
+            if (compare(*c, *r)) { found = true; break; }
+        }
+        if (!found) result.push_back(c);
+    }
+    
+    if (result.size() == 1) {
+        return *result[0];
+    } else {
+        return Type(UnionType{result});
+    }
+}
+
+// ---------------------------------------------------------------------
+// Парсинг из строки (необходим для конструктора)
+// ---------------------------------------------------------------------
+
+// Вспомогательные функции для парсинга
+
+static string trim(const string& s) {
+    size_t start = s.find_first_not_of(" \t");
+    if (start == string::npos) return "";
+    size_t end = s.find_last_not_of(" \t");
+    return s.substr(start, end - start + 1);
+}
+
+// Разбивает строку по разделителю, учитывая скобки
+static vector<string> split_top_level(const string& s, char delim) {
+    vector<string> result;
+    int paren = 0;
+    int square = 0;
+    size_t start = 0;
+    for (size_t i = 0; i < s.size(); ++i) {
+        if (s[i] == '(') paren++;
+        else if (s[i] == ')') paren--;
+        else if (s[i] == '[') square++;
+        else if (s[i] == ']') square--;
+        else if (s[i] == delim && paren == 0 && square == 0) {
+            result.push_back(trim(s.substr(start, i - start)));
+            start = i + 1;
+        }
+    }
+    result.push_back(trim(s.substr(start)));
+    return result;
+}
+
+void Type::parse_from_string(const string& str) {
+    string s = trim(str);
+    if (s.empty()) {
+        m_data = monostate{};
+        update_pool();
+        return;
+    }
+
+    if (s == "auto") {
+        m_data = AutoType{};
+        update_pool();
+        return;
+    }
+    if (s == "*auto") {
+        m_data = PointerAutoType{};
+        update_pool();
+        return;
+    }
+
+    // Проверка на union (содержит '|' на верхнем уровне)
+    {
+        int paren = 0, square = 0;
+        bool is_union = false;
+        for (size_t i = 0; i < s.size(); ++i) {
+            if (s[i] == '(') paren++;
+            else if (s[i] == ')') paren--;
+            else if (s[i] == '[') square++;
+            else if (s[i] == ']') square--;
+            else if (s[i] == '|' && paren == 0 && square == 0) {
+                is_union = true;
+                break;
+            }
+        }
+        if (is_union) {
+            vector<string> comp_strs = split_top_level(s, '|');
+            vector<TypePtr> comps;
+            for (const string& comp_str : comp_strs) {
+                comps.push_back(make_type_ptr(Type(comp_str)));
+            }
+            m_data = UnionType{comps};
+            update_pool();
+            return;
+        }
+    }
+
+    // Проверка на указатель
+    if (s[0] == '*') {
+        string rest = s.substr(1);
+        Type pointee(rest);
+        m_data = PointerType{make_type_ptr(pointee)};
+        update_pool();
+        return;
+    }
+
+    // Проверка на массив
+    if (s[0] == '[') {
+        // Формат: [<element_type>, <size>] или [<element_type>, ~]
+        size_t close = s.find(']');
+        if (close != string::npos) {
+            string inner = s.substr(1, close - 1);
+            size_t comma = inner.find(',');
+            if (comma != string::npos) {
+                string elem_str = trim(inner.substr(0, comma));
+                string size_str = trim(inner.substr(comma + 1));
+                Type elem_type(elem_str);
+                optional<size_t> sz;
+                if (size_str != "~") {
+                    sz = stoull(size_str);
+                }
+                m_data = ArrayType{make_type_ptr(elem_type), sz};
+                update_pool();
+                return;
+            }
+        }
+    }
+
+    // Проверка на функцию
+    if (s.find("Func") != string::npos) {
+        // Упрощённый парсинг: ищем скобки
+        size_t lparen = s.find('(');
+        if (lparen != string::npos) {
+            size_t rparen = s.find(')', lparen);
+            if (rparen != string::npos) {
+                string args_str = s.substr(lparen + 1, rparen - lparen - 1);
+                vector<string> arg_strs = split_top_level(args_str, ',');
+                vector<TypePtr> args;
+                for (const string& a : arg_strs) {
+                    if (!a.empty()) args.push_back(make_type_ptr(Type(a)));
+                }
+                // Проверяем наличие возвращаемого типа
+                size_t arrow = s.find("->", rparen);
+                TypePtr ret = nullptr;
+                if (arrow != string::npos) {
+                    string ret_str = s.substr(arrow + 2);
+                    ret_str = trim(ret_str);
+                    // Убираем возможные внешние скобки
+                    if (!ret_str.empty() && ret_str.front() == '(' && ret_str.back() == ')') {
+                        ret_str = ret_str.substr(1, ret_str.size() - 2);
+                    }
+                    ret = make_type_ptr(Type(ret_str));
+                }
+                m_data = FunctionType{args, ret};
+                update_pool();
+                return;
+            }
+        }
+    }
+
+    // Иначе считаем примитивным типом
+    m_data = PrimitiveType{s};
+    update_pool();
+}
+
+// ---------------------------------------------------------------------
+// Вспомогательные функции (сохраняем сигнатуры)
+// ---------------------------------------------------------------------
+
+Type create_pointer_type(const Type& type) {
+    if (type.is_union_type()) {
+        auto comps = type.get_union_components();
+        vector<TypePtr> ptr_comps;
+        for (const auto& comp : comps) {
+            ptr_comps.push_back(make_type_ptr(Type(PointerType{comp})));
+        }
+        return Type(UnionType{ptr_comps});
+    } else {
+        return Type(PointerType{make_type_ptr(type)});
+    }
+}
+
+Type create_function_type(Type return_type, vector<Type> argument_types) {
+    vector<TypePtr> args;
+    for (auto& a : argument_types) {
+        args.push_back(make_type_ptr(a));
+    }
+    return Type(FunctionType{args, make_type_ptr(return_type)});
 }
 
 Type create_function_type(vector<Type> argument_types) {
-    string func_str = "Func(";
-    
-    for (size_t i = 0; i < argument_types.size(); i++) {
-        func_str += argument_types[i].pool;
-        if (i != argument_types.size() - 1) {
-            func_str += ", ";
-        }
+    vector<TypePtr> args;
+    for (auto& a : argument_types) {
+        args.push_back(make_type_ptr(a));
     }
-    
-    func_str += ")";
-    return Type(func_str);
+    return Type(FunctionType{args, nullptr});
 }
 
-
+// ---------------------------------------------------------------------
+// Стандартные типы
+// ---------------------------------------------------------------------
 
 namespace STANDART_TYPE {
     const Type INT = Type("Int");
@@ -490,20 +645,22 @@ namespace STANDART_TYPE {
     const Type NULL_T = Type("Null");
     const Type LAMBDA = Type("Lambda");
     const Type AUTO = Type("auto");
-    
 }
 
-// Функция проверки совместимости типов для присваивания
 bool IsTypeCompatible(const Type& target_type, const Type& source_type) {
     return source_type.is_sub_type(target_type);
 }
+
+// ---------------------------------------------------------------------
+// Структура Value и вспомогательные функции создания
+// ---------------------------------------------------------------------
 
 struct Value {
     Type type;
     std::any data;
 
     Value(Type type, std::any data) 
-        : type(type), data(std::move(data)) {}
+        : type(std::move(type)), data(std::move(data)) {}
     
     Value(const Value& other) 
         : type(other.type), 
@@ -511,8 +668,6 @@ struct Value {
   
     Value(Value&& other) = default;
 
-
-    // Добавить operator= для правильного копирования
     Value& operator=(const Value& other) {
         if (this != &other) {
             type = other.type;
@@ -523,16 +678,17 @@ struct Value {
     
     Value& operator=(Value&& other) = default;
 
-    Value copy() {
+    Value copy() const {
         return Value(*this);
     }
 
     friend ostream& operator<<(ostream& os, const Value& value) {
-        if (value.type == STANDART_TYPE::STRING){
-            os << any_cast<string>(value.data) << endl;
-        }
-        if (value.type == STANDART_TYPE::NAMESPACE){
-            os << "NAMESPACE" << endl;
+        if (value.type == STANDART_TYPE::STRING) {
+            os << any_cast<string>(value.data);
+        } else if (value.type == STANDART_TYPE::NAMESPACE) {
+            os << "NAMESPACE";
+        } else {
+            os << "Value(" << value.type.pool << ")";
         }
         return os;
     }
@@ -540,65 +696,30 @@ struct Value {
 
 struct Null {
     Null() = default;
-
-    template<typename T>
-    bool operator==(T) {
-        return typeid(Null).name() == typeid(T).name();
-    }
-
-    template<typename T>
-    bool operator!=(T) {
-        return typeid(Null).name() != typeid(T).name();
-    }
+    template<typename T> bool operator==(T) const { return false; }
+    template<typename T> bool operator!=(T) const { return true; }
 };
 
-Value NewInt(int64_t value) {
-    return Value(STANDART_TYPE::INT, value);
-}
+Value NewInt(int64_t value) { return Value(STANDART_TYPE::INT, value); }
+Value NewDouble(double value) { return Value(STANDART_TYPE::DOUBLE, value); }
+Value NewBool(bool value) { return Value(STANDART_TYPE::BOOL, value); }
+Value NewType(const string& name) { return Value(STANDART_TYPE::TYPE, Type(name)); }
+Value NewType(const Type& type) { return Value(STANDART_TYPE::TYPE, type); }
+Value NewNull() { return Value(STANDART_TYPE::NULL_T, Null()); }
+Value NewString(const string& value) { return Value(STANDART_TYPE::STRING, value); }
+Value NewChar(char value) { return Value(STANDART_TYPE::CHAR, value); }
 
-Value NewDouble(float value) {
-    return Value(STANDART_TYPE::DOUBLE, value);
-}
-
-Value NewBool(bool value) {
-    return Value(STANDART_TYPE::BOOL, value);
-}
-
-Value NewType(string name) {
-    return Value(STANDART_TYPE::TYPE, Type(name));
-}
-
-Value NewType(Type type) {
-    return Value(STANDART_TYPE::TYPE, type);
-}
-
-
-Value NewNull() {
-    return Value(STANDART_TYPE::NULL_T, Null());
-}
-
-Value NewString(string value) {
-    return Value(STANDART_TYPE::STRING, value);
-} 
-
-Value NewChar(char value) {
-    return Value(STANDART_TYPE::CHAR, value);
-}
-
-Value NewPointer(int value, const Type& pointer_type, const bool create_pointer = true) {
-
+Value NewPointer(int value, const Type& pointer_type, bool create_pointer = true) {
     if (create_pointer)
         return Value(create_pointer_type(pointer_type), value);
     else
         return Value(pointer_type, value);
 }
 
-// Создать тип указателя из другого типа
-Type PointerType(const Type& pointer_type) {
+Type MakePointerType(const Type& pointer_type) {
     return create_pointer_type(pointer_type);
 }
 
-// Создать указатель из значения
 Value NewPointerValue(int address, const Type& pointee_type) {
     return NewPointer(address, pointee_type);
 }

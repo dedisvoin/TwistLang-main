@@ -564,6 +564,31 @@ namespace ERROR {
         exit(0);
     }
 
+    // Ошибка: неверный тип элемента при добавлении в массив
+    void InvalidArrayElementTypeOnPush(const Token& start, const Token& end, const string& expected_type, const string& actual_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << " >> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid element type" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Cannot push value of type `" << actual_type << "` into array of element type `" << expected_type << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << endl;
+        exit(0);
+    }
+
+    void InvalidArrayElementType(const Token& start, const Token& end, const string& expected_type, const string& actual_type, size_t index) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << " >> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid array element type" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Array waited element of type `" << expected_type << "`, but found element of type `" << actual_type << "` at index " << index << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << endl;
+        exit(0);
+    }
+
     // Ошибка: неверный индекс (не целое число)
     void InvalidArrayIndex(const Token& index_token, const string& actual_type) {
         string file_lines = PREPROCESSOR_OUTPUT;

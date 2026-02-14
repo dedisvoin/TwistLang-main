@@ -4,6 +4,7 @@
 struct Array {
     vector<Value> values;
     Type type;
+    bool is_static = false;
     Array(Type type, vector<Value> values) : type(type), values(values) {
         
     }
