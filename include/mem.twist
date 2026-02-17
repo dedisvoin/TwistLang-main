@@ -1,4 +1,4 @@
-@include "types.twist"
+#include "types.twist"
 
 global func is_ptr(arg: Any) -> Bool {
     if (typeof(arg) >> *auto) ret true;

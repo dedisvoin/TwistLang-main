@@ -67,6 +67,7 @@ class CustomScintilla(QsciScintilla):
 
     def keyPressEvent(self, event):
         # Автозакрытие парных символов
+
         if event.key() == Qt.Key.Key_ParenLeft:          # (
             self.insert_pair('(', ')')
             event.accept()
@@ -203,11 +204,16 @@ class TwistLangLexer(QsciLexerCustom):
 
         # Директивы
         self.directives = {
-            '@define', '@macro', '@include'
+            '#define', '#macro', '#include'
         }
 
         # Специальные ключевые слова
         self.special_keywords = {'new', 'del', 'typeof', 'sizeof', 'out', 'outln', 'input'}
+
+    def wordCharacters(self):
+        # Возвращаем символы, которые считаются частью слова (включая '#')
+        return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#"
+
 
     def setup_styles(self):
         bg_color = QColor("#1e1e2e")
@@ -237,14 +243,21 @@ class TwistLangLexer(QsciLexerCustom):
         for style, color in colors.items():
             self.setColor(color, style)
 
+        # Шрифт для комментариев (курсив)
         italic_font = self.get_safe_font("Consolas", self.font_size)
         italic_font.setItalic(True)
         self.setFont(italic_font, self.STYLE_COMMENT)
 
+        # Жирный шрифт для ключевых слов
         bold_font = self.get_safe_font("Consolas", self.font_size)
         bold_font.setBold(True)
         self.setFont(bold_font, self.STYLE_KEYWORD)
-        self.setFont(bold_font, self.STYLE_MODIFIER)
+
+        # Жирный курсив для модификаторов
+        bold_italic_font = self.get_safe_font("Consolas", self.font_size)
+        bold_italic_font.setBold(True)
+        bold_italic_font.setItalic(True)
+        self.setFont(bold_italic_font, self.STYLE_MODIFIER)
 
     def get_safe_font(self, preferred_font, size):
         font = QFont(preferred_font, size)
@@ -319,11 +332,12 @@ class TwistLangLexer(QsciLexerCustom):
 
             try:
                 ch = segment[pos:pos+char_len].decode('utf-8')
+                next_ch = segment[pos+char_len:pos+char_len+1].decode('utf-8')
             except:
                 ch = '\ufffd'
 
             # --- Комментарий ---
-            if ch == '#':
+            if ch == '/' and next_ch == '/':
                 expecting_namespace = False
                 j = pos
                 while j < seg_len and segment[j:j+1] != b'\n':
@@ -407,8 +421,8 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
 
-            # --- Идентификаторы (буквы, _, @) ---
-            if ch.isalpha() or ch == '_' or ch == '@':
+            # --- Идентификаторы (буквы, _) ---
+            if ch.isalpha() or ch == '_' or ch == '#':
                 j = pos + char_len
                 while j < seg_len:
                     bj = segment[j]
@@ -453,7 +467,7 @@ class TwistLangLexer(QsciLexerCustom):
                         style = self.STYLE_TYPE
                     elif word in self.literals:
                         style = self.STYLE_LITERAL
-                    elif word.startswith('@'):
+                    elif word.startswith('#'):
                         style = self.STYLE_DIRECTIVE
                     elif j < seg_len and segment[j:j+1] == b'(':
                         style = self.STYLE_FUNCTION
@@ -779,14 +793,17 @@ class TwistLangEditor(QMainWindow):
         editor.setLexer(lexer)
 
         # Включение автодополнения
-        editor.setAutoCompletionSource(QsciScintilla.AutoCompletionSource.AcsAll)
+        editor.setAutoCompletionSource(QsciScintilla.AutoCompletionSource.AcsAPIs)
         editor.setAutoCompletionThreshold(1)
         editor.setAutoCompletionCaseSensitivity(False)
         editor.setAutoCompletionReplaceWord(False)
 
+        
+
         # Автодополнение с иконками
         self.setup_autocompletion_icons(editor, lexer)
 
+    
     def create_type_pixmap(self, text, color, size):
         pixmap = QPixmap(size, size)
         pixmap.fill(Qt.GlobalColor.transparent)
@@ -816,6 +833,7 @@ class TwistLangEditor(QMainWindow):
         editor.registerImage(7, img_function)
 
         api = QsciAPIs(lexer)
+        
         for word in lexer.keywords:
             api.add(word + "?1")
         for word in lexer.modifiers:
@@ -824,10 +842,19 @@ class TwistLangEditor(QMainWindow):
             api.add(word + "?3")
         for word in lexer.literals:
             api.add(word + "?4")
-        for word in lexer.directives:
-            api.add(word + "?5")
         for word in lexer.special_keywords:
             api.add(word + "?6")
+
+        # Добавляем описания (calltips) для директив
+        for word in lexer.directives:
+            if word == '#macro':
+                api.add(word + " : Define a macro: #macro function name and arguments = body ?5 ")
+            elif word == '#define':
+                api.add(word + " : Define a constant: #define name = value ?5 ")
+            elif word == '#include':
+                api.add(word + " : Include another file: #include \"filename\" ?5 ")
+
+        # Подготавливаем API и устанавливаем его в лексер (ОДИН раз!)
         api.prepare()
         lexer.setAPIs(api)
 

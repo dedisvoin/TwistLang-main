@@ -441,7 +441,7 @@ struct Lexer {
                 continue;
             }
 
-            if (_ == '#') {
+            if (_ == '/' && get(1) == '/') {
                 parse_comment();
             }
         }

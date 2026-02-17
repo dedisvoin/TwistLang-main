@@ -1,14 +1,3 @@
-@include "include/mem.twist"
+#define TEST = "TEST"
 
-
-
-static const let a: *auto = malloc(Double | String);
-
-*a = "ded";
-outln *a; # FIX IT
-
-
-
-
-
-
+outln TEST;

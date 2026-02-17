@@ -161,7 +161,7 @@ void TimeIt(string name, function<void()> func) {
     
     auto nanoseconds_remain = duration_ns;
     
-    cout << MT::INFO << name << TERMINAL_COLORS::BLACK;
+    cout << MT::INFO << name << TERMINAL_COLORS::GREEN;
     
     bool printed = false;
     

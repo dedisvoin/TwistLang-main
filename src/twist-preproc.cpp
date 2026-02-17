@@ -170,7 +170,7 @@ private:
         lineNum++;
         std::string trimmed = trim(line);
         
-        if (startsWith(trimmed, "@macro")) {
+        if (startsWith(trimmed, "#macro")) {
             std::string macroContent = line;
             bool hasOpeningBrace = (line.find('{') != std::string::npos);
             
@@ -230,7 +230,7 @@ private:
             lines.push_back(info);
             
        
-            } else if (startsWith(trimmed, "@include")) {
+            } else if (startsWith(trimmed, "#include")) {
                 int includeLine = outerLine + lineNum - 1;
                 
                 LineInfo info;
@@ -281,7 +281,7 @@ private:
                 endMarker.lineCount = 1;
                 lines.push_back(endMarker);
                 
-            } else if (startsWith(trimmed, "@define")) {
+            } else if (startsWith(trimmed, "#define")) {
                 LineInfo info;
                 info.content = line;
                 info.isDirective = true;
@@ -311,11 +311,11 @@ private:
     std::string extractIncludeFilename(const std::string& line) {
         size_t start = line.find('"');
         if (start == std::string::npos) {
-            throw std::runtime_error("Invalid include syntax - missing opening quote");
+            throw std::runtime_error("Invalid #include syntax - missing opening quote");
         }
         size_t end = line.find('"', start + 1);
         if (end == std::string::npos) {
-            throw std::runtime_error("Invalid include syntax - missing closing quote");
+            throw std::runtime_error("Invalid #include syntax - missing closing quote");
         }
         return line.substr(start + 1, end - start - 1);
     }
@@ -327,7 +327,7 @@ private:
         for (const auto& info : lines) {
             if (info.isDirective && !info.isIncludeDirective) {
                 std::string trimmed = trim(info.content);
-                if (startsWith(trimmed, "@define")) {
+                if (startsWith(trimmed, "#define")) {
                     try {
                         processDefineDirective(info);
                     } catch (const std::runtime_error& e) {
@@ -335,7 +335,7 @@ private:
                                                info.content, e.what()));
                         throw;
                     }
-                } else if (startsWith(trimmed, "@macro")) {
+                } else if (startsWith(trimmed, "#macro")) {
                     try {
                         processMacroDirective(info);
                     } catch (const std::runtime_error& e) {
@@ -352,14 +352,14 @@ private:
         const std::string& line = info.content;
         size_t eqPos = line.find('=');
         if (eqPos == std::string::npos) {
-            throw std::runtime_error("Invalid @define syntax - missing '='");
+            throw std::runtime_error("Invalid #define syntax - missing '='");
         }
         
         std::string left = trim(line.substr(7, eqPos - 7));
         std::string right = trim(line.substr(eqPos + 1));
         
         if (left.empty()) {
-            throw std::runtime_error("Invalid @define syntax - empty identifier");
+            throw std::runtime_error("Invalid #define syntax - empty identifier");
         }
         
         for (char c : left) {
@@ -394,9 +394,9 @@ private:
     void processMacroDirective(const LineInfo& info) {
         const std::string& line = info.content;
         
-        size_t macroPos = line.find("@macro");
+        size_t macroPos = line.find("#macro");
         if (macroPos == std::string::npos) {
-            throw std::runtime_error("Invalid macro directive");
+            throw std::runtime_error("Invalid #macro directive");
         }
         
         size_t pos = macroPos + 6;
@@ -750,7 +750,7 @@ private:
                 continue;
             } else {
                 // Для директив макросов (@macro) заменяем на соответствующее количество пустых строк
-                if (startsWith(trim(info.content), "@macro")) {
+                if (startsWith(trim(info.content), "#macro")) {
                     // Выводим пустые строки вместо декларации макроса
                     for (int j = 0; j < info.lineCount; j++) {
                         output << "\n";
