@@ -748,40 +748,58 @@ public:
                     for (size_t i = 0; i < n->args.size(); i++) {
                         auto* arg = n->args[i];
                         bool arg_is_last_in_list = (i == n->args.size() - 1);
-                        
-                        // Определяем, есть ли у этого аргумента тип или значение по умолчанию
+
+                        bool has_size = arg->is_variadic && arg->variadic_size != nullptr;
                         bool has_type = arg->type_expr != nullptr;
                         bool has_default = arg->default_parameter != nullptr;
-                        
-                        if (has_type || has_default) {
-                            // Имя аргумента с двоеточием
-                            output << args_prefix 
-                                   << (arg_is_last_in_list ? colorize("└── ", Colors::STRUCTURE_COLOR) : colorize("├── ", Colors::STRUCTURE_COLOR))
-                                   << colorize(arg->name, Colors::IDENTIFIER_COLOR) << ":" << std::endl;
-                            
-                            // Префикс для типа/значения по умолчанию
-                            std::string child_prefix = args_prefix + (arg_is_last_in_list ? "    " : "│   ");
-                            
-                            if (has_type && has_default) {
-                                // Есть и тип, и значение по умолчанию
-                                output << child_prefix << colorize("├── Type:", Colors::STRUCTURE_COLOR) << std::endl;
-                                print_node(arg->type_expr.get(), child_prefix + "│   ", true);
-                                output << child_prefix << colorize("└── Default:", Colors::STRUCTURE_COLOR) << std::endl;
-                                print_node(arg->default_parameter.get(), child_prefix + "    ", true);
-                            } else if (has_type) {
-                                // Только тип
-                                output << child_prefix << colorize("└── Type:", Colors::STRUCTURE_COLOR) << std::endl;
-                                print_node(arg->type_expr.get(), child_prefix + "    ", true);
-                            } else {
-                                // Только значение по умолчанию
-                                output << child_prefix << colorize("└── Default:", Colors::STRUCTURE_COLOR) << std::endl;
-                                print_node(arg->default_parameter.get(), child_prefix + "    ", true);
-                            }
+                        int child_count = (has_size ? 1 : 0) + (has_type ? 1 : 0) + (has_default ? 1 : 0);
+
+                        // Имя с маркером динамического размера
+                        std::string name_part = arg->name;
+                        if (arg->is_variadic && !has_size)
+                            name_part += "[]";
+
+                        // Модификаторы
+                        std::string modifiers;
+                        if (arg->is_const) modifiers += " const";
+                        if (arg->is_static) modifiers += " static";
+                        if (arg->is_final) modifiers += " final";
+                        if (arg->is_global) modifiers += " global";
+
+                        if (child_count == 0) {
+                            // Нет детей – просто имя и модификаторы
+                            output << args_prefix
+                                << (arg_is_last_in_list ? colorize("└── ", Colors::STRUCTURE_COLOR) : colorize("├── ", Colors::STRUCTURE_COLOR))
+                                << colorize(name_part, Colors::IDENTIFIER_COLOR)
+                                << (modifiers.empty() ? "" : colorize(modifiers, Colors::MODIFIER_COLOR))
+                                << std::endl;
                         } else {
-                            // Если нет детей, просто выводим имя аргумента
-                            output << args_prefix 
-                                   << (arg_is_last_in_list ? colorize("└── ", Colors::STRUCTURE_COLOR) : colorize("├── ", Colors::STRUCTURE_COLOR))
-                                   << colorize(arg->name, Colors::IDENTIFIER_COLOR) << std::endl;
+                            // Есть дети – имя с двоеточием и модификаторами
+                            output << args_prefix
+                                << (arg_is_last_in_list ? colorize("└── ", Colors::STRUCTURE_COLOR) : colorize("├── ", Colors::STRUCTURE_COLOR))
+                                << colorize(name_part, Colors::IDENTIFIER_COLOR)
+                                << (modifiers.empty() ? "" : colorize(modifiers, Colors::MODIFIER_COLOR))
+                                << ":" << std::endl;
+
+                            std::string child_prefix = args_prefix + (arg_is_last_in_list ? "    " : "│   ");
+
+                            // Дети: размер, тип, значение по умолчанию
+                            std::vector<std::pair<std::string, Node*>> children;
+                            if (has_size) children.emplace_back("Size", arg->variadic_size.get());
+                            if (has_type) children.emplace_back("Type", arg->type_expr.get());
+                            if (has_default) children.emplace_back("Default", arg->default_parameter.get());
+
+                            for (size_t j = 0; j < children.size(); j++) {
+                                bool child_last = (j == children.size() - 1);
+                                const auto& [label, node] = children[j];
+
+                                output << child_prefix
+                                    << (child_last ? colorize("└── ", Colors::STRUCTURE_COLOR) : colorize("├── ", Colors::STRUCTURE_COLOR))
+                                    << colorize(label + ":", Colors::STRUCTURE_COLOR) << std::endl;
+
+                                std::string node_prefix = child_prefix + (child_last ? "    " : "│   ");
+                                print_node(node, node_prefix, true);
+                            }
                         }
                     }
                 }

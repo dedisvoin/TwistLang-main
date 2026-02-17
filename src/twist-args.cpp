@@ -1,6 +1,6 @@
 #include "string"
 #include "twist-nodetemp.cpp"
-#include "twist-values.cpp"
+#include <memory>
 
 #pragma once
 
@@ -14,8 +14,10 @@ struct Arg {
     bool is_final = false;
     bool is_static = false;
     bool is_global = false;
-    Type default_type = STANDART_TYPE::NULL_T;
-    Value default_value = NewNull();
+    
+    // Для сборки аргументов в один массив
+    bool is_variadic = false;
+    unique_ptr<Node> variadic_size = nullptr;
 
     Arg(string name) : name(name) {
         

@@ -296,7 +296,21 @@ bool Type::is_func() const {
 }
 
 bool Type::is_pointer() const {
-    return holds_alternative<PointerType>(m_data);
+    // Если это прямой указатель
+    if (holds_alternative<PointerType>(m_data)) return true;
+    
+    // Если это объединение (union)
+    if (holds_alternative<UnionType>(m_data)) {
+        const auto& u = get<UnionType>(m_data);
+        // Проверяем, что все компоненты являются указателями
+        for (const auto& comp : u.components) {
+            if (!comp->is_pointer()) return false;
+        }
+        // Пустой union не должен считаться указателем, но в корректных данных такого не бывает
+        return !u.components.empty();
+    }
+    
+    return false;
 }
 
 pair<string, string> Type::parse_array_type() const {

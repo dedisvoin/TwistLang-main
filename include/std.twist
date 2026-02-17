@@ -11,47 +11,47 @@ static const final namespace std {
 
 
     # min lambda
-    let min = lambda (a: Number, b: Number) -> Number { 
+    let min = lambda (a: Number, b: Number) -> Number :
         if (a < b) { a } else { b }
-    };
+    ;
 
     # max lambda
-    let max = lambda (a: Number, b: Number) -> Number { 
+    let max = lambda (a: Number, b: Number) -> Number : 
         if (a > b) { a } else { b }
-    };
+    ;
 
     # перемещает значение в другую область динамической памяти
     # старое значение удаляется из диначиской памяти
-    let move = lambda(_value: AnyBasePtr) -> AnyBasePtr { 
+    let move = lambda(_value: AnyBasePtr) -> AnyBasePtr :
         namespace {
             let ptr = new<static, const> (*_value);
             del *_value;
         }::ptr
-    };
+    ;
 
-    let delete = lambda(_value: AnyBasePtr) {
+    let delete = lambda(_value: AnyBasePtr) :
         namespace {
             del *_value;  
         }::_value
-    };
+    ;
     
     # сравнение значений по типу 
-    let equal = lambda(a, b) {
+    let equal = lambda(a, b) :
         if (typeof(a) == typeof(b)) {
             a == b
         } else {
             false
         }
-    };
+    ;
 
 }
 
-let outype = lambda (value: auto) -> Null {
+let outype = lambda (value: auto) -> Null :
     namespace {
         let _ = null;
         outln "Type(", typeof(value), ")";
     }::_
-};
+;
 
 global func allocate(T: Type) -> *auto {
     if (T == Int) ret new<static> (0);
@@ -59,7 +59,7 @@ global func allocate(T: Type) -> *auto {
     if (T == Char) ret new<static> (0);
     if (T == String) ret new<static> ("");
     if (T == Bool) ret new<static> (false);
-    if (T == Lambda) ret new<static> (lambda(){});
+    if (T == Lambda) ret new<static> (lambda() : );
     if (T == auto) ret new (null);
     outln "Error basic type: ", T;
     exit -1;

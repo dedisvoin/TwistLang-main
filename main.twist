@@ -1,3 +1,14 @@
-let sum = lambda(a: Int, b: Int) -> [Double | Int, 10] : [Int, 4]{a, b} ;
+@include "include/mem.twist"
 
-outln sum(10, 20)[1];
+
+
+static const let a: *auto = malloc(Double | String);
+
+*a = "ded";
+outln *a; # FIX IT
+
+
+
+
+
+

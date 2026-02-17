@@ -1,0 +1,80 @@
+<start file="include/mem.twist" outer=1>
+<start file="include/types.twist" outer=1>
+
+
+
+
+
+
+
+
+
+
+
+global final const let Any = (*auto) | auto;
+global final const let Number = Int | Double;
+global final const let Literal = String | Char;
+
+
+
+
+
+
+<end file="include/mem.twist" outer=1>
+
+global func is_ptr(arg: Any) -> Bool {
+    if (typeof(arg) >> *auto) ret true;
+    ret false;
+}
+
+global func move(final static arg: Any) -> *auto {
+    if (is_ptr(arg)) {
+        let _value_cpy = *arg;
+        *arg = null;
+        ret new (_value_cpy);
+    } else {
+        ret new (arg);
+    }
+}
+
+func swap(final static arg1: *auto, final static arg2: *auto) -> Null {
+    let tmp = *arg1;
+    *arg1 = *arg2;
+    *arg2 = tmp;
+}
+
+func copy(final static arg: Any) -> *auto {
+    if (is_ptr(arg)) {
+        let _value_cpy = *arg;
+        ret new (_value_cpy);
+    } else {
+        ret new (arg);
+    }
+}
+
+func malloc(T: Type) -> *auto {
+    ret new<static(T)>;
+}
+
+
+
+
+
+
+
+
+
+<end file="main.twist" outer=1>
+
+
+
+static const let a: *auto = malloc(Double | String);
+
+*a = "ded";
+outln *a; # FIX IT
+
+
+
+
+
+

@@ -192,16 +192,56 @@ namespace ERROR {
 
 
     // GOOD
-    void IvalidCallableType(const Token& start, const Token& end) {
+    void IvalidCallableType(const Token& start, const Token& end, Type& type) {
         string file_lines = PREPROCESSOR_OUTPUT;
 
         cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid call" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::RED << "|" << TM::RESET << endl;
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
-        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid callable type" << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Invalid callable type `" << type.pool << "`" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         MSG("You must call a this object types (lambda, function, method)");
+        exit(0);
+    }
+
+        // Ошибка: неверное выражение размера для variadic-параметра (не Int или отрицательное)
+    void InvalidVariadicSizeExpression(const Token& start, const Token& end, const string& actual_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid variadic size expression" << endl;
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Variadic size must be of type `Int`, got `" << actual_type << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        MSG("Variadic parameter syntax: `name[size_expr]: Type` or `name[]: Type` for dynamic size.");
+        exit(0);
+    }
+
+    // Ошибка: неверный тип элемента в variadic-аргументе
+    void InvalidVariadicArgumentType(const Token& start, const Token& end, const string& expected, const string& got, int index) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid variadic argument type" << endl;
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Variadic argument " << index << " expected type `" << expected << "`, but got `" << got << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        exit(0);
+    }
+
+    // Ошибка: несоответствие количества элементов в variadic-аргументе (для фиксированного размера)
+    void VariadicSizeMismatch(const Token& start, const Token& end, int expected, int actual) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Variadic size mismatch" << endl;
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Expected " << expected << " arguments for variadic parameter, but got " << actual << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         exit(0);
     }
 
@@ -346,6 +386,32 @@ namespace ERROR {
         
         exit(0);
     }
+
+    static void MissingFuncArgument(const Token& start_callable, const Token& end_callable, 
+                                const Token& arg_start, const Token& arg_end, 
+                                const string& arg_name, int arg_index) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << start_callable.pif << " >> Missing argument" << endl;
+        cout << TM::YELLOW << "|" << TM::RESET << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start_callable.pif.line << " | " << TM::RESET << lines[start_callable.pif.global_line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start_callable.pif.line).length() + 3, ' ') 
+            << string(start_callable.pif.index, ' ') << TM::YELLOW 
+            << string(end_callable.pif.index + end_callable.pif.lenght - start_callable.pif.index, '^') 
+            << " Missing argument at position " << arg_index + 1 << " with no default value" << endl;
+        cout << TM::YELLOW << "|" << TM::RESET << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << arg_start.pif.line << " | " << TM::RESET << lines[arg_start.pif.global_line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(arg_start.pif.line).length() + 3, ' ') 
+            << string(arg_start.pif.index, ' ') << TM::YELLOW 
+            << string(arg_end.pif.index + arg_end.pif.lenght - arg_start.pif.index, '^') 
+            << " Argument '" << arg_name << "' declared here" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(arg_start.pif.line).length() + 4, '-') 
+            << string(arg_start.pif.index, '-') << "'" << TM::RESET << endl;
+        
+        exit(0);
+    }
+
 
     void WaitedFuncTypeReturnTypeSpecifier(const Token& start_args, const Token& end_args) {
         string file_lines = PREPROCESSOR_OUTPUT;

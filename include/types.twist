@@ -1,0 +1,20 @@
+@define gfc = global final const
+@macro macro_var_name(_) = "_"
+@macro get_type(obj) = typeof(obj)
+@macro macro_compare_type(*val_1, *val_2) = {
+    if (typeof(val_1) == typeof(val_2)) {
+        if (val_1 == val_2) {
+            true
+        } else { false }
+    } else { false }
+}
+
+gfc let Any = (*auto) | auto;
+gfc let Number = Int | Double;
+gfc let Literal = String | Char;
+
+
+
+
+
+

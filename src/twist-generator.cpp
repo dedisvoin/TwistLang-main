@@ -1,6 +1,7 @@
 #include "twist-tokenwalker.cpp"
 #include "twist-namespace.cpp"
 #include "twist-functions.cpp"
+#include <type_traits>
 #include <vcruntime_startup.h>
 #include "twist-lambda.cpp"
 #include "twist-tokens.cpp"
@@ -45,6 +46,8 @@ using namespace std;
 // `eval_from` возвращает значение типа `Value`.
 struct NodeNumber : public Node { NO_EXEC
     Value value = NewNull();
+
+    NodeNumber(int value) : value(NewInt(value)) { this->NODE_TYPE = NodeTypes::NODE_NUMBER; }
 
     NodeNumber(Token& token) {
         this->NODE_TYPE = NodeTypes::NODE_NUMBER;
@@ -119,31 +122,37 @@ struct NodeChar : public Node { NO_EXEC
 // Подробное описание:
 // Нода для булевых литералов `true`/`false`. При парсинге определяет булевое
 // значение и при eval возвращает `Value` с типом BOOL.
+auto ValueTrue = NewBool(true);
+auto ValueFalse = NewBool(true);
 struct NodeBool : public Node { NO_EXEC
-    Value value;
+    Token token;
+    Value value = NewNull();
 
-    NodeBool(Token& token) : value(NewNull()) {
+    NodeBool(Token& token){
         this->NODE_TYPE = NodeTypes::NODE_BOOL;
-        if (token.value == "true") value = NewBool(true);
-        if (token.value == "false") value = NewBool(false);
+        this->token = token;
+        if (token.value != "true") this->value = NewBool(false);
+        if (token.value != "false") this->value = NewBool(true);
     }
 
-    Value eval_from(Memory& _memory) override { return value; }
+    Value eval_from(Memory& _memory) override {
+        if (token.value == "true") return ValueTrue;
+        if (token.value == "false") return ValueFalse;
+    }
 };
 
 // NodeNull:
 // Подробное описание:
 // Нода представления `null`-значения. Содержит предсозданный `Value` типа
 // NULL_T и при eval просто возвращает этот объект.
+auto ValueNull = NewNull();
 struct NodeNull : public Node { NO_EXEC
-    Value value = NewNull();
-
     NodeNull() {
         this->NODE_TYPE = NodeTypes::NODE_NULL;
     }
 
     Value eval_from(Memory& _memory) override {
-        return this->value;
+        return ValueNull;
     }
 };
 
@@ -191,12 +200,12 @@ struct NodeValueHolder : public Node { NO_EXEC
 // рекурсивно проходит цепочку и возвращает значение конечного элемента,
 // выполняя проверки доступа и приватности.
 struct NodeNameResolution : public Node { NO_EXEC
-    unique_ptr<Node> namespace_expr;
-    string current_name;
-    vector<string> remaining_chain; // Оставшаяся цепочка имен
+    unique_ptr<Node>    namespace_expr;
+    string              current_name;
+    vector<string>      remaining_chain; // Оставшаяся цепочка имен
 
-    Token start;
-    Token end;
+    Token               start;
+    Token               end;
 
     NodeNameResolution(unique_ptr<Node> namespace_expr, const string& current_name, Token start, Token end,
                       const vector<string>& remaining_chain = {}) :
@@ -1806,8 +1815,10 @@ struct NodeReturn : public Node { NO_EVAL
     }
 
     void exec_from(Memory& _memory) override {
-        auto value = expr->eval_from(_memory);
+        if (!expr) 
+            throw Return(NewNull()); 
 
+        auto value = expr->eval_from(_memory);
         throw Return(value);
     }
 };
@@ -1868,38 +1879,140 @@ struct NodeCall : public Node { NO_EXEC
 
     Value call_function(Value &value, Memory& _memory) {
         auto func = any_cast<Function*>(value.data);
-            
+
         Memory saved_mem = *func->memory;
         func->memory->add_object_in_func(func->name, value, false, false, false, true);
 
-        if (func->arguments.size() != args.size()) {
-            ERROR::InvalidFuncArgumentCount(start_callable, end_callable,
-                func->start_args_token, func->end_args_token, func->arguments.size(), args.size());
-        }
+        size_t arg_idx = 0;  // текущий индекс в списке переданных аргументов args
 
-        for (size_t i = 0; i < args.size(); i++) {
-            auto settable_value = args[i]->eval_from(_memory);
-            if (func->arguments[i]->type_expr) {
-                auto super_type_value = func->arguments[i]->type_expr->eval_from(*func->memory);
-                if (!settable_value.type.is_sub_type(any_cast<Type>(super_type_value.data))) {
-                    ERROR::InvalidFuncArgumentType(start_callable, end_callable, func->start_args_token, func->end_args_token,
-                        any_cast<Type>(super_type_value.data), settable_value.type, func->arguments[i]->name);
+        // Проходим по всем объявленным параметрам функции
+        for (size_t param_idx = 0; param_idx < func->arguments.size(); ++param_idx) {
+            Arg* param = func->arguments[param_idx];
+
+            if (!param->is_variadic) {
+                // --- Обычный (не variadic) параметр ---
+                Value arg_value = NewNull();
+
+                if (arg_idx < args.size()) {
+                    arg_value = args[arg_idx]->eval_from(_memory);
+                    ++arg_idx;
                 }
+                else if (param->default_parameter) {
+                    arg_value = param->default_parameter->eval_from(_memory);
+                }
+                else {
+                    ERROR::MissingFuncArgument(start_callable, end_callable,
+                        func->start_args_token, func->end_args_token,
+                        param->name, param_idx);
+                }
+
+                // Проверка типа
+                if (param->type_expr) {
+                    auto expected_type_val = param->type_expr->eval_from(*func->memory);
+                    Type expected = any_cast<Type>(expected_type_val.data);
+                    if (!arg_value.type.is_sub_type(expected)) {
+                        ERROR::InvalidFuncArgumentType(start_callable, end_callable,
+                            func->start_args_token, func->end_args_token,
+                            expected, arg_value.type, param->name);
+                    }
+                }
+
+                func->memory->add_object_in_func(param->name, arg_value,
+                    param->is_const, param->is_static,
+                    param->is_final, param->is_global);
             }
-            func->memory->add_object_in_func(func->arguments[i]->name, settable_value, func->arguments[i]->is_const, func->arguments[i]->is_static, func->arguments[i]->is_final, func->arguments[i]->is_global);
+            else {
+                // --- Variadic параметр ---
+                int64_t variadic_size = 0;
+
+                // Определяем размер variadic-блока
+                if (param->variadic_size) {   // фиксированный размер
+                    Value size_val = param->variadic_size->eval_from(_memory);
+                    if (size_val.type != STANDART_TYPE::INT) {
+                        ERROR::InvalidVariadicSizeExpression(start_callable, end_callable,
+                            size_val.type.pool);
+                    }
+                    variadic_size = any_cast<int64_t>(size_val.data);
+                    if (variadic_size < 0) {
+                        ERROR::InvalidVariadicSizeExpression(start_callable, end_callable,
+                            "negative size");
+                    }
+                }
+                else {   // динамический размер – все оставшиеся аргументы
+                    variadic_size = args.size() - arg_idx;
+                }
+
+                // Проверяем, хватает ли переданных аргументов
+                if (arg_idx + variadic_size > args.size()) {
+                    ERROR::MissingFuncArgument(start_callable, end_callable,
+                        func->start_args_token, func->end_args_token,
+                        param->name, param_idx);
+                }
+
+                // Собираем значения в массив
+                vector<Value> elements;
+                Type element_type;   // будет определён ниже, если есть type_expr
+                bool has_explicit_type = (param->type_expr != nullptr);
+
+                if (has_explicit_type) {
+                    auto expected_type_val = param->type_expr->eval_from(*func->memory);
+                    element_type = any_cast<Type>(expected_type_val.data);
+                }
+
+                for (int64_t i = 0; i < variadic_size; ++i) {
+                    Value elem = args[arg_idx + i]->eval_from(_memory);
+
+                    // Проверка типа элемента
+                    if (has_explicit_type && !elem.type.is_sub_type(element_type)) {
+                        ERROR::InvalidVariadicArgumentType(start_callable, end_callable,
+                            element_type.pool, elem.type.pool, i);
+                    }
+
+                    elements.push_back(elem);
+                }
+                arg_idx += variadic_size;
+
+                // Создаём тип массива
+                string elem_type_str = has_explicit_type ? element_type.pool : "auto";
+                string array_type_str;
+                if (param->variadic_size) {
+                    array_type_str = "[" + elem_type_str + ", " + to_string(variadic_size) + "]";
+                } else {
+                    array_type_str = "[" + elem_type_str + ", ~]";
+                }
+                Type array_type(array_type_str);
+
+                // Формируем значение-массив
+                Array arr(array_type, std::move(elements));
+                Value array_value(array_type, std::move(arr));
+
+                // Добавляем в память функции под именем параметра
+                func->memory->add_object_in_func(param->name, array_value,
+                    param->is_const, param->is_static,
+                    param->is_final, param->is_global);
+            }
         }
 
+        // Проверка, что не осталось лишних аргументов
+        if (arg_idx < args.size()) {
+            ERROR::InvalidFuncArgumentCount(start_callable, end_callable,
+                func->start_args_token, func->end_args_token,
+                arg_idx, args.size());
+        }
 
+        // Выполняем тело функции
         try {
             ((Node*)(func->body))->exec_from(*func->memory);
             return NewNull();
-
-        } catch (Return _value) {
+        }
+        catch (Return _value) {
             if (func->return_type) {
-                auto super_type_value = func->return_type->eval_from(*func->memory);
-                if (!_value.value.type.is_sub_type(any_cast<Type>(super_type_value.data))) {
-                    ERROR::InvalidLambdaReturnType(start_callable, end_callable, func->start_return_type_token, func->end_return_type_token,
-                        any_cast<Type>(super_type_value.data), _value.value.type);
+                auto expected_ret = func->return_type->eval_from(*func->memory);
+                Type expected = any_cast<Type>(expected_ret.data);
+                if (!_value.value.type.is_sub_type(expected)) {
+                    ERROR::InvalidLambdaReturnType(start_callable, end_callable,
+                        func->start_return_type_token, func->end_return_type_token,
+                        expected, _value.value.type);
                 }
             }
             *func->memory = saved_mem;
@@ -1917,7 +2030,7 @@ struct NodeCall : public Node { NO_EXEC
             return call_function(value, _memory);
         }
 
-        ERROR::IvalidCallableType(start_callable, end_callable);
+        ERROR::IvalidCallableType(start_callable, end_callable, value.type);
     }
 };
 
@@ -3099,6 +3212,7 @@ unique_ptr<Node> ASTGenerator::ParseFuncDecl() {
 
 
     vector<Arg*> arguments;
+  
     while (true) {
         if (walker.CheckValue(")")) {
             walker.next();
@@ -3109,6 +3223,9 @@ unique_ptr<Node> ASTGenerator::ParseFuncDecl() {
         bool arg_is_static = false;
         bool arg_is_final = false;
         bool arg_is_global = false;
+        bool is_variadic = false;
+        unique_ptr<Node> variadic_size_expr = nullptr;
+
         while (true) {
             if (walker.CheckValue("const")) {
                 arg_is_const = true;
@@ -3135,7 +3252,6 @@ unique_ptr<Node> ASTGenerator::ParseFuncDecl() {
 
 
 
-
         if (!walker.CheckType(TokenType::LITERAL))
             ERROR::UnexpectedToken(*walker.get(), "variable name");
         string arg_name = walker.get()->value;
@@ -3144,6 +3260,22 @@ unique_ptr<Node> ASTGenerator::ParseFuncDecl() {
         unique_ptr<Node> type_expr = nullptr;
         unique_ptr<Node> default_expr = nullptr;
 
+        // Вариадик параметр
+        if (walker.CheckValue("[")) {
+            walker.next();
+            is_variadic = true;
+            // Если сразу идёт ']' — динамический размер
+            if (walker.CheckValue("]")) {
+                variadic_size_expr = nullptr;   // маркер динамического размера
+            } else {
+                variadic_size_expr = parse_expression();
+                if (!variadic_size_expr)
+                    ERROR::UnexpectedToken(*walker.get(), "variadic size expression");
+                if (!walker.CheckValue("]"))
+                    ERROR::UnexpectedToken(*walker.get(), "']'");
+            }
+            walker.next();
+        }
 
 
         if (!walker.CheckValue(":"))
@@ -3171,6 +3303,8 @@ unique_ptr<Node> ASTGenerator::ParseFuncDecl() {
         arg->is_static = arg_is_static;
         arg->is_final = arg_is_final;
         arg->is_global = arg_is_global;
+        arg->is_variadic = is_variadic;
+        arg->variadic_size = std::move(variadic_size_expr);
 
         arguments.push_back(arg);
 
@@ -3795,7 +3929,7 @@ unique_ptr<Node> ASTGenerator::ParseNameResolution(unique_ptr<Node> expression) 
         // Первый элемент цепочки становится первым уровнем
         string first_name = chain[0];
         vector<string> remaining_chain(chain.begin() + 1, chain.end());
-        Token end = *walker.get();
+        Token end = *walker.get(-1);
         expression = make_unique<NodeNameResolution>(std::move(expression), first_name, start, end, remaining_chain);
     }
 
