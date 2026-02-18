@@ -1,4 +1,4 @@
-#define gfc = global final const
+#define GFC = global final const
 #macro macro_var_name(_) = "_"
 #macro get_type(obj) = typeof(obj)
 #macro macro_compare_type(*val_1, *val_2) = {
@@ -9,12 +9,20 @@
     } else { false }
 }
 
-gfc let Any = (*auto) | auto;
-gfc let Number = Int | Double;
-gfc let Literal = String | Char;
+GFC let Any = (*auto) | auto;
+GFC let Number = Int | Double;
+GFC let Literal = String | Char;
 
+GFC let nullptr = *Null;
 
-
+GFC func union(T[]: Type) -> Type {
+    let u_T = T[0];
+    let s_T = sizeof(T);
+    for (let i = 1; i < s_T; i = i + 1;) {
+        u_T = u_T | T[i];
+    }
+    ret u_T;
+}
 
 
 

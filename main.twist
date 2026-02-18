@@ -1,3 +1,5 @@
-#define TEST = "TEST"
+#include "include/types.twist"
 
-outln TEST;
+
+let T = union(Int, Double, *Null);
+out T;

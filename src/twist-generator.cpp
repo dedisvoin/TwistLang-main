@@ -131,13 +131,13 @@ struct NodeBool : public Node { NO_EXEC
     NodeBool(Token& token){
         this->NODE_TYPE = NodeTypes::NODE_BOOL;
         this->token = token;
-        if (token.value != "true") this->value = NewBool(false);
-        if (token.value != "false") this->value = NewBool(true);
+        if (token.value != "true") this->value = ValueTrue;
+        if (token.value != "false") this->value = ValueFalse;
     }
 
     Value eval_from(Memory& _memory) override {
-        if (token.value == "true") return ValueTrue;
-        if (token.value == "false") return ValueFalse;
+        if (token.value == "true") return this->value;
+        if (token.value == "false") return this->value;
     }
 };
 
@@ -388,8 +388,10 @@ struct NodeBinary : public Node { NO_EXEC
                 return NewInt(l - r);
             else if (op == "*")
                 return NewInt(l * r);
-            else if (op == "/")
+            else if (op == "/") {
+                if (r == 0) ERROR::ZeroDivision(start_token, end_token, op_token, left_val, right_val);
                 return NewInt(l / r);
+            }
             else if (op == "**")
                 return NewInt(pow(l,r));
             else if (op == "%")
@@ -419,8 +421,10 @@ struct NodeBinary : public Node { NO_EXEC
                 return NewDouble(l - r);
             else if (op == "*")
                 return NewDouble(l * r);
-            else if (op == "/")
+            else if (op == "/") {
+                if (r == 0) ERROR::ZeroDivision(start_token, end_token, op_token, left_val, right_val);
                 return NewDouble(l / r);
+            }
             else if (op == "**")
                 return NewDouble(pow(l, r));
             else if (op == "%")
@@ -1444,7 +1448,7 @@ struct NodeSizeof : public Node { NO_EXEC
         if (value.type == STANDART_TYPE::CHAR)
             return NewInt(sizeof(char));
         if (value.type == STANDART_TYPE::STRING)
-            return NewInt(any_cast<string>(value.data).size() * sizeof(char));
+            return NewInt(any_cast<string&>(value.data).size());
         if (value.type == STANDART_TYPE::BOOL)
             return NewInt(sizeof(bool));
         if (value.type == STANDART_TYPE::TYPE)
@@ -2364,15 +2368,26 @@ struct NodeGetIndex : public Node { NO_EXEC
             ERROR::InvalidArrayIndex(start_token, index_value.type.pool);
         }
 
-        auto arr = any_cast<Array>(value.data);
-        int64_t idx = any_cast<int64_t>(index_value.data);
+        if (value.type.is_array_type()) {
+            auto arr = any_cast<Array>(value.data);
+            int64_t idx = any_cast<int64_t>(index_value.data);
 
-        if (arr.get_size() <= idx) {
-            ERROR::ArrayIndexOutOfRange(start_token, idx, arr.get_size());
+            if (arr.get_size() <= idx) 
+                ERROR::ArrayIndexOutOfRange(start_token, idx, arr.get_size());
+            
+            return arr.values[idx];
+
+        } else if (value.type == STANDART_TYPE::STRING) {
+            auto arr = any_cast<string>(value.data);
+            int64_t idx = any_cast<int64_t>(index_value.data);
+
+            if (arr.size() <= idx) 
+                ERROR::ArrayIndexOutOfRange(start_token, idx, arr.size());
+            
+
+            return NewChar(arr[idx]);
         }
-
-        auto ret_value = arr.values[idx];
-        return ret_value;
+        
     }
 };
 
@@ -3628,8 +3643,6 @@ unique_ptr<Node> ASTGenerator::ParseInput() {
         walker.next();
         auto start_token = *walker.get();
         expr = parse_expression();
-        if (!expr)
-            ERROR::UnexpectedToken(*walker.get(), "expression");
         if (!walker.CheckValue(")"))
             ERROR::UnexpectedToken(*walker.get(), "')'");
         auto end_token = *walker.get();

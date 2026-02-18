@@ -77,7 +77,23 @@ namespace ERROR {
         exit(0);
     }
 
-
+    // GOOD
+    void ZeroDivision(const Token& start, const Token& end, const Token& op_t,
+                            const Value& value_l, const Value& value_r) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << op_t.pif << " >> Unsupported operator: '" << op_t.value << "'" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::YELLOW << "|" << TM::RESET << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(op_t.pif.index + op_t.pif.lenght - 1, ' ') << TM::RED << ".---- Zero division" << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(op_t.pif.index, ' ') << TM::RED << string(op_t.pif.lenght, 'v') << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << 
+        TM::YELLOW  << string(op_t.pif.index - start.pif.index, '^') << 
+        string(op_t.pif.lenght, '~') << 
+        string(end.pif.index - (op_t.pif.index + op_t.pif.lenght) + end.pif.lenght, '^') << endl;
+        cout << TM::YELLOW << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        exit(0);
+    }
 
     // GOOD
     void UnsupportedUnaryOperator(const Token& op_t, const Token& start, const Token& end, const Value& value) {

@@ -715,7 +715,7 @@ struct Null {
 };
 
 Value NewInt(int64_t value) { return Value(STANDART_TYPE::INT, value); }
-Value NewDouble(double value) { return Value(STANDART_TYPE::DOUBLE, value); }
+Value NewDouble(float value) { return Value(STANDART_TYPE::DOUBLE, value); }
 Value NewBool(bool value) { return Value(STANDART_TYPE::BOOL, value); }
 Value NewType(const string& name) { return Value(STANDART_TYPE::TYPE, Type(name)); }
 Value NewType(const Type& type) { return Value(STANDART_TYPE::TYPE, type); }
