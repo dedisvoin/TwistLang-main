@@ -42,6 +42,18 @@ namespace ERROR {
         exit(0);
     }
 
+    static void ArgumentShadowsGlobal(const Token& call_start, const Token& call_end, const string& func_name, const string& arg_name) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        vector<string> lines = SplitString(file_lines, '\n');
+
+        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << call_start.pif << " >> Argument shadows global" << endl;
+        cout << TM::YELLOW << "|" << TM::RESET << endl;
+        cout << TM::YELLOW << "| " << TM::CYAN << call_start.pif.line << " | " << TM::RESET << lines[call_start.pif.global_line - 1] << endl;
+        cout << TM::YELLOW << "| " << string(to_string(call_start.pif.line).length() + 3, ' ') << string(call_start.pif.index, ' ') << TM::YELLOW << string(call_end.pif.index + call_end.pif.lenght - call_start.pif.index, '^') << " Argument '" << arg_name << "' in call to function '" << func_name << "' shadows a global variable with the same name" << endl;
+        cout << TM::YELLOW << "`" << string(to_string(call_start.pif.line).length() + 4, '-') << string(call_start.pif.index, '-') << "'" << TM::RESET << endl;
+        // Не завершаем программу, это только предупреждение
+    }
+
 
 
     // GOOD
@@ -800,6 +812,18 @@ namespace ERROR {
         cout << TM::RED << "|" << TM::RESET << endl;
         cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Property '" << property_name << "' not found in namespace '" << namespace_name << "'" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << endl;
+        exit(0);
+    }
+
+    void UndefinedStructProperty(const Token& start, const Token& end, const string& property_name, const string& namespace_name) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Undefined property" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Property '" << property_name << "' not found in structure '" << namespace_name << "'" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         cout << endl;
         exit(0);

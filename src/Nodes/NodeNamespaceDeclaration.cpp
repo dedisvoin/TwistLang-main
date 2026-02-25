@@ -2,6 +2,8 @@
 #include "../twist-errors.cpp"
 #include "../twist-namespace.cpp"
 
+#pragma once
+
 struct NodeNamespaceDeclaration : public Node { NO_EVAL
     shared_ptr<Memory> namespace_memory;
     unique_ptr<Node> statement;

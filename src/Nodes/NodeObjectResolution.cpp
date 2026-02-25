@@ -59,7 +59,7 @@ struct NodeObjectResolution : public Node { NO_EXEC
 
         // Проверяем существование переменной/namespace
         if (!ns_memory->check_literal(current_name)) {
-            ERROR::UndefinedProperty(start, end, current_name, ns_value.type.pool);
+            ERROR::UndefinedStructProperty(start, end, current_name, ns_value.type.pool);
         }
 
         // Получаем значение

@@ -3,6 +3,8 @@
 
 #include "NodeLiteral.cpp"
 
+#pragma once
+
 /*
  * NodeBaseVariableDecl – узел объявления переменной (let, const, static и т.д.).
  *
@@ -28,7 +30,7 @@
  *   5. Регистрирует объект в STATIC_MEMORY и добавляет в текущую память.
  */
 
-struct NodeBaseVariableDecl : public Node { NO_EVAL
+struct NodeVariableDeclaration : public Node { NO_EVAL
     string var_name;
     unique_ptr<Node> value_expr;
     Token decl_token;
@@ -47,7 +49,7 @@ struct NodeBaseVariableDecl : public Node { NO_EVAL
     bool is_global = false;
     bool is_private = false;
 
-    NodeBaseVariableDecl(const string& name, unique_ptr<Node> expr, Token decl_token, unique_ptr<Node> type_expr,
+    NodeVariableDeclaration(const string& name, unique_ptr<Node> expr, Token decl_token, unique_ptr<Node> type_expr,
                             Token type_start_token, Token type_end_token, bool nullable, Token start_expr_token, Token end_expr_token)
         : var_name(name), decl_token(decl_token), type_start_token(type_start_token), type_end_token(type_end_token),
         nullable(nullable), start_expr_token(start_expr_token), end_expr_token(end_expr_token) {

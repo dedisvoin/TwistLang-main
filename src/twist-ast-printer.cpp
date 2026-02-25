@@ -226,7 +226,7 @@ public:
             }
             
             case NodeTypes::NODE_VARIABLE_DECLARATION: {
-                auto* n = static_cast<NodeBaseVariableDecl*>(node);
+                auto* n = static_cast<NodeVariableDeclaration*>(node);
                 output << colorize("VarDecl", Colors::KEYWORD_COLOR) << ": "
                        << colorize(n->var_name, Colors::IDENTIFIER_COLOR);
                 
@@ -710,7 +710,7 @@ public:
             }
             
             case NodeTypes::NODE_FUNCTION_DECLARATION: {
-                auto* n = static_cast<NodeFuncDecl*>(node);
+                auto* n = static_cast<NodeFunctionDeclaration*>(node);
                 output << colorize("Function", Colors::KEYWORD_COLOR) << ": "
                        << colorize(n->name, Colors::IDENTIFIER_COLOR);
                 

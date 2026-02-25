@@ -2,13 +2,13 @@
 #include "twist-namespace.cpp"
 #include "twist-structs.cpp"
 #include "twist-functions.cpp"
-#include <vcruntime_startup.h>
+
 #include "twist-lambda.cpp"
 #include "twist-tokens.cpp"
 #include "twist-errors.cpp"
 #include "twist-values.cpp"
-#include "twist-array.cpp"
 #include "twist-memory.cpp"
+#include "twist-array.cpp"
 #include "twist-args.cpp"
 
 #include "Nodes/NodeNumber.cpp"
@@ -17,6 +17,7 @@
 #include "Nodes/NodeBool.cpp"
 #include "Nodes/NodeNull.cpp"
 #include "Nodes/NodeLiteral.cpp"
+
 #include "Nodes/NodeNamespaceResolution.cpp"
 #include "Nodes/NodeObjectResolution.cpp"
 #include "Nodes/NodeScopes.cpp"
@@ -32,13 +33,24 @@
 #include "Nodes/NodeDoWhile.cpp"
 #include "Nodes/NodeFor.cpp"
 #include "Nodes/NodeInput.cpp"
+
 #include "Nodes/NodeTypeof.cpp"
 #include "Nodes/NodeSizeof.cpp"
+
 #include "Nodes/NodeAssert.cpp"
 #include "Nodes/NodeExit.cpp"
 #include "Nodes/NodeVariableEqual.cpp"
 #include "Nodes/NodeNamespaceDeclaration.cpp"
+#include "Nodes/NodeNamespaceAnonim.cpp"
+#include "Nodes/NodeNew.cpp"
+#include "Nodes/NodeFunctionDeclaration.cpp"
+#include "Nodes/NodeBlockOfDeclarations.cpp"
+#include "Nodes/NodeReturn.cpp"
+#include "Nodes/NodeExpressionState.cpp"
+#include "Nodes/NodeLambda.cpp"
+#include "Nodes/NodeStructDeclaration.cpp"
 
+#include <vcruntime_startup.h>
 #include <iostream>
 #include <cstddef>
 #include <cstdint>
@@ -375,127 +387,11 @@ struct NodeDelete : public Node { NO_EVAL
 };
 
 
-// NodeNamespace:
-// Подробное описание:
-// Анонимное namespace-выражение: создаёт локальную память, выполняет
-// внутренние инструкции и возвращает новое значение типа NAMESPACE.
-struct NodeNamespace : public Node { NO_EXEC
-    unique_ptr<Node> statement;
 
 
-    NodeNamespace(unique_ptr<Node> statement) : statement(std::move(statement)) {
-            this->NODE_TYPE = NodeTypes::NODE_NAMESPACE_EXPRESSION;
-        }
-
-    Value eval_from(Memory& _memory) override {
-        // Используем shared_ptr
-        auto name_space_mem = make_shared<Memory>();
-        _memory.link_objects(*name_space_mem);
-
-        if (statement) {
-            statement->exec_from(*name_space_mem.get());
-        }
-
-        auto new_namespace = NewNamespace(name_space_mem, "anonymous-namespace");
-        return new_namespace;
-    }
-};
 
 
-// NodeExpressionStatement:
-// Подробное описание:
-// Нода, представляющая выражение как отдельный оператор (например вызов
-// функции без присваивания). Просто вычисляет выражение и игнорирует результат.
-struct NodeExpressionStatement : public Node { NO_EVAL
-    unique_ptr<Node> expr;
-    NodeExpressionStatement(unique_ptr<Node> expr) : expr(std::move(expr)) {
-        this->NODE_TYPE = NodeTypes::NODE_EXPRESSION_STATEMENT;
-    }
-    void exec_from(Memory& _memory) override {
-        expr->eval_from(_memory);
-    }
-};
 
-// NodeLambda:
-// Подробное описание:
-// Нода лямбда-выражения: собирает аргументы, опциональный тип возврата и
-// тело. При eval создаёт объект `Lambda`, подготавливает память и проверяет
-// спецификаторы типов аргументов и возвращаемого значения.
-struct NodeLambda : public Node { NO_EXEC
-    vector<Arg*> args;
-    unique_ptr<Node> return_type;
-    unique_ptr<Node> body;
-
-    Token start_args_token;
-    Token end_args_token;
-    Token start_type_token;
-    Token end_type_token;
-
-    string name = "";
-
-    NodeLambda(unique_ptr<Node> body, vector<Arg*> args, unique_ptr<Node> return_type,
-               Token start_args_token, Token end_args_token, Token start_type_token, Token end_type_token) :
-        body(std::move(body)), args(std::move(args)), return_type(std::move(return_type)),
-        start_args_token(start_args_token), end_args_token(end_args_token), start_type_token(start_type_token), end_type_token(end_type_token) {
-            this->NODE_TYPE = NodeTypes::NODE_LAMBDA;
-        }
-
-
-    Value eval_from(Memory& _memory) override {
-        auto new_lambda_memory = make_shared<Memory>();
-        // Копируем глобальные переменные из родительской памяти
-        _memory.link_objects(*new_lambda_memory);
-
-
-        for (auto arg : args) {
-            if (arg->type_expr) {
-                auto super_type_value = arg->type_expr->eval_from(*new_lambda_memory);
-                if (super_type_value.type != STANDART_TYPE::TYPE) {
-                    ERROR::WaitedLambdaArgumentTypeSpecifier(start_args_token, end_args_token, arg->name);
-                }
-            }
-        }
-
-        if (return_type) {
-            auto super_type_value = return_type->eval_from(*new_lambda_memory);
-            if (super_type_value.type != STANDART_TYPE::TYPE) {
-                ERROR::WaitedLambdaReturnTypeSpecifier(start_type_token, end_type_token);
-            }
-        }
-        auto lambda = NewLambda(new_lambda_memory, body.get(), vector(args), std::move(return_type), start_args_token, end_args_token, start_type_token, end_type_token);
-        if (name != "") {
-            (any_cast<Lambda*>(lambda.data))->memory->add_object(name, lambda, lambda.type, true, true, true, true, false);
-        }
-        return lambda;
-    }
-};
-
-struct Return {
-    Value value;
-    Return(Value value) : value(value) {}
-};
-
-// NodeReturn:
-// Подробное описание:
-// Нода `return` внутри функций/лямбд. Вычисляет выражение и бросает
-// специальное исключение `Return` с упакованным значением для обработки
-// вызывающей рамкой.
-struct NodeReturn : public Node { NO_EVAL
-    unique_ptr<Node> expr;
-    Token start_token;
-    Token end_token;
-    NodeReturn(unique_ptr<Node> expr, Token start_token, Token end_token) : expr(std::move(expr)), start_token(start_token), end_token(end_token) {
-        this->NODE_TYPE = NodeTypes::NODE_RETURN;
-    }
-
-    void exec_from(Memory& _memory) override {
-        if (!expr) 
-            throw Return(NewNull()); 
-
-        auto value = expr->eval_from(_memory);
-        throw Return(value);
-    }
-};
 
 struct NodeCall : public Node { NO_EXEC
     unique_ptr<Node> callable;
@@ -604,7 +500,12 @@ struct NodeCall : public Node { NO_EXEC
                             expected, arg_value.type, param->name);
                     }
                 }
-
+                if (func->memory->check_literal(param->name)) {
+                    MemoryObject* existing = func->memory->get_variable(param->name);
+                    if (existing->modifiers.is_global) {
+                        ERROR::ArgumentShadowsGlobal(start_callable, end_callable, func->name, param->name);
+                    }
+                }
                 func->memory->add_object_in_func(param->name, arg_value,
                     param->is_const, param->is_static,
                     param->is_final, param->is_global);
@@ -673,6 +574,13 @@ struct NodeCall : public Node { NO_EXEC
                 // Формируем значение-массив
                 Array arr(array_type, std::move(elements));
                 Value array_value(array_type, std::move(arr));
+
+                if (func->memory->check_literal(param->name)) {
+                    MemoryObject* existing = func->memory->get_variable(param->name);
+                    if (existing->modifiers.is_global) {
+                        ERROR::ArgumentShadowsGlobal(start_callable, end_callable, func->name, param->name);
+                    }
+                }
 
                 // Добавляем в память функции под именем параметра
                 func->memory->add_object_in_func(param->name, array_value,
@@ -781,65 +689,6 @@ struct NodeCall : public Node { NO_EXEC
     }
 };
 
-// NodeNew:
-// Подробное описание:
-// Нода создания нового объекта/указателя (`new`): может принимать выражение
-// и/или явное указание типа. Создаёт объект в STATIC_MEMORY и возвращает
-// указатель (Pointer) на него, выполняя проверки типов и модификаторов.
-struct NodeNew : public Node { NO_EXEC
-    unique_ptr<Node> expr;
-    unique_ptr<Node> type_expr;
-    bool is_const = false;
-    bool is_static = false;
-
-    Token start_type;
-    Token end_type;
-
-    NodeNew(unique_ptr<Node> expr, unique_ptr<Node> type_expr, bool is_static, bool is_const,
-            Token start_type, Token end_type) :
-    expr(std::move(expr)), type_expr(std::move(type_expr)), is_const(is_const), is_static(is_static),
-    start_type(start_type), end_type(end_type) {
-        this->NODE_TYPE = NodeTypes::NODE_NEW;
-    }
-
-    Value eval_from(Memory& _memory) override {
-
-        if (type_expr && expr) {
-            auto result = expr->eval_from(_memory);
-            auto super_type_value = type_expr->eval_from(_memory);
-            if (!result.type.is_sub_type(any_cast<Type>(super_type_value.data))) {
-                ERROR::StaticTypesMisMatch(start_type, end_type, any_cast<Type>(super_type_value.data), result.type);
-            }
-
-            auto object = CreateMemoryObject(result, any_cast<Type>(super_type_value.data), nullptr, is_const, is_static, false, false, false);
-            auto addres = NewPointer(object->address, any_cast<Type>(super_type_value.data), true);
-            STATIC_MEMORY.register_object(object);
-            return addres;
-        } else if (type_expr && !expr) {
-            auto result = NewNull();
-            auto super_type_value = type_expr->eval_from(_memory);
-            auto object = CreateMemoryObject(result, any_cast<Type>(super_type_value.data), nullptr, is_const, is_static, false, false, false);
-            auto addres = NewPointer(object->address, any_cast<Type>(super_type_value.data), true);
-            STATIC_MEMORY.register_object(object);
-            return addres;
-        } else if (!type_expr && expr) {
-            auto result = expr->eval_from(_memory);
-            auto object = CreateMemoryObject(result, result.type, nullptr, is_const, is_static, false, false, false);
-            auto addres = NewPointer(object->address, result.type, true);
-            STATIC_MEMORY.register_object(object);
-            return addres;
-        } else if (is_static && expr) {
-            auto result = expr->eval_from(_memory);
-            auto object = CreateMemoryObject(result, result.type, nullptr, is_const, is_static, false, false, false);
-            auto addres = NewPointer(object->address, result.type, true);
-            STATIC_MEMORY.register_object(object);
-            return addres;
-
-        } else {
-            ERROR::InvalidNewInstruction(start_type, end_type);
-        }
-    }
-};
 
 // NodeNewFuncType:
 // Подробное описание:
@@ -887,94 +736,6 @@ struct NodeNewFuncType : public Node { NO_EXEC
             return NewType(result);
         }
 
-    }
-};
-
-// NodeFuncDecl:
-// Подробное описание:
-// Нода объявления функции: собирает имя, аргументы, тип возврата и тело,
-// создаёт объект Function, регистрирует его в памяти и STATIC_MEMORY.
-struct NodeFuncDecl : public Node { NO_EVAL
-    string name;
-    vector<Arg*> args;
-    unique_ptr<Node> return_type;
-    unique_ptr<Node> body;
-
-    bool is_static = false;
-    bool is_final = false;
-    bool is_const = false;
-    bool is_global = false;
-    bool is_private = false;
-
-    Token start_args_token;
-    Token end_args_token;
-    Token start_return_token;
-    Token end_return_token;
-
-
-    NodeFuncDecl(string name, vector<Arg*> args, unique_ptr<Node> return_type, unique_ptr<Node> body,
-                Token start_args_token, Token end_args_token, Token start_return_token, Token end_return_token) :
-        name(name), args(std::move(args)), return_type(std::move(return_type)), body(std::move(body)),
-        start_args_token(start_args_token), end_args_token(end_args_token), start_return_token(start_return_token), end_return_token(end_return_token) {
-        this->NODE_TYPE = NodeTypes::NODE_FUNCTION_DECLARATION;
-    }
-
-    static Type extract_type_from_value(const Value& val, const Token& start_token, const Token& end_token, const string& entity_name) {
-        if (val.type == STANDART_TYPE::TYPE) {
-            return any_cast<Type>(val.data);
-        }
-        else if (!STANDART_TYPE::UNTYPED.is_sub_type(val.type)) {
-            // Это структура
-            return any_cast<Struct>(val.data).type;
-        }
-        // Иначе – ошибка: значение не является типом
-        cout << "ERROR_TYPE" << endl;
-        // return Type(); // unreachable
-    }
-
-    Type construct_type(Memory& _memory) {
-        // Обработка возвращаемого типа (если есть)
-        Type ret_type;
-        if (return_type) {
-            auto ret_val = return_type->eval_from(_memory);
-            ret_type = extract_type_from_value(ret_val, start_return_token, end_return_token, "return type");
-        }
-
-        // Собираем типы аргументов
-        vector<Type> arg_types;
-        for (size_t i = 0; i < args.size(); ++i) {
-            auto arg = args[i];
-            if (!arg->type_expr) {
-                // По логике парсера type_expr всегда присутствует, но на всякий случай
-                ERROR::WaitedFuncTypeArgumentTypeSpecifier(start_args_token, end_args_token, arg->name);
-            }
-            auto arg_val = arg->type_expr->eval_from(_memory);
-            Type t = extract_type_from_value(arg_val, start_args_token, end_args_token, "argument '" + arg->name + "'");
-            arg_types.push_back(t);
-        }
-
-        // Создаём тип функции
-        if (return_type) {
-            return create_function_type(ret_type, arg_types);
-        } else {
-            return create_function_type(arg_types);
-        }
-    }
-
-    void exec_from(Memory& _memory) override {
-        Type function_type = construct_type(_memory);
-        
-
-        auto new_function_memory = make_shared<Memory>();
-        //_memory.link_objects(*new_function_memory);
-        
-        auto func = NewFunction(name, new_function_memory, body.get(), args, std::move(return_type), function_type, start_args_token, end_args_token, start_return_token, end_return_token);
-        
-        auto object = CreateMemoryObject(func, function_type,&new_function_memory, is_const, is_static, is_final, is_global, is_private);
-        if (_memory.check_literal(name))
-            _memory.delete_variable(name);
-        _memory.add_object(name, object);
-        STATIC_MEMORY.register_object(object);
     }
 };
 
@@ -1124,52 +885,6 @@ struct NodeGetIndex : public Node { NO_EXEC
     }
 };
 
-// + SUCCESS WORKS
-// NodeBlockDecl:
-// Подробное описание:
-// Нода блока объявлений (например, `var`/`const` блок). Хранит список
-// деклараций и применяет общий набор модификаторов ко всем внутренним
-// объявлениям перед их исполнением.
-struct NodeBlockDecl : public Node { NO_EVAL
-    bool is_static = false;
-    bool is_final = false;
-    bool is_const = false;
-    bool is_global = false;
-    bool is_private = false;
-
-    vector<unique_ptr<Node>> decls;
-
-    NodeBlockDecl(vector<unique_ptr<Node>> decls) : decls(std::move(decls)) {
-        this->NODE_TYPE = NodeTypes::NODE_BLOCK_OF_DECLARATIONS;
-    }
-
-    void exec_from(Memory& _memory) override {
-        for (int i = 0; i < decls.size(); i++) {
-            if (decls[i]->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
-                ((NodeBaseVariableDecl*)decls[i].get())->is_const = is_const;
-                ((NodeBaseVariableDecl*)decls[i].get())->is_static = is_static;
-                ((NodeBaseVariableDecl*)decls[i].get())->is_final = is_final;
-                ((NodeBaseVariableDecl*)decls[i].get())->is_global = is_global;
-                ((NodeBaseVariableDecl*)decls[i].get())->is_private = is_private;
-            }
-            else if (decls[i]->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
-                ((NodeNamespaceDeclaration*)decls[i].get())->is_const = is_const;
-                ((NodeNamespaceDeclaration*)decls[i].get())->is_static = is_static;
-                ((NodeNamespaceDeclaration*)decls[i].get())->is_final = is_final;
-                ((NodeNamespaceDeclaration*)decls[i].get())->is_global = is_global;
-                ((NodeNamespaceDeclaration*)decls[i].get())->is_private = is_private;
-            }
-            else if (decls[i]->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
-                ((NodeFuncDecl*)decls[i].get())->is_const = is_const;
-                ((NodeFuncDecl*)decls[i].get())->is_static = is_static;
-                ((NodeFuncDecl*)decls[i].get())->is_final = is_final;
-                ((NodeFuncDecl*)decls[i].get())->is_global = is_global;
-                ((NodeFuncDecl*)decls[i].get())->is_private = is_private;
-            }
-            decls[i]->exec_from(_memory);
-        }
-    }
-};
 
 // NodeArrayPush:
 // Подробное описание:
@@ -1329,53 +1044,6 @@ struct NodeArrayPush : public Node { NO_EXEC
 
 };
 
-struct NodeStructDecl : public Node { NO_EVAL
-    unique_ptr<Node> statement;
-    string name;
-
-    Token decl_token;
-
-    bool is_static = false;
-    bool is_final = false;
-    bool is_const = false;
-    bool is_global = true;
-    bool is_private = false;
-
-    NodeStructDecl(unique_ptr<Node> statement, string name, Token decl_token) :
-         statement(std::move(statement)), name(name), decl_token(decl_token) {
-            this->NODE_TYPE = NodeTypes::NODE_NAMESPACE_DECLARATION;
-        }
-
-    void exec_from(Memory& _memory) override {
-        auto new_struct_memory = make_shared<Memory>();
-        auto new_struct = NewStruct(name);
-        
-        // 1. Сначала устанавливаем память у самой структуры
-        any_cast<Struct&>(new_struct.data).memory = new_struct_memory;
-        
-        // 2. Теперь добавляем объект в память структуры (копия будет иметь тот же shared_ptr)
-        new_struct_memory->add_object_in_struct(name, new_struct, false, false, false, true);
-
-        // 3. Линкуем глобальные объекты
-        _memory.link_objects(*new_struct_memory);
-        
-        // 4. Выполняем тело структуры (поля добавляются в new_struct_memory)
-        if (statement) {
-            statement->exec_from(*new_struct_memory);
-        }
-
-        // 5. Проверяем, не было ли уже объявлено имя структуры
-        if (_memory.check_literal(name)) {
-            if (_memory.is_final(name)) {
-                ERROR::VariableAlreadyDefined(decl_token, name);
-            }
-            _memory.delete_variable(name);
-        }
-        
-        // 6. Регистрируем структуру в родительской памяти
-        _memory.add_object(name, new_struct, new_struct.type, is_const, is_static, is_final, is_global, is_private);
-    }
-};
 
 struct Context {
     Memory memory;
@@ -1725,7 +1393,7 @@ struct ASTGenerator {
         // block declaration
         if ((current.type == TokenType::KEYWORD) &&
             (current.value == "final" || current.value == "const" ||
-            current.value == "static" || current.value == "global")) {
+            current.value == "static" || current.value == "global" || current.value == "private")) {
             string modifier = current.value;
             walker.next();
             if (walker.get()->type == TokenType::L_CURVE_BRACKET) {
@@ -2155,7 +1823,7 @@ unique_ptr<Node> ASTGenerator::ParseFuncDecl() {
 
 
 
-    return make_unique<NodeFuncDecl>(name, std::move(arguments), std::move(return_type_expr), std::move(statement), start_args_token, end_args_token, start_return_token, end_return_token);
+    return make_unique<NodeFunctionDeclaration>(name, std::move(arguments), std::move(return_type_expr), std::move(statement), start_args_token, end_args_token, start_return_token, end_return_token);
 
 
 }
@@ -2704,7 +2372,7 @@ unique_ptr<Node> ASTGenerator::ParseDelete() {
 
 unique_ptr<Node> ASTGenerator::ParseObjectResolution(unique_ptr<Node> expression) {
     vector<string> chain;
-    Token start = *walker.get(-1);
+    
     // Собираем всю цепочку имен
     while (walker.CheckValue(".")) {
         walker.next(); // pass first '.'
@@ -2716,7 +2384,7 @@ unique_ptr<Node> ASTGenerator::ParseObjectResolution(unique_ptr<Node> expression
         chain.push_back(literal_name);
         walker.next();
     }
-
+    Token start = *walker.get(-1);
     // Если есть цепочка, создаем ноду разрешения
     if (!chain.empty()) {
         // Первый элемент цепочки становится первым уровнем
@@ -2961,7 +2629,7 @@ unique_ptr<Node> ASTGenerator::ParseBaseVariableDecl() {
     if (walker.CheckValue(";")) {
         auto expr = make_unique<NodeNull>();
         walker.next();
-        return make_unique<NodeBaseVariableDecl>(var_name, std::move(expr), variable_token,
+        return make_unique<NodeVariableDeclaration>(var_name, std::move(expr), variable_token,
                                              std::move(type_expr), type_start_token, type_end_token, nullable, start_expr_token, end_expr_token);
     }
 
@@ -2978,7 +2646,7 @@ unique_ptr<Node> ASTGenerator::ParseBaseVariableDecl() {
         ERROR::UnexpectedToken(*walker.get(), "';'");
     walker.next(); // pass ';' token
 
-    return make_unique<NodeBaseVariableDecl>(var_name, std::move(expr), variable_token,
+    return make_unique<NodeVariableDeclaration>(var_name, std::move(expr), variable_token,
                                              std::move(type_expr), type_start_token, type_end_token, nullable, start_expr_token, end_expr_token);
 }
 
@@ -2989,7 +2657,7 @@ unique_ptr<Node> ASTGenerator::ParseFinalVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private")) {
+        !walker.CheckValue("private") && !walker.CheckValue("struct")) {
         ERROR::UnexpectedStatement(*walker.get(), "variable declaration");
     }
 
@@ -2998,13 +2666,15 @@ unique_ptr<Node> ASTGenerator::ParseFinalVariableDecl() {
     auto decl = parse_statement();
 
     if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
-        ((NodeBaseVariableDecl*)decl.get())->is_final = true;
+        ((NodeVariableDeclaration*)decl.get())->is_final = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
         ((NodeNamespaceDeclaration*)decl.get())->is_final = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_final = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
-        ((NodeFuncDecl*)decl.get())->is_final = true;
+        ((NodeFunctionDeclaration*)decl.get())->is_final = true;
+        } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
+        ((NodeFunctionDeclaration*)decl.get())->is_final = true;
     } else {
         ERROR::UnexpectedStatement(token, "variable declaration");
     }
@@ -3019,7 +2689,7 @@ unique_ptr<Node> ASTGenerator::ParseStaticVariableDecl() {
     if (!walker.CheckValue("final") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private")) {
+        !walker.CheckValue("private") && !walker.CheckValue("struct")) {
         ERROR::UnexpectedStatement(*walker.get(), "variable declaration");
     }
 
@@ -3027,13 +2697,15 @@ unique_ptr<Node> ASTGenerator::ParseStaticVariableDecl() {
     auto decl = parse_statement();
 
     if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
-        ((NodeBaseVariableDecl*)decl.get())->is_static = true;
+        ((NodeVariableDeclaration*)decl.get())->is_static = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
         ((NodeNamespaceDeclaration*)decl.get())->is_static = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_static = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
-        ((NodeFuncDecl*)decl.get())->is_static = true;
+        ((NodeFunctionDeclaration*)decl.get())->is_static = true;
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
+        ((NodeStructDeclaration*)decl.get())->is_static = true;
     } else {
         ERROR::UnexpectedStatement(token, "variable declaration");
     }
@@ -3048,7 +2720,7 @@ unique_ptr<Node> ASTGenerator::ParseConstVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("final") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private")) {
+        !walker.CheckValue("private") && !walker.CheckValue("struct")) {
         ERROR::UnexpectedStatement(*walker.get(), "variable declaration");
     }
 
@@ -3056,17 +2728,19 @@ unique_ptr<Node> ASTGenerator::ParseConstVariableDecl() {
     auto decl = parse_statement();
 
     if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
-        ((NodeBaseVariableDecl*)decl.get())->is_const = true;
+        ((NodeVariableDeclaration*)decl.get())->is_const = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
         ((NodeNamespaceDeclaration*)decl.get())->is_const = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_const = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
-        ((NodeFuncDecl*)decl.get())->is_const = true;
+        ((NodeFunctionDeclaration*)decl.get())->is_const = true;
+        } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
+        ((NodeStructDeclaration*)decl.get())->is_const = true;
     } else {
         ERROR::UnexpectedStatement(token, "variable declaration");
     }
-
+    
     return decl;
 }
 
@@ -3077,7 +2751,7 @@ unique_ptr<Node> ASTGenerator::ParseGlobalVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("final") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private")) {
+        !walker.CheckValue("private") && !walker.CheckValue("struct")) {
         ERROR::UnexpectedStatement(*walker.get(), "variable declaration");
     }
 
@@ -3085,13 +2759,15 @@ unique_ptr<Node> ASTGenerator::ParseGlobalVariableDecl() {
     auto decl = parse_statement();
 
     if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
-        ((NodeBaseVariableDecl*)decl.get())->is_global = true;
+        ((NodeVariableDeclaration*)decl.get())->is_global = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
         ((NodeNamespaceDeclaration*)decl.get())->is_global = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_global = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
-        ((NodeFuncDecl*)decl.get())->is_global = true;
+        ((NodeFunctionDeclaration*)decl.get())->is_global = true;
+        } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
+        ((NodeStructDeclaration*)decl.get())->is_global = true;
     } else {
         ERROR::UnexpectedStatement(token, "variable declaration");
     }
@@ -3105,7 +2781,7 @@ unique_ptr<Node> ASTGenerator::ParsePrivateVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("final") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("global")) {
+        !walker.CheckValue("global") && !walker.CheckValue("struct")) {
         ERROR::UnexpectedStatement(*walker.get(), "variable declaration");
     }
 
@@ -3113,13 +2789,15 @@ unique_ptr<Node> ASTGenerator::ParsePrivateVariableDecl() {
     auto decl = parse_statement();
 
     if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
-        ((NodeBaseVariableDecl*)decl.get())->is_private = true;
+        ((NodeVariableDeclaration*)decl.get())->is_private = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
         ((NodeNamespaceDeclaration*)decl.get())->is_private = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_private = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
-        ((NodeFuncDecl*)decl.get())->is_private = true;
+        ((NodeFunctionDeclaration*)decl.get())->is_private = true;
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
+        ((NodeStructDeclaration*)decl.get())->is_private = true;
     } else {
         ERROR::UnexpectedStatement(token, "variable declaration");
     }
@@ -3261,5 +2939,5 @@ unique_ptr<Node> ASTGenerator::ParseStructDecl() {
     
     auto body = parse_statement();
 
-    return make_unique<NodeStructDecl>(std::move(body), name, token);
+    return make_unique<NodeStructDeclaration>(std::move(body), name, token);
 }
