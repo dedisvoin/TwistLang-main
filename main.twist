@@ -1,0 +1,5 @@
+let functions = {
+    lambda (a: Int, b: Int) : a + b
+};
+
+outln (functions[0])(10, 20.6, 10);

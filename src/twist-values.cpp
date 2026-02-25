@@ -18,6 +18,7 @@ using namespace std;
 struct Type;
 using TypePtr = shared_ptr<const Type>;
 
+
 struct PrimitiveType {
     string name;
 };
@@ -42,6 +43,8 @@ struct UnionType {
 
 struct AutoType {};        // для "auto"
 struct PointerAutoType {}; // для "*auto"
+
+
 
 inline TypePtr make_type_ptr(const Type& t);
 

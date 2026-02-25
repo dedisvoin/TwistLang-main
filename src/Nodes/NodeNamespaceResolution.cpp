@@ -4,6 +4,7 @@
 #include "../twist-namespace.cpp"
 #include "NodeValueHolder.cpp"
 
+#pragma once
 /*
  * NodeNamespaceResolution – разрешение имени через оператор :: (пространство имён).
  *

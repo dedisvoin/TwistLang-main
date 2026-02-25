@@ -9,9 +9,9 @@ namespace ERROR_TYPES {
     const string SYNTAX      = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::YELLOW + "syntax" + TERMINAL_COLORS::RESET;
     const string EXECUTION   = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::MAGENTA + "exec" + TERMINAL_COLORS::RESET;
     const string SEMANTIC    = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::CYAN + "semantic" + TERMINAL_COLORS::RESET;
-    const string MSG         = "[ " + TERMINAL_COLORS::BLACK + "msg" + TERMINAL_COLORS::RESET + " ] ";
-    const string WRN         = "[ " + TERMINAL_COLORS::YELLOW + " ! " + TERMINAL_COLORS::RESET + " ] ";
-    const string FIX         = "[ " + TERMINAL_COLORS::GREEN + " + " + TERMINAL_COLORS::RESET + " ] ";
+    const string MSG         = "[" + TERMINAL_COLORS::BLACK + "?" + TERMINAL_COLORS::RESET + "] ";
+    const string WRN         = "[" + TERMINAL_COLORS::YELLOW + "!" + TERMINAL_COLORS::RESET + "] ";
+    const string FIX         = "[" + TERMINAL_COLORS::GREEN + "+" + TERMINAL_COLORS::RESET + "] ";
 }
 
 void MSG(string message) {

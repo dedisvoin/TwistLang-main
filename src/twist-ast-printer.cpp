@@ -304,7 +304,7 @@ public:
                 
                 std::string new_prefix = prefix + (is_last ? "    " : "│   ");
                 output << new_prefix << colorize("├── Condition:", Colors::STRUCTURE_COLOR) << std::endl;
-                print_node(n->eq_expression.get(), new_prefix + "│   ", true);
+                print_node(n->condition.get(), new_prefix + "│   ", true);
                 output << new_prefix << colorize("├── Then:", Colors::STRUCTURE_COLOR) << std::endl;
                 print_node(n->true_statement.get(), new_prefix + "│   ", true);
                 
@@ -318,7 +318,7 @@ public:
             }
             
             case NodeTypes::NODE_NAMESPACE_DECLARATION: {
-                auto* n = static_cast<NodeNamespaceDecl*>(node);
+                auto* n = static_cast<NodeNamespaceDeclaration*>(node);
                 output << colorize("Namespace", Colors::KEYWORD_COLOR) << ": "
                        << colorize(n->name, Colors::IDENTIFIER_COLOR);
                 

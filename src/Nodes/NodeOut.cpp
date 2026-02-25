@@ -2,7 +2,9 @@
 #include "../twist-namespace.cpp"
 #include "../twist-lambda.cpp"
 #include "../twist-functions.cpp"
+#include "../twist-array.cpp"
 
+#include <any>
 #include <iomanip>   
 #include <limits>    
 
@@ -69,6 +71,8 @@ struct NodeBaseOut : public Node { NO_EVAL
             }
             auto ret_type_val = f->return_type->eval_from(_memory);
             buf << ") -> " << any_cast<Type>(ret_type_val.data).pool;
+        } else if (value.type.is_array_type()) {
+            buf << value.type.pool << "[" << any_cast<Array&>(value.data).values.size() << "]";
         }
     }
 
@@ -125,6 +129,8 @@ struct NodeBaseOutLn : public Node { NO_EVAL
             }
             auto ret_type_val = f->return_type->eval_from(_memory);
             buf << ") -> " << any_cast<Type>(ret_type_val.data).pool;
+        } else if (value.type.is_array_type()) {
+            buf << value.type.pool << "[" << any_cast<Array&>(value.data).values.size() << "]";
         }
     }
 

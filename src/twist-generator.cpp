@@ -2,7 +2,6 @@
 #include "twist-namespace.cpp"
 #include "twist-structs.cpp"
 #include "twist-functions.cpp"
-#include <type_traits>
 #include <vcruntime_startup.h>
 #include "twist-lambda.cpp"
 #include "twist-tokens.cpp"
@@ -32,6 +31,13 @@
 #include "Nodes/NodeWhile.cpp"
 #include "Nodes/NodeDoWhile.cpp"
 #include "Nodes/NodeFor.cpp"
+#include "Nodes/NodeInput.cpp"
+#include "Nodes/NodeTypeof.cpp"
+#include "Nodes/NodeSizeof.cpp"
+#include "Nodes/NodeAssert.cpp"
+#include "Nodes/NodeExit.cpp"
+#include "Nodes/NodeVariableEqual.cpp"
+#include "Nodes/NodeNamespaceDeclaration.cpp"
 
 #include <iostream>
 #include <cstddef>
@@ -50,251 +56,6 @@ using namespace std;
 
 
 
-
-
-
-
-// + UNSTABLE WORKS
-// NodeVariableEqual:
-// Подробное описание:
-// Нода присваивания: левая часть — переменная/разрешение имени/дескриптор,
-// правая — выражение. Выполняет поиск целевой памяти, проверки на const,
-// private/static типы и в итоге присваивает новое значение.
-struct NodeVariableEqual : public Node { NO_EVAL
-    unique_ptr<Node> expression;
-    unique_ptr<Node> variable;
-
-    Token start_left_value_token;
-    Token end_left_value_token;
-
-    Token start_value_token;
-    Token end_value_token;
-
-    NodeVariableEqual(unique_ptr<Node> variable, unique_ptr<Node> expression, Token start_left_value_token, Token end_left_value_token,
-                        Token start_value_token, Token end_value_token)  :
-        expression(std::move(expression)), variable(std::move(variable)),
-        start_left_value_token(start_left_value_token), end_left_value_token(end_left_value_token),
-        start_value_token(start_value_token), end_value_token(end_value_token) {
-            this->NODE_TYPE = NodeTypes::NODE_VARIABLE_EQUAL;
-        };
-
-    void exec_from(Memory& _memory) override {
-
-        auto right_value = expression->eval_from(_memory);
-
-        // НЕ перемещаем variable, используем сырой указатель
-
-        Node* variable_ptr = variable.get();
-
-        // Получаем целевую память и имя переменной - используем ССЫЛКУ вместо копии!
-        pair<Memory*, string> target = resolveAssignmentTargetMemory(variable_ptr, _memory);
-
-        Memory* target_memory = target.first;
-        string target_var_name = target.second;
-
-
-
-        if (target_memory->is_private(target_var_name)) {
-            ERROR::PrivateVariableAccess(start_left_value_token, end_value_token, target_var_name);
-        }
-
-
-        if (!target_memory->check_literal(target_var_name))
-            ERROR::UndefinedLeftVariable(start_left_value_token, end_left_value_token, target_var_name);
-
-        // Проверяем константность
-        if (target_memory->is_const(target_var_name)) {
-            ERROR::ConstRedefinition(start_left_value_token, end_value_token, target_var_name);
-        }
-
-        
-        // Проверяем типизацию для статических переменных
-        if (target_memory->is_static(target_var_name)) {
-            
-            auto wait_type = target_memory->get_wait_type(target_var_name);
-            auto value_type = right_value.type;
-            if (!IsTypeCompatible(wait_type, value_type)) {
-                ERROR::StaticTypesMisMatch(start_left_value_token, end_value_token, wait_type, value_type);
-            }
-        }
-
-
-
-        // Выполняем присваивание
-        target_memory->set_object_value(target_var_name, right_value);
-    }
-
-    pair<Memory*, string> resolveAssignmentTargetMemory(Node* node, Memory& _memory) {
-        if (node->NODE_TYPE == NodeTypes::NODE_LITERAL) {
-            if (!_memory.check_literal(((NodeLiteral*)node)->name)) {
-                ERROR::UndefinedLeftVariable(start_left_value_token, end_left_value_token, ((NodeLiteral*)node)->name);
-            }
-            return {&_memory, ((NodeLiteral*)node)->name};
-        }
-        else if (node->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
-            NodeNamespaceResolution* resolution = (NodeNamespaceResolution*)node;
-
-            // Получаем namespace
-            Value ns_value = resolution->namespace_expr->eval_from(_memory);
-
-            if (ns_value.type != STANDART_TYPE::NAMESPACE) {
-                ERROR::InvalidAccessorType(resolution->start, resolution->end, ns_value.type.pool);
-            }
-
-            // ИСПРАВЛЕНО: используем ссылку вместо копии
-            auto& ns = any_cast<Namespace&>(ns_value.data);
-
-            // Получаем указатель на память из shared_ptr
-            Memory* current_memory = ns.memory.get();
-
-            // Строим полную цепочку имен
-            vector<string> full_chain = resolution->remaining_chain;
-            full_chain.insert(full_chain.begin(), resolution->current_name);
-
-            // Проходим по цепочке, если она есть
-            if (full_chain.size() > 1) {
-                // Ищем конечный namespace через цепочку
-                for (size_t i = 0; i < full_chain.size() - 1; i++) {
-                    const string& name = full_chain[i];
-
-                    if (!current_memory->check_literal(name)) {
-                        ERROR::UndefinedVariableInNamespace(name, "current namespace");
-                    }
-
-                    MemoryObject* obj = current_memory->get_variable(name);
-
-                    // Проверяем приватность
-                    if (obj->modifiers.is_private)
-                        ERROR::PrivateVariableAccess(start_left_value_token, end_left_value_token, name);
-
-                    if (obj->value.type != STANDART_TYPE::NAMESPACE) {
-                        ERROR::InvalidNamespaceChainType(resolution->start, resolution->end, name, obj->value.type.pool);
-                    }
-
-                    // Переходим к следующему namespace
-                    auto& next_ns = any_cast<Namespace&>(obj->value.data);
-                    current_memory = next_ns.memory.get();
-                }
-            }
-
-            // Возвращаем память и имя последнего элемента
-            return {current_memory, full_chain.back()};
-        }
-        else if (node->NODE_TYPE == NodeTypes::NODE_OBJECT_RESOLUTION) {
-            NodeObjectResolution* resolution = (NodeObjectResolution*)node;
-
-            // Получаем значение объекта (структуры)
-            Value obj_value = resolution->obj_expr->eval_from(_memory);
-
-            // Проверяем, что это структура (не стандартный тип)
-            if (STANDART_TYPE::UNTYPED.is_sub_type(obj_value.type)) {
-                ERROR::InvalidAccessorType(resolution->start, resolution->end, obj_value.type.pool);
-            }
-
-            // Получаем ссылку на структуру
-            auto& obj = any_cast<Struct&>(obj_value.data);
-
-            // Получаем указатель на память
-            Memory* current_memory = obj.memory.get();
-
-            // Строим полную цепочку имён
-            vector<string> full_chain = resolution->remaining_chain;
-            full_chain.insert(full_chain.begin(), resolution->current_name);
-
-            // Проходим по цепочке, если она есть
-            if (full_chain.size() > 1) {
-                for (size_t i = 0; i < full_chain.size() - 1; i++) {
-                    const string& name = full_chain[i];
-
-                    if (!current_memory->check_literal(name)) {
-                        ERROR::UndefinedFieldInObject(resolution->start, resolution->end, name, obj.type.pool);
-                    }
-
-                    MemoryObject* field_obj = current_memory->get_variable(name);
-
-                    // Проверяем приватность
-                    if (field_obj->modifiers.is_private)
-                        ERROR::PrivatePropertyAccess(resolution->start, resolution->end, name);
-                    
-
-                    Value field_value = field_obj->value;
-
-                    // Проверяем, что поле является структурой (для продолжения цепочки)
-                    // Проверяем приватность
-                    if (field_obj->modifiers.is_private)
-                        ERROR::PrivateVariableAccess(start_left_value_token, end_left_value_token, name);
-
-                    if (field_obj->value.type != STANDART_TYPE::NAMESPACE) {
-                        ERROR::InvalidNamespaceChainType(resolution->start, resolution->end, name, field_obj->value.type.pool);
-                    }
-
-                    auto& next_obj = any_cast<Struct&>(field_value.data);
-                    current_memory = next_obj.memory.get();
-                }
-            }
-
-            // Возвращаем память и имя последнего поля
-            return {current_memory, full_chain.back()};
-        }
-
-        // Ошибка для неизвестного типа ноды
-        cout << "INTERNAL ERROR: Unknown assignment target node type" << endl;
-        exit(0);
-    }
-};
-
-// + SUCCESS WORKS
-// NodeNamespaceDecl:
-// Подробное описание:
-// Нода объявления namespace: создаёт новую память, линкует объекты родителя,
-// выполняет вложенные объявления и регистрирует namespace в родительской
-// памяти как объект типа NAMESPACE.
-struct NodeNamespaceDecl : public Node { NO_EVAL
-    shared_ptr<Memory> namespace_memory;
-    unique_ptr<Node> statement;
-
-    string name;
-
-    Token decl_token;
-
-    bool is_static = false;
-    bool is_final = false;
-    bool is_const = false;
-    bool is_global = false;
-    bool is_private = false;
-
-    NodeNamespaceDecl(unique_ptr<Node> statement, string name, Token decl_token) :
-         statement(std::move(statement)), name(name), decl_token(decl_token) {
-            this->NODE_TYPE = NodeTypes::NODE_NAMESPACE_DECLARATION;
-        }
-
-    void exec_from(Memory& _memory) override {
-    auto new_namespace_memory = make_shared<Memory>();
-    // Создаём Namespace с этой памятью
-    auto new_namespace = NewNamespace(new_namespace_memory, name);
-    
-    // Добавляем его в свою память (чтобы он был доступен внутри)
-    new_namespace_memory->add_object(name, new_namespace, STANDART_TYPE::NAMESPACE, is_const, is_static, is_final, is_global, is_private);
-    
-    // Линкуем глобальные объекты из родительской памяти
-    _memory.link_objects(*new_namespace_memory);
-    
-    if (statement) {
-        statement->exec_from(*new_namespace_memory);
-    }
-    
-    // Проверяем, не было ли уже объявлено имя namespace
-    if (_memory.check_literal(name)) {
-        if (_memory.is_final(name)) {
-            ERROR::VariableAlreadyDefined(decl_token, name);
-        }
-        _memory.delete_variable(name);
-    }
-    
-    // Добавляем namespace в родительскую память
-    _memory.add_object(name, new_namespace, STANDART_TYPE::NAMESPACE, is_const, is_static, is_final, is_global, is_private);
-}
-};
 
 
 
@@ -500,59 +261,6 @@ struct NodeLeftDereference : public Node { NO_EVAL
     }
 };
 
-// NodeTypeof:
-// Подробное описание:
-// Нода `typeof(expr)` — возвращает объект `Type`, соответствующий типу
-// вычисленного выражения.
-struct NodeTypeof : public Node { NO_EXEC
-    unique_ptr<Node> expr;
-
-    NodeTypeof(unique_ptr<Node> expr) : expr(std::move(expr)) {
-        this->NODE_TYPE = NodeTypes::NODE_TYPEOF;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        auto value = expr->eval_from(_memory);
-        return NewType(value.type);
-    }
-};
-
-// NodeSizeof:
-// Подробное описание:
-// Нода `sizeof(expr)` — возвращает размер в байтах для соответствующего типа
-// выражения (примерная семантика, реализованная в `eval_from`).
-struct NodeSizeof : public Node { NO_EXEC
-    unique_ptr<Node> expr;
-
-    NodeSizeof(unique_ptr<Node> expr) : expr(std::move(expr)) {
-        this->NODE_TYPE = NodeTypes::NODE_SIZEOF;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        auto value = expr->eval_from(_memory);
-        if (value.type == STANDART_TYPE::INT)
-            return NewInt(sizeof(int64_t));
-        if (value.type == STANDART_TYPE::DOUBLE)
-            return NewInt(sizeof(long double));
-        if (value.type == STANDART_TYPE::CHAR)
-            return NewInt(sizeof(char));
-        if (value.type == STANDART_TYPE::STRING)
-            return NewInt(any_cast<string&>(value.data).size());
-        if (value.type == STANDART_TYPE::BOOL)
-            return NewInt(sizeof(bool));
-        if (value.type == STANDART_TYPE::TYPE)
-            return NewInt(sizeof(Type));
-        if (value.type == STANDART_TYPE::NAMESPACE)
-            return NewInt(sizeof(Namespace));
-        if (value.type == STANDART_TYPE::NULL_T)
-            return NewInt(sizeof(Null));
-        if (value.type.is_array_type()) {
-            return NewInt(any_cast<Array&>(value.data).values.size());
-        }
-
-        return NewInt(sizeof(std::any));
-    }
-};
 
 
 // TODO AND TESTS
@@ -667,109 +375,6 @@ struct NodeDelete : public Node { NO_EVAL
 };
 
 
-// NodeIfExpr:
-// Подробное описание:
-// Выражение условного вида, возвращающее значение (тернарный аналог):
-// `cond ? true_expr : else_expr`. Возвращает результат соответствующей ветки.
-struct NodeIfExpr : public Node { NO_EXEC
-    unique_ptr<Node> condition;
-    unique_ptr<Node> true_expr;
-    unique_ptr<Node> else_expr;
-
-    NodeIfExpr(unique_ptr<Node> condition, unique_ptr<Node> true_expr, unique_ptr<Node> else_expr)
-        : condition(std::move(condition)), true_expr(std::move(true_expr)), else_expr(std::move(else_expr)) {
-            this->NODE_TYPE = NodeTypes::NODE_IF_EXPRESSION;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        auto condition_value = condition->eval_from(_memory);
-        if (condition_value.type == STANDART_TYPE::BOOL) {
-            if (any_cast<bool>(condition_value.data)) {
-                return true_expr->eval_from(_memory);
-            }
-            if (else_expr) return else_expr->eval_from(_memory);
-        } else if (condition_value.type == STANDART_TYPE::NULL_T) {
-            return else_expr->eval_from(_memory);
-        } else {
-            return true_expr->eval_from(_memory);
-        }
-    }
-};
-
-// NodeInput:
-// Подробное описание:
-// Нода ввода с консоли. Опционально принимает выражение для вывода приглашения
-// перед вводом. Возвращает распознанное значение (int, double, char или string)
-// либо null для пустой строки.
-struct NodeInput : public Node { NO_EXEC
-    unique_ptr<Node> expr;
-    Token start_token;
-    Token end_token;
-
-    NodeInput(unique_ptr<Node> expr, Token start_token, Token end_token)
-        : expr(std::move(expr)), start_token(start_token), end_token(end_token) {
-            this->NODE_TYPE = NodeTypes::NODE_INPUT;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        if (expr) {
-
-            auto value = expr->eval_from(_memory);
-
-            if (value.type == STANDART_TYPE::STRING) {
-                cout << any_cast<string>(value.data);
-            } else if (value.type == STANDART_TYPE::CHAR) {
-                cout << any_cast<char>(value.data);
-            } else {
-                ERROR::IncompartableTypeInput(start_token, end_token, value.type);
-            }
-        }
-
-        string _input;
-        getline(cin, _input);
-
-        if (_input.empty())
-            return NewNull();
-
-        if (_input.length() == 1) {
-            // Один символ - может быть char или digit
-            char* ch = new char(_input[0]);
-            if (isdigit(*ch)) {
-                auto value = NewInt(atoi(ch));
-                delete ch;
-                return value;
-            }
-            else {
-                auto value = NewChar(*ch);
-                delete ch;
-                return value;
-            }
-        } else {
-            bool isNumber = true;
-            bool isDOuble = false;
-            for (char c : _input) {
-                if (!isdigit(c) && c != '.') {
-                    isNumber = false;
-                    break;
-                }
-                if (c == '.') isDOuble = true;
-            }
-            if (isNumber) {
-                if (isDOuble) {
-                    auto value = NewDouble(atof(_input.c_str()));
-                    return value;
-                } else {
-                    auto value = NewInt(atoi(_input.c_str()));
-                    return value;
-                }
-            } else {
-                auto value = NewString(_input);
-                return value;
-            }
-        }
-    }
-};
-
 // NodeNamespace:
 // Подробное описание:
 // Анонимное namespace-выражение: создаёт локальную память, выполняет
@@ -796,30 +401,6 @@ struct NodeNamespace : public Node { NO_EXEC
     }
 };
 
-// NodeAssert:
-// Подробное описание:
-// Нода `assert`, которая проверяет, что выражение возвращает BOOL true,
-// иначе выбрасывает соответствующую ошибку времени выполнения.
-struct NodeAssert : public Node { NO_EVAL
-    unique_ptr<Node> expr;
-    Token start_token;
-    Token end_token;
-
-    NodeAssert(unique_ptr<Node> expr, Token start_token, Token end_token)
-        : expr(std::move(expr)), start_token(start_token), end_token(end_token) {
-            this->NODE_TYPE = NodeTypes::NODE_ASSERT;
-    }
-
-    void exec_from(Memory& _memory) override {
-        auto value = expr->eval_from(_memory);
-        if (value.type != STANDART_TYPE::BOOL) {
-            ERROR::AssertionIvalidArgument(start_token, end_token);
-        }
-        if (!any_cast<bool>(value.data)) {
-            ERROR::AssertionFailed(start_token, end_token);
-        }
-    }
-};
 
 // NodeExpressionStatement:
 // Подробное описание:
@@ -1397,30 +978,6 @@ struct NodeFuncDecl : public Node { NO_EVAL
     }
 };
 
-// NodeExit:
-// Подробное описание:
-// Нода выхода из программы (`exit(code)`). Проверяет, что аргумент имеет
-// тип INT, и вызывает `exit` с кодом завершения.
-struct NodeExit : public Node { NO_EVAL
-    unique_ptr<Node> expr;
-    Token start_token;
-    Token end_token;
-
-    NodeExit(unique_ptr<Node> expr, Token start_token, Token end_token)
-        : expr(std::move(expr)), start_token(start_token), end_token(end_token) {
-        this->NODE_TYPE = NodeTypes::NODE_EXIT;
-    }
-
-    void exec_from(Memory& _memory) override {
-        auto value = expr->eval_from(_memory);
-
-        if (value.type != STANDART_TYPE::INT) {
-            ERROR::InvalidExitType(start_token, end_token, value.type.pool);
-        }
-
-        exit(any_cast<int64_t>(value.data));
-    }
-};
 
 // NodeNewArrayType:
 // Подробное описание:
@@ -1596,11 +1153,11 @@ struct NodeBlockDecl : public Node { NO_EVAL
                 ((NodeBaseVariableDecl*)decls[i].get())->is_private = is_private;
             }
             else if (decls[i]->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
-                ((NodeNamespaceDecl*)decls[i].get())->is_const = is_const;
-                ((NodeNamespaceDecl*)decls[i].get())->is_static = is_static;
-                ((NodeNamespaceDecl*)decls[i].get())->is_final = is_final;
-                ((NodeNamespaceDecl*)decls[i].get())->is_global = is_global;
-                ((NodeNamespaceDecl*)decls[i].get())->is_private = is_private;
+                ((NodeNamespaceDeclaration*)decls[i].get())->is_const = is_const;
+                ((NodeNamespaceDeclaration*)decls[i].get())->is_static = is_static;
+                ((NodeNamespaceDeclaration*)decls[i].get())->is_final = is_final;
+                ((NodeNamespaceDeclaration*)decls[i].get())->is_global = is_global;
+                ((NodeNamespaceDeclaration*)decls[i].get())->is_private = is_private;
             }
             else if (decls[i]->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
                 ((NodeFuncDecl*)decls[i].get())->is_const = is_const;
@@ -3212,7 +2769,7 @@ unique_ptr<Node> ASTGenerator::ParseNameSpaceDecl() {
     walker.next();
 
     // Создаем namespace
-    auto namespace_node = make_unique<NodeNamespaceDecl>(nullptr, namespace_name, decl_token);
+    auto namespace_node = make_unique<NodeNamespaceDeclaration>(nullptr, namespace_name, decl_token);
 
     auto block = parse_statement();
     namespace_node->statement = std::move(block);
@@ -3247,7 +2804,7 @@ unique_ptr<Node> ASTGenerator::ParseIfExpr() {
         ERROR::UnexpectedToken(*walker.get(), "}");
     walker.next();
 
-    unique_ptr<Node> else_expr;
+    unique_ptr<Node> else_expr = nullptr;
     if (walker.CheckValue("else")) {
         walker.next();
         if (!walker.CheckType(TokenType::L_CURVE_BRACKET))
@@ -3443,7 +3000,7 @@ unique_ptr<Node> ASTGenerator::ParseFinalVariableDecl() {
     if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
         ((NodeBaseVariableDecl*)decl.get())->is_final = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
-        ((NodeNamespaceDecl*)decl.get())->is_final = true;
+        ((NodeNamespaceDeclaration*)decl.get())->is_final = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_final = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
@@ -3472,7 +3029,7 @@ unique_ptr<Node> ASTGenerator::ParseStaticVariableDecl() {
     if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
         ((NodeBaseVariableDecl*)decl.get())->is_static = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
-        ((NodeNamespaceDecl*)decl.get())->is_static = true;
+        ((NodeNamespaceDeclaration*)decl.get())->is_static = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_static = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
@@ -3501,7 +3058,7 @@ unique_ptr<Node> ASTGenerator::ParseConstVariableDecl() {
     if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
         ((NodeBaseVariableDecl*)decl.get())->is_const = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
-        ((NodeNamespaceDecl*)decl.get())->is_const = true;
+        ((NodeNamespaceDeclaration*)decl.get())->is_const = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_const = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
@@ -3530,7 +3087,7 @@ unique_ptr<Node> ASTGenerator::ParseGlobalVariableDecl() {
     if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
         ((NodeBaseVariableDecl*)decl.get())->is_global = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
-        ((NodeNamespaceDecl*)decl.get())->is_global = true;
+        ((NodeNamespaceDeclaration*)decl.get())->is_global = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_global = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
@@ -3558,7 +3115,7 @@ unique_ptr<Node> ASTGenerator::ParsePrivateVariableDecl() {
     if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
         ((NodeBaseVariableDecl*)decl.get())->is_private = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
-        ((NodeNamespaceDecl*)decl.get())->is_private = true;
+        ((NodeNamespaceDeclaration*)decl.get())->is_private = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
         ((NodeBlockDecl*)decl.get())->is_private = true;
     } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {

@@ -5,6 +5,8 @@
 
 #include "NodeValueHolder.cpp"
 
+#pragma once
+
 /*
  * NodeObjectResolution – доступ к полю объекта/структуры через точку (.).
  *

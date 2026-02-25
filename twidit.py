@@ -182,9 +182,11 @@ class TwistLangLexer(QsciLexerCustom):
         # Ключевые слова
         self.keywords = {
             'if', 'else', 'for', 'while', 'let', 'in', 'and', 'or',
-            'ret', 'assert', 'lambda', 'break', 'continue',
-            'struct', 'namespace', 'func'
+            'ret', 'assert', 'lambda',
+            'struct', 'namespace', 'func', 'continue;', 'break;'
         }
+
+        
 
         # Модификаторы переменных
         self.modifiers = {
@@ -251,13 +253,17 @@ class TwistLangLexer(QsciLexerCustom):
         # Жирный шрифт для ключевых слов
         bold_font = self.get_safe_font("Consolas", self.font_size)
         bold_font.setBold(True)
+        bold_font.setItalic(True)
         self.setFont(bold_font, self.STYLE_KEYWORD)
 
         # Жирный курсив для модификаторов
         bold_italic_font = self.get_safe_font("Consolas", self.font_size)
-        bold_italic_font.setBold(True)
-        bold_italic_font.setItalic(True)
+        bold_italic_font.setUnderline(True)
         self.setFont(bold_italic_font, self.STYLE_MODIFIER)
+
+        specials_font = self.get_safe_font("Consolas", self.font_size)
+        specials_font.setItalic(True)
+        self.setFont(specials_font, self.STYLE_SPECIAL)
 
     def get_safe_font(self, preferred_font, size):
         font = QFont(preferred_font, size)
@@ -453,11 +459,16 @@ class TwistLangLexer(QsciLexerCustom):
                 if word == "namespace":
                     expecting_namespace = True
                     style = self.STYLE_KEYWORD
+                elif word == "struct":
+                    expecting_namespace = True
+                    style = self.STYLE_KEYWORD
                 elif expecting_namespace:
                     style = self.STYLE_NAMESPACE_ID
                     expecting_namespace = False
                 else:
                     if word in self.keywords:
+                        style = self.STYLE_KEYWORD
+                    elif word in {'continue', 'break'}:
                         style = self.STYLE_KEYWORD
                     elif word in self.special_keywords:
                         style = self.STYLE_SPECIAL
@@ -504,9 +515,52 @@ class TwistLangLexer(QsciLexerCustom):
 class EditorTabWidget(QTabWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTabsClosable(True)
-        self.tabCloseRequested.connect(self.close_tab)
+        self.setTabsClosable(False)  # отключаем стандартные кнопки
         self.setMovable(True)
+
+    def addTab(self, widget, title):
+        index = super().addTab(widget, title)
+        self._add_close_button(index)
+        return index
+
+    def insertTab(self, index, widget, title):
+        index = super().insertTab(index, widget, title)
+        self._add_close_button(index)
+        return index
+
+    def _add_close_button(self, index):
+        btn = QToolButton(self.tabBar())
+        btn.setIcon(self._create_close_icon())
+        btn.setIconSize(QSize(16, 16))
+        btn.setStyleSheet("""
+            QToolButton {
+                background-color: transparent;
+                border: none;
+                padding: 1px;
+            }
+            QToolButton:hover {
+                background-color: rgba(255, 255, 255, 30);
+                border-radius: 2px;
+            }
+            QToolButton:pressed {
+                background-color: rgba(255, 255, 255, 60);
+            }
+        """)
+        btn.clicked.connect(lambda checked, idx=index: self._on_close_clicked(idx))
+        self.tabBar().setTabButton(index, QTabBar.ButtonPosition.RightSide, btn)
+
+    def _create_close_icon(self):
+        pixmap = QPixmap(16, 16)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setPen(QPen(QColor("#cdd6f4"), 2))  # цвет крестика
+        painter.drawLine(4, 4, 12, 12)
+        painter.drawLine(12, 4, 4, 12)
+        painter.end()
+        return QIcon(pixmap)
+
+    def _on_close_clicked(self, index):
+        self.close_tab(index)
 
     def close_tab(self, index):
         widget = self.widget(index)
@@ -588,17 +642,13 @@ class TwistLangEditor(QMainWindow):
             QTabBar::close-button {
                 width: 20px;
                 height: 20px;
-                border-radius: 4px;
-                padding: 2px;
-                margin: 2px;
                 subcontrol-position: right;
-                background-color: transparent;
             }
             QTabBar::close-button:hover {
-                background-color: #f38ba8;
+                background-color: rgba(255, 255, 255, 30);
             }
             QTabBar::close-button:pressed {
-                background-color: #eba0ac;
+                background-color: rgba(255, 255, 255, 60);
             }
             QMenuBar {
                 background-color: #181825;
@@ -844,6 +894,7 @@ class TwistLangEditor(QMainWindow):
             api.add(word + "?4")
         for word in lexer.special_keywords:
             api.add(word + "?6")
+        
 
         # Добавляем описания (calltips) для директив
         for word in lexer.directives:
