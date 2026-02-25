@@ -1,56 +1,34 @@
 
-# функции должны быть строго типизированы
-# Вот так нельзя!
-# func sum(a, b) {
-#    ret a + b;
-# }
-
-# Вот правильная версия функции
 func sum(a: Int, b: Int) -> Int {
     ret a + b;
 }
 
-outln sum(5, 10); # 15
+outln sum(5, 10);
 
 
-# Чтобы язык сам вывел тип, нужно указать тип auto
 
 func multiply(a: auto, b: Int) -> auto {
     ret a * b;
 }
 
-outln multiply(5, 10); # 50
-outln multiply("YES", 3); # YESYESYES 
+outln multiply(5, 10);
+outln multiply("YES", 3);
 
 
-# Если функция не возвращает значение, то нужно указать тип Null (не обязательно!)
-# По стандарту если нет интсрукции ret, то функция возвращает обьект null
+
 func test() -> Null {
     outln "Test";
 }
 
-outln test(); # null
+outln test(); 
 
-
-# При декларации функции у нее появляется свой тип
 func print(a: String) -> Null {
     outln a;
 }
 
-outln typeof(print); # (Func(String) -> Null)
+outln typeof(print);
 
 
-# К аргументам функции можно использовать модификаторы
-func test_const(const a: Int, static b: Int, final c: Int) -> Null {
-    # a = a + 5; # Ошибка! Нельзя изменять аргумент, объявленный как const
-    # b = b + 0.3; # Ошибка! Нельзя изменять аргумент, объявленный как static
-    # let c = 10; # Ошибка! Нельзя заного определять переменную, объявленную как final
-}
-
-test_const(10, 20, 30);
-
-
-# Функцию можно объявить внутри другой функции (замыкания)
 func outer() -> auto {
     func inner() -> Null {
         outln "Inner function";
@@ -58,7 +36,7 @@ func outer() -> auto {
     ret inner;
 }
 
-outer()(); # Inner function
+outer()();
 
 func make_multiplier(global x: Int) -> auto {
     func multiplier(y: Int) -> Int {
@@ -68,12 +46,12 @@ func make_multiplier(global x: Int) -> auto {
 }
 
 let double = make_multiplier(2);
-outln double(5); # 10
+outln double(5);
 
 let triple = make_multiplier(3);
-outln triple(5); # 15
+outln triple(5); 
 
-# Дженерики
+
 func sum(global arg_types: auto) -> auto {
     func _(x: arg_types[0], y: arg_types[1]) -> auto {
         ret x + y;
@@ -84,7 +62,7 @@ func sum(global arg_types: auto) -> auto {
 
 outln sum({Int, Int})(20, 30); 
 
-# Рекурсивные функции
+
 func factorial(n: Int) -> Int {
     if (n <= 1) {
         ret 1;
@@ -92,10 +70,10 @@ func factorial(n: Int) -> Int {
     ret n * factorial(n - 1);
 }
 
-outln factorial(5);   # 120
+outln factorial(5); 
 
 
-# Замыкания счетчики
+
 func makeCounter(global start: Int) -> auto {
     global let count = start;
     func increment() -> Int {
@@ -105,17 +83,16 @@ func makeCounter(global start: Int) -> auto {
     func reset() -> Null {
         count = start;
     }
-    ret {increment, reset};   # возвращаем пару функций
+    ret {increment, reset};  
 }
 
 let counter = makeCounter(10);
-outln counter[0]();   # 11 (increment)
-outln counter[0]();   # 12
-counter[1]();         # reset
-outln counter[0]();   # 11
+outln counter[0](); 
+outln counter[0](); 
+counter[1]();         
+outln counter[0]();  
 
 
-# функции как конструкторы обьектов пространств имен
 func createPoint(global x: Int, global y: Int) -> auto {
     let template = namespace {
         func print() -> Null {
@@ -134,4 +111,4 @@ let p1 = createPoint(10, 20);
 let p2 = createPoint(30, 40);
 
 let p3 = p1::sum(p2);
-p3::print(); # Point(40, 60)
+p3::print(); 

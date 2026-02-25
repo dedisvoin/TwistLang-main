@@ -1,3 +1,4 @@
+
 #include <string>
 #include <vector>
 #include <memory>
@@ -11,11 +12,12 @@
 
 using namespace std;
 
-// Предварительные объявления
+#define NUMBER_ACCURACY long double
+
+
 struct Type;
 using TypePtr = shared_ptr<const Type>;
 
-// Внутренние структуры для представления типов
 struct PrimitiveType {
     string name;
 };
@@ -31,7 +33,7 @@ struct ArrayType {
 
 struct FunctionType {
     vector<TypePtr> arg_types;
-    TypePtr return_type;  // может быть nullptr для функций без возвращаемого типа
+    TypePtr return_type;  
 };
 
 struct UnionType {
@@ -41,37 +43,36 @@ struct UnionType {
 struct AutoType {};        // для "auto"
 struct PointerAutoType {}; // для "*auto"
 
-// Вспомогательная функция для создания shared_ptr<Type>
 inline TypePtr make_type_ptr(const Type& t);
 
 
-// Основной класс Type
+
 struct Type {
-    // Публичное поле (для совместимости)
+
     string pool;
 
-    // Конструкторы
+    
     Type() : m_data(monostate{}) {}
     
-    // Конструктор из строки (парсинг)
+
     Type(const string& str) {
         parse_from_string(str);
     }
     
-    // Конструкторы из внутренних представлений
+
     explicit Type(PrimitiveType pt) : m_data(std::move(pt)) { update_pool(); }
     explicit Type(PointerType pt) : m_data(std::move(pt)) { update_pool(); }
     explicit Type(ArrayType at) : m_data(std::move(at)) { update_pool(); }
     explicit Type(FunctionType ft) : m_data(std::move(ft)) { update_pool(); }
     explicit Type(UnionType ut) : m_data(std::move(ut)) { update_pool(); }
 
-    // Копирование и перемещение
+ 
     Type(const Type&) = default;
     Type(Type&&) = default;
     Type& operator=(const Type&) = default;
     Type& operator=(Type&&) = default;
 
-    // Операторы сравнения
+  
     bool operator==(const Type& other) const {
         return compare(*this, other);
     }
@@ -79,7 +80,7 @@ struct Type {
         return !(*this == other);
     }
 
-    // Основные методы (сохраняем сигнатуры)
+ 
     bool is_sub_type(const Type& other) const;
     bool is_union_type() const;
     bool is_array_type() const;
@@ -115,16 +116,10 @@ public:
     >;
     Data m_data;
 
-    // Парсинг строки и заполнение m_data
+  
     void parse_from_string(const string& str);
-
-    // Обновление строки pool на основе m_data
     void update_pool();
-
-    // Сравнение двух типов (рекурсивное)
     static bool compare(const Type& a, const Type& b);
-    
-    // Вспомогательная для is_sub_type
     bool is_sub_type_impl(const Type& other, const UnionType* other_union = nullptr) const;
     
     // Получение компонентов union в виде TypePtr
@@ -179,11 +174,8 @@ bool Type::compare(const Type& a, const Type& b) {
     }, a.m_data, b.m_data);
 }
 
-// ---------------------------------------------------------------------
-// Реализация методов
-// ---------------------------------------------------------------------
 
-// Вспомогательная функция для создания shared_ptr<Type>
+
 inline TypePtr make_type_ptr(const Type& t) {
     return make_shared<Type>(t);
 }
@@ -306,7 +298,7 @@ bool Type::is_pointer() const {
         for (const auto& comp : u.components) {
             if (!comp->is_pointer()) return false;
         }
-        // Пустой union не должен считаться указателем, но в корректных данных такого не бывает
+        
         return !u.components.empty();
     }
     
@@ -465,11 +457,6 @@ Type Type::operator|(const Type& other) const {
     }
 }
 
-// ---------------------------------------------------------------------
-// Парсинг из строки (необходим для конструктора)
-// ---------------------------------------------------------------------
-
-// Вспомогательные функции для парсинга
 
 static string trim(const string& s) {
     size_t start = s.find_first_not_of(" \t");
@@ -478,7 +465,7 @@ static string trim(const string& s) {
     return s.substr(start, end - start + 1);
 }
 
-// Разбивает строку по разделителю, учитывая скобки
+
 static vector<string> split_top_level(const string& s, char delim) {
     vector<string> result;
     int paren = 0;
@@ -554,7 +541,7 @@ void Type::parse_from_string(const string& str) {
 
     // Проверка на массив
     if (s[0] == '[') {
-        // Формат: [<element_type>, <size>] или [<element_type>, ~]
+        
         size_t close = s.find(']');
         if (close != string::npos) {
             string inner = s.substr(1, close - 1);
@@ -576,7 +563,7 @@ void Type::parse_from_string(const string& str) {
 
     // Проверка на функцию
     if (s.find("Func") != string::npos) {
-        // Упрощённый парсинг: ищем скобки
+        
         size_t lparen = s.find('(');
         if (lparen != string::npos) {
             size_t rparen = s.find(')', lparen);
@@ -593,7 +580,7 @@ void Type::parse_from_string(const string& str) {
                 if (arrow != string::npos) {
                     string ret_str = s.substr(arrow + 2);
                     ret_str = trim(ret_str);
-                    // Убираем возможные внешние скобки
+                    
                     if (!ret_str.empty() && ret_str.front() == '(' && ret_str.back() == ')') {
                         ret_str = ret_str.substr(1, ret_str.size() - 2);
                     }
@@ -611,9 +598,6 @@ void Type::parse_from_string(const string& str) {
     update_pool();
 }
 
-// ---------------------------------------------------------------------
-// Вспомогательные функции (сохраняем сигнатуры)
-// ---------------------------------------------------------------------
 
 Type create_pointer_type(const Type& type) {
     if (type.is_union_type()) {
@@ -641,6 +625,7 @@ Type create_function_type(vector<Type> argument_types) {
     for (auto& a : argument_types) {
         args.push_back(make_type_ptr(a));
     }
+    
     return Type(FunctionType{args, nullptr});
 }
 
@@ -659,21 +644,20 @@ namespace STANDART_TYPE {
     const Type NULL_T = Type("Null");
     const Type LAMBDA = Type("Lambda");
     const Type AUTO = Type("auto");
+    const Type METHOD = Type("Method");
+
+    const Type UNTYPED = INT | BOOL | STRING | CHAR | DOUBLE | NAMESPACE | NULL_T | LAMBDA;
 }
 
 bool IsTypeCompatible(const Type& target_type, const Type& source_type) {
     return source_type.is_sub_type(target_type);
 }
 
-// ---------------------------------------------------------------------
-// Структура Value и вспомогательные функции создания
-// ---------------------------------------------------------------------
-
 struct Value {
     Type type;
     std::any data;
 
-    Value(Type type, std::any data) 
+    Value(const Type type, std::any data) 
         : type(std::move(type)), data(std::move(data)) {}
     
     Value(const Value& other) 
@@ -715,7 +699,7 @@ struct Null {
 };
 
 Value NewInt(int64_t value) { return Value(STANDART_TYPE::INT, value); }
-Value NewDouble(float value) { return Value(STANDART_TYPE::DOUBLE, value); }
+Value NewDouble(NUMBER_ACCURACY value) { return Value(STANDART_TYPE::DOUBLE, value); }
 Value NewBool(bool value) { return Value(STANDART_TYPE::BOOL, value); }
 Value NewType(const string& name) { return Value(STANDART_TYPE::TYPE, Type(name)); }
 Value NewType(const Type& type) { return Value(STANDART_TYPE::TYPE, type); }

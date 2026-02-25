@@ -5,10 +5,16 @@ global func is_ptr(arg: Any) -> Bool {
     ret false;
 }
 
-global func move(final static arg: Any) -> *auto {
+global func move(final static arg: *auto, final static pos: (*auto) | Null = null) -> (*auto) | Null {
+    if (pos != null) {
+        *pos = *arg;
+        *arg = null;
+        ret;
+    }
     if (is_ptr(arg)) {
         let _value_cpy = *arg;
         *arg = null;
+        
         ret new (_value_cpy);
     } else {
         ret new (arg);
@@ -33,6 +39,7 @@ func copy(final static arg: Any) -> *auto {
 func malloc(T: Type) -> *auto {
     ret new<static(T)>;
 }
+
 
 
 

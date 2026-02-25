@@ -4,6 +4,8 @@
 #include "twist-args.cpp"
 #include <memory>
 
+#pragma once
+
 using namespace std;
 
 struct Lambda {

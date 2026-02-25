@@ -1,6 +1,8 @@
 #include "twist-values.cpp"
 
-// TODO
+#pragma once
+
+
 struct Array {
     vector<Value> values;
     Type type;

@@ -1086,8 +1086,7 @@ class TwistLangEditor(QMainWindow):
                 self.status_bar.showMessage("No valid include path found", 2000)
         else:
             self.status_bar.showMessage("Not an @include line", 2000)
-
-    # --- Зум ---
+   
     def zoom_in(self):
         editor = self.current_editor()
         if not editor:

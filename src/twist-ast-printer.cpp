@@ -181,7 +181,7 @@ public:
             }
             
             case NodeTypes::NODE_NAME_RESOLUTION: {
-                auto* n = static_cast<NodeNameResolution*>(node);
+                auto* n = static_cast<NodeNamespaceResolution*>(node);
                 output << colorize("NameResolution", Colors::STRUCTURE_COLOR) << ": "
                        << colorize(n->current_name, Colors::IDENTIFIER_COLOR);
                 if (!n->remaining_chain.empty()) {

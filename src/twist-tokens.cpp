@@ -4,9 +4,7 @@
 
 using namespace std;
 
-/*
-    Token types
-*/
+
 enum TokenType {
     NUMBER, STRING, OPERATOR, LITERAL, CHAR,
     DAC, DAD,
@@ -16,7 +14,7 @@ enum TokenType {
     KEYWORD,
     DEREFERENCE,
     END_OF_FILE,
-    DUMMY // Dummy token
+    DUMMY
 };
  const vector<string> TTTypeArray = {
     "NUMBER", "STRING", "OPERATOR", "LITERAL", "CHAR",

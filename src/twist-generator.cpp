@@ -1,5 +1,6 @@
 #include "twist-tokenwalker.cpp"
 #include "twist-namespace.cpp"
+#include "twist-structs.cpp"
 #include "twist-functions.cpp"
 #include <type_traits>
 #include <vcruntime_startup.h>
@@ -11,14 +12,33 @@
 #include "twist-memory.cpp"
 #include "twist-args.cpp"
 
-#include <algorithm>
+#include "Nodes/NodeNumber.cpp"
+#include "Nodes/NodeString.cpp"
+#include "Nodes/NodeChar.cpp"
+#include "Nodes/NodeBool.cpp"
+#include "Nodes/NodeNull.cpp"
+#include "Nodes/NodeLiteral.cpp"
+#include "Nodes/NodeNamespaceResolution.cpp"
+#include "Nodes/NodeObjectResolution.cpp"
+#include "Nodes/NodeScopes.cpp"
+#include "Nodes/NodeUnary.cpp"
+#include "Nodes/NodeBinary.cpp"
+#include "Nodes/NodeVariableDeclaration.cpp"
+#include "Nodes/NodeOut.cpp"
+#include "Nodes/NodeBlock.cpp"
+#include "Nodes/NodeIf.cpp"
+#include "Nodes/NodeBreak.cpp"
+#include "Nodes/NodeContinue.cpp"
+#include "Nodes/NodeWhile.cpp"
+#include "Nodes/NodeDoWhile.cpp"
+#include "Nodes/NodeFor.cpp"
+
 #include <iostream>
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
 #include <memory>
-#include <cmath>
 #include <any>
 
 #pragma once
@@ -26,799 +46,13 @@
 #pragma clang diagnostic ignored "-Wreturn-type"
 
 
-
-#define NO_EXEC \
-    void exec_from(Memory& _memory) override {} \
-
-#define NO_EVAL \
-    Value eval_from(Memory& _memory) override {} \
-
-
 using namespace std;
 
 
 
-// NodeNumber:
-// Подробное описание:
-// Эта нода представляет числовой литерал в AST. Она хранит информацию о типе
-// числа (целое или дробное) и самом значении. При создании парсит токен,
-// определяет тип и сохраняет значение в соответствующем поле. Метод
-// `eval_from` возвращает значение типа `Value`.
-struct NodeNumber : public Node { NO_EXEC
-    Value value = NewNull();
 
-    NodeNumber(int value) : value(NewInt(value)) { this->NODE_TYPE = NodeTypes::NODE_NUMBER; }
 
-    NodeNumber(Token& token) {
-        this->NODE_TYPE = NodeTypes::NODE_NUMBER;
 
-        size_t dot_count = count(token.value.begin(), token.value.end(), '.');
-
-        if (dot_count > 1) ERROR::InvalidNumber(token, token.value);
-
-        if (dot_count == 1) {
-            this->value = NewDouble(atof(
-                (token.value.substr(0, token.value.find(".")) + "," + token.value.substr(token.value.find(".") + 1)).c_str()
-            ));
-        } else {
-            this->value = NewInt(stoll(token.value));
-        }
-    }
-
-    Value eval_from(Memory& _memory) override {
-        return value;
-    }
-};
-
-// NodeString:
-// Подробное описание:
-// Нода для строковых литералов. Хранит исходную строку и при вычислении
-// возвращает `Value` с типом STRING и соответствующими данными.
-struct NodeString : public Node { NO_EXEC
-    Value value;  // Храним сразу Value
-
-    NodeString(string& val) : value(NewString(std::move(val))) {
-        this->NODE_TYPE = NodeTypes::NODE_STRING;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        return value;
-    }
-};
-
-// NodeChar:
-// Подробное описание:
-// Нода для символьных литералов (char). Хранит символ и при eval возвращает
-// `Value` с типом CHAR и самим символом.
-struct NodeChar : public Node { NO_EXEC
-    // Храним как union: либо char, либо готовый Value
-    union {
-        char char_value;
-        Value cached_value;
-    };
-    bool is_cached = false;
-
-    NodeChar(char val) : char_value(val) {
-        this->NODE_TYPE = NodeTypes::NODE_CHAR;
-    }
-
-    ~NodeChar() {
-        if (is_cached) {
-            cached_value.~Value();  // Явно разрушаем Value если был создан
-        }
-    }
-
-    Value eval_from(Memory& _memory) override {
-        if (!is_cached) {
-            // Создаем Value на месте (placement new)
-            new (&cached_value) Value(NewChar(char_value));
-            is_cached = true;
-        }
-        return cached_value;
-    }
-
-};
-// NodeBool:
-// Подробное описание:
-// Нода для булевых литералов `true`/`false`. При парсинге определяет булевое
-// значение и при eval возвращает `Value` с типом BOOL.
-auto ValueTrue = NewBool(true);
-auto ValueFalse = NewBool(true);
-struct NodeBool : public Node { NO_EXEC
-    Token token;
-    Value value = NewNull();
-
-    NodeBool(Token& token){
-        this->NODE_TYPE = NodeTypes::NODE_BOOL;
-        this->token = token;
-        if (token.value != "true") this->value = ValueTrue;
-        if (token.value != "false") this->value = ValueFalse;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        if (token.value == "true") return this->value;
-        if (token.value == "false") return this->value;
-    }
-};
-
-// NodeNull:
-// Подробное описание:
-// Нода представления `null`-значения. Содержит предсозданный `Value` типа
-// NULL_T и при eval просто возвращает этот объект.
-auto ValueNull = NewNull();
-struct NodeNull : public Node { NO_EXEC
-    NodeNull() {
-        this->NODE_TYPE = NodeTypes::NODE_NULL;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        return ValueNull;
-    }
-};
-
-// NodeLiteral:
-// Подробное описание:
-// Нода, представляющая идентификатор (имя переменной/литерала). При eval она
-// проверяет существование литерала в памяти и возвращает связанное значение.
-struct NodeLiteral : public Node { NO_EXEC
-    string name;
-    Token& token;
-
-    NodeLiteral(Token& token) : token(token) {
-        name = token.value;
-        this->NODE_TYPE = NODE_LITERAL;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        if (!_memory.check_literal(name))
-            ERROR::UndefinedVariable(token);
-
-        return _memory.get_variable(name)->value;
-    }
-};
-
-// NodeValueHolder:
-// Подробное описание:
-// Упаковщик для уже вычисленного `Value`. Используется когда нужно передать
-// конкретное значение как ноду (например, временные значения в трансформациях).
-struct NodeValueHolder : public Node { NO_EXEC
-    Value value;
-
-    NodeValueHolder(Value val) : value(std::move(val)) {
-        this->NODE_TYPE = NodeTypes::NODE_VALUE_HOLDER;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        return value;
-    }
-};
-
-// NodeNameResolution:
-// Подробное описание:
-// Нода для доступа к имени внутри namespace-выражения (напр. a.b.c).
-// Содержит выражение-namespace, текущее имя и оставшуюся цепочку. При eval
-// рекурсивно проходит цепочку и возвращает значение конечного элемента,
-// выполняя проверки доступа и приватности.
-struct NodeNameResolution : public Node { NO_EXEC
-    unique_ptr<Node>    namespace_expr;
-    string              current_name;
-    vector<string>      remaining_chain; // Оставшаяся цепочка имен
-
-    Token               start;
-    Token               end;
-
-    NodeNameResolution(unique_ptr<Node> namespace_expr, const string& current_name, Token start, Token end,
-                      const vector<string>& remaining_chain = {}) :
-        namespace_expr(std::move(namespace_expr)), current_name(current_name), start(start), end(end) ,
-        remaining_chain(remaining_chain) {
-        this->NODE_TYPE = NodeTypes::NODE_NAME_RESOLUTION;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        // Получаем значение namespace
-        Value ns_value = namespace_expr->eval_from(_memory);
-
-        // Проверяем тип
-        if (ns_value.type != STANDART_TYPE::NAMESPACE) {
-            ERROR::InvalidAccessorType(start, end, ns_value.type.pool);
-        }
-
-        // ИСПРАВЛЕНО: используем ссылку вместо копии
-        auto& ns = any_cast<Namespace&>(ns_value.data);
-
-        // Теперь memory - shared_ptr, получаем доступ через get()
-        Memory* ns_memory = ns.memory.get();
-
-        // Проверяем существование переменной/namespace
-        if (!ns_memory->check_literal(current_name)) {
-            ERROR::UndefinedProperty(start, end, current_name, "namespace");
-        }
-
-        // Получаем значение
-        auto result = ns_memory->get_variable(current_name);
-
-        if (result->modifiers.is_private)
-            ERROR::PrivatePropertyAccess(start, end, current_name);
-
-        // Если есть оставшаяся цепочка, продолжаем рекурсивно
-        if (!remaining_chain.empty()) {
-            // Создаем новую ноду для следующего уровня
-            vector<string> next_chain(remaining_chain.begin() + 1, remaining_chain.end());
-            auto next_node = make_unique<NodeNameResolution>(
-                make_unique<NodeValueHolder>(result->value),
-                remaining_chain[0],
-                start, end,
-                next_chain
-            );
-
-            return next_node->eval_from(_memory);
-        }
-
-        return result->value;
-    }
-};
-
-// + SUCCESS WORKS
-// NodeScopes:
-// Подробное описание:
-// Нода, представляющая скобочное выражение/сопровождающее выражение в
-// скобках. Просто вычисляет вложенное выражение при eval.
-struct NodeScopes : public Node { NO_EXEC
-    unique_ptr<Node> expression;
-
-    NodeScopes(unique_ptr<Node> expr) : expression(std::move(expr)) {
-        this->NODE_TYPE = NodeTypes::NODE_SCOPES;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        return expression->eval_from(_memory);
-    }
-};
-
-
-// + SUCCESS WORKS
-// NodeUnary:
-// Подробное описание:
-// Нода унарных операций: принимает операнд и оператор (например -, +, !,
-// ++, --). Выполняет соответствующую операцию в `eval_from` с учётом типа
-// операнда и выполняет проверки на поддерживаемые операции.
-struct NodeUnary : public Node { NO_EXEC
-    unique_ptr<Node> operand;
-    string op;
-
-    Token start;
-    Token end;
-    Token operator_token;
-
-    NodeUnary(unique_ptr<Node> operand, Token start, Token end, Token operator_token)
-        : operand(std::move(operand)), start(start), end(end), operator_token(operator_token) {
-            this->NODE_TYPE = NodeTypes::NODE_UNARY;
-            op = operator_token.value;
-        }
-
-    Value eval_from(Memory& _memory) override {
-        Value value = operand->eval_from(_memory);
-
-        if (value.type == STANDART_TYPE::INT) {
-            if (op == "-") {
-                int64_t v = any_cast<int64_t>(value.data);
-                return NewInt(-v);
-            } else if (op == "+") {
-                int64_t v = any_cast<int64_t>(value.data);
-                return NewInt(+v);
-            }
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
-        } else if (value.type == STANDART_TYPE::BOOL) {
-            if (op == "!" || op == "not")
-                return NewBool(!any_cast<bool>(value.data));
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
-        } else if (value.type == STANDART_TYPE::NULL_T) {
-            if (op == "!")
-                return NewBool(true);
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
-        } else if (value.type == STANDART_TYPE::DOUBLE) {
-            if (op == "-") {
-                long double v = any_cast<long double>(value.data);
-                return NewDouble(-v);
-            } else if (op == "+") {
-                long double v = any_cast<long double>(value.data);
-                return NewDouble(+v);
-            }
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
-        } else if (value.type.is_pointer()) {
-            if (op == "--") {
-                long double v = any_cast<int>(value.data);
-                return NewPointer(v - 1, value.type, false);
-            } else if (op == "++") {
-                long double v = any_cast<int>(value.data);
-                return NewPointer(v + 1, value.type, false);
-            }
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
-        } else
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
-
-
-
-        // Implement unary operation evaluation here
-        return value;
-    }
-};
-
-// + SUCCESS WORKS
-// NodeBinary:
-// Подробное описание:
-// Нода бинарных операций: хранит левый и правый операнды и строку-оператор.
-// В `eval_from` реализовано множество комбинаций типов (INT, DOUBLE, BOOL,
-// STRING, CHAR, указатели, массивы и т.д.) с соответствующими семантиками
-// операторов (+, -, *, /, %, ==, !=, <, > и т.д.).
-struct NodeBinary : public Node { NO_EXEC
-    unique_ptr<Node> left;
-    unique_ptr<Node> right;
-    string op;
-
-    Token& start_token;
-    Token& end_token;
-    Token& op_token;
-
-    NodeBinary(unique_ptr<Node> left, const string& operation, unique_ptr<Node> right, Token& start_token, Token& end_token, Token& op_token)
-        : left(std::move(left)), right(std::move(right)), op(operation), start_token(start_token), end_token(end_token), op_token(op_token) {
-            this->NODE_TYPE = NodeTypes::NODE_BINARY;
-        }
-
-    Value eval_from(Memory& _memory) override {
-        auto left_val = left->eval_from(_memory);
-
-        if (left_val.type == STANDART_TYPE::BOOL) {
-            bool l = any_cast<bool>(left_val.data);
-            if ((op == "||" || op == "or") && l)
-                return NewBool(true);
-            else if ((op == "&&" || op == "and") && !l)
-                return NewBool(false);
-        }
-
-        auto right_val = right->eval_from(_memory);
-
-        if (left_val.type == STANDART_TYPE::INT && right_val.type == STANDART_TYPE::INT) {
-            int64_t l = any_cast<int64_t>(left_val.data);
-            int64_t r = any_cast<int64_t>(right_val.data);
-
-            if (op == "+")
-                return NewInt(l + r);
-            else if (op == "-")
-                return NewInt(l - r);
-            else if (op == "*")
-                return NewInt(l * r);
-            else if (op == "/") {
-                if (r == 0) ERROR::ZeroDivision(start_token, end_token, op_token, left_val, right_val);
-                return NewInt(l / r);
-            }
-            else if (op == "**")
-                return NewInt(pow(l,r));
-            else if (op == "%")
-                return NewInt(l % r);
-            else if (op == "==")
-                return NewBool(l == r);
-            else if (op == "!=")
-                return NewBool(l != r);
-            else if (op == "<=")
-                return NewBool(l <= r);
-            else if (op == ">=")
-                return NewBool(l >= r);
-            else if (op == "<")
-                return NewBool(l < r);
-            else if (op == ">")
-                return NewBool(l > r);
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-
-        } else if ((left_val.type == STANDART_TYPE::DOUBLE || left_val.type == STANDART_TYPE::INT) &&
-                 (right_val.type == STANDART_TYPE::DOUBLE || right_val.type == STANDART_TYPE::INT)) {
-            float l = (left_val.type == STANDART_TYPE::DOUBLE) ? any_cast<float>(left_val.data) : static_cast<long double>(any_cast<int64_t>(left_val.data));
-            float r = (right_val.type == STANDART_TYPE::DOUBLE) ? any_cast<float>(right_val.data) : static_cast<long double>(any_cast<int64_t>(right_val.data));
-
-            if (op == "+")
-                return NewDouble(l + r);
-            else if (op == "-")
-                return NewDouble(l - r);
-            else if (op == "*")
-                return NewDouble(l * r);
-            else if (op == "/") {
-                if (r == 0) ERROR::ZeroDivision(start_token, end_token, op_token, left_val, right_val);
-                return NewDouble(l / r);
-            }
-            else if (op == "**")
-                return NewDouble(pow(l, r));
-            else if (op == "%")
-                return NewDouble(l - floor(l / r) * r);
-            else if (op == "==")
-                return NewBool(l == r);
-            else if (op == "!=")
-                return NewBool(l != r);
-            else if (op == "<=")
-                return NewBool(l <= r);
-            else if (op == ">=")
-                return NewBool(l >= r);
-            else if (op == "<")
-                return NewBool(l < r);
-            else if (op == ">")
-                return NewBool(l > r);
-
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-
-        } else if (left_val.type == STANDART_TYPE::BOOL && right_val.type == STANDART_TYPE::BOOL) {
-            bool l = any_cast<bool>(left_val.data);
-            bool r = any_cast<bool>(right_val.data);
-            if (op == "==")
-                return NewBool(l == r);
-            else if (op == "!=")
-                return NewBool(l != r);
-            else if (op == "||" || op == "or")
-                return NewBool(l || r);
-            else if (op == "&&" || op == "and")
-                return NewBool(l && r);
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-        } else if (left_val.type == STANDART_TYPE::TYPE && right_val.type == STANDART_TYPE::TYPE) {
-            Type l = any_cast<Type>(left_val.data);
-            Type r = any_cast<Type>(right_val.data);
-
-            if (op == "|")
-                return Value(STANDART_TYPE::TYPE, l | r);
-            if (op == "==")
-                return NewBool(l == r);
-            if (op == "!=")
-                return NewBool(l != r);
-            if (op == "<<")
-                return NewBool(r.is_sub_type(l));
-            if (op == ">>")
-                return NewBool(l.is_sub_type(r));
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-        } else if ((left_val.type == STANDART_TYPE::NULL_T && right_val.type != STANDART_TYPE::NULL_T) ||
-                   (left_val.type != STANDART_TYPE::NULL_T && right_val.type == STANDART_TYPE::NULL_T) ||
-                   (left_val.type == STANDART_TYPE::NULL_T && right_val.type == STANDART_TYPE::NULL_T)) {
-            if (op == "==") {
-                if (left_val.type == right_val.type)
-                    return NewBool(true);
-                else
-                    return NewBool(false);
-            }
-            else if (op == "!=") {
-                if (left_val.type == right_val.type)
-                    return NewBool(false);
-                else
-                    return NewBool(true);
-            }
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-        } else if (left_val.type == STANDART_TYPE::STRING && right_val.type == STANDART_TYPE::STRING) {
-            if (op == "==")
-                return NewBool(any_cast<string>(left_val.data) == any_cast<string>(right_val.data));
-
-            if (op == "!=")
-                return NewBool(any_cast<string>(left_val.data) != any_cast<string>(right_val.data));
-
-            if (op == "+")
-                return NewString(any_cast<string>(left_val.data) + any_cast<string>(right_val.data));
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-
-        } else if (left_val.type == STANDART_TYPE::CHAR && right_val.type == STANDART_TYPE::CHAR) {
-            if (op == "==")
-                return NewBool(any_cast<char>(left_val.data) == any_cast<char>(right_val.data));
-
-            if (op == "!=")
-                return NewBool(any_cast<char>(left_val.data) != any_cast<char>(right_val.data));
-
-            if (op == "+")
-                return NewString(string()+any_cast<char>(left_val.data) + string()+any_cast<char>(right_val.data));
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-        } else if (left_val.type == STANDART_TYPE::STRING && right_val.type == STANDART_TYPE::INT) {
-            if (op == "*") {
-                string dummy;
-
-                for (int i = 0; i < any_cast<int64_t>(right_val.data); i++) {
-                    dummy += any_cast<string>(left_val.data);
-                }
-                return NewString(dummy);
-            }
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-
-        } else if (left_val.type == STANDART_TYPE::CHAR && right_val.type == STANDART_TYPE::INT) {
-            if (op == "*") {
-                string dummy;
-
-                for (int i = 0; i < any_cast<int64_t>(right_val.data); i++) {
-                    dummy += any_cast<char>(left_val.data);
-                }
-                return NewString(dummy);
-            }
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-
-        } else if (left_val.type.is_pointer() && right_val.type.is_pointer()) {
-            if (op == "==")
-                return NewBool(any_cast<int>(left_val.data) == any_cast<int>(right_val.data));
-            if (op == "!=")
-                return NewBool(any_cast<int>(left_val.data) != any_cast<int>(right_val.data));
-            if (op == ">")
-                return NewBool(any_cast<int>(left_val.data) > any_cast<int>(right_val.data));
-            if (op == "<")
-                return NewBool(any_cast<int>(left_val.data) < any_cast<int>(right_val.data));
-            if (op == ">=")
-                return NewBool(any_cast<int>(left_val.data) >= any_cast<int>(right_val.data));
-            if (op == "<=")
-                return NewBool(any_cast<int>(left_val.data) <= any_cast<int>(right_val.data));
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-        } else if (left_val.type.is_pointer() && right_val.type == STANDART_TYPE::INT) {
-
-            if (op == "+")
-                return NewPointer(any_cast<int>(left_val.data) + any_cast<int64_t>(right_val.data), left_val.type, false);;
-
-            if (op == "-")
-                return NewPointer(any_cast<int>(left_val.data) - any_cast<int64_t>(right_val.data), left_val.type, false);
-
-
-        } else if (left_val.type.is_array_type() && right_val.type.is_array_type()) {
-            if (op == "+") {
-                // ОПТИМИЗАЦИЯ: Кэшируем any_cast результаты чтобы не вызывать их в цикле
-                Type T = Type("");
-
-                auto& left_arr = any_cast<Array&>(left_val.data);
-                for (int i = 0; i < left_arr.values.size(); i++) {
-                    T = T | left_arr.values[i].type;
-                }
-
-                auto& right_arr = any_cast<Array&>(right_val.data);
-                for (int i = 0; i < right_arr.values.size(); i++) {
-                    T = T | right_arr.values[i].type;
-                }
-
-                T = Type("[" + T.pool + ", ~]");
-                return Value(T, Array(T,
-                    concatenate(left_arr.values, right_arr.values)));
-            }
-        } else if (left_val.type.is_array_type()) {
-            if (op == "<-") {
-                // ОПТИМИЗАЦИЯ: Для push операции, если левая часть - это переменная,
-                // модифицируем её ПРЯМО в памяти БЕЗ промежуточного копирования
-                if (left->NODE_TYPE == NodeTypes::NODE_LITERAL) {
-                    string var_name = ((NodeLiteral*)left.get())->name;
-                    MemoryObject* var_obj = _memory.get_variable(var_name);
-
-                    if (var_obj && var_obj->value.type.is_array_type()) {
-                        // Модифицируем массив напрямую в памяти
-                        auto& arr = any_cast<Array&>(var_obj->value.data);
-                        auto arr_type_pair = arr.type.parse_array_type();
-                        string elem_type_str = arr_type_pair.first;
-                        if (elem_type_str != "") {
-                            Type expected(elem_type_str);
-                            if (!IsTypeCompatible(expected, right_val.type)) {
-                                ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_val.type.pool);
-                            }
-                        }
-                        arr.values.emplace_back(right_val);
-                        // Возвращаем ссылку из памяти
-                        return var_obj->value;
-                    }
-                }
-
-                // Fallback для других случаев (например, если левая часть - выражение)
-                {
-                    auto& arr = any_cast<Array&>(left_val.data);
-                    auto arr_type_pair = arr.type.parse_array_type();
-                    string elem_type_str = arr_type_pair.first;
-                    if (elem_type_str != "") {
-                        Type expected(elem_type_str);
-                        if (!IsTypeCompatible(expected, right_val.type)) {
-                            ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_val.type.pool);
-                        }
-                    }
-                    arr.values.emplace_back(right_val);
-                }
-                return left_val;
-            }
-        } else
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-    }
-};
-
-// + SUCCESS WORKS
-// NodeBaseVariableDecl:
-// Подробное описание:
-// Базовая нода объявления переменной: хранит имя, выражение-значение,
-// опциональное выражение типа и модификаторы (static, final, const, global,
-// private). В `exec_from` создаёт объект в памяти, выполняет валидацию типов
-// и регистрацию в STATIC_MEMORY при необходимости.
-struct NodeBaseVariableDecl : public Node { NO_EVAL
-    string var_name;
-    unique_ptr<Node> value_expr;
-    Token decl_token;
-    unique_ptr<Node> type_expr;
-    Token type_start_token;
-    Token type_end_token;
-
-    Token start_expr_token;
-    Token end_expr_token;
-
-    bool nullable = false;
-
-    bool is_static = false;
-    bool is_final = false;
-    bool is_const = false;
-    bool is_global = false;
-    bool is_private = false;
-
-    NodeBaseVariableDecl(const string& name, unique_ptr<Node> expr, Token decl_token, unique_ptr<Node> type_expr,
-                            Token type_start_token, Token type_end_token, bool nullable, Token start_expr_token, Token end_expr_token)
-        : var_name(name), decl_token(decl_token), type_start_token(type_start_token), type_end_token(type_end_token),
-        nullable(nullable), start_expr_token(start_expr_token), end_expr_token(end_expr_token) {
-            this->NODE_TYPE = NodeTypes::NODE_VARIABLE_DECLARATION;
-            this->value_expr = std::move(expr);
-            this->type_expr = std::move(type_expr);
-        }
-
-    void exec_from(Memory& _memory) override {
-        Value value = value_expr->eval_from(_memory);
-
-        if (_memory.check_literal(var_name)) {
-            if (_memory.is_final(var_name)) {
-                ERROR::VariableAlreadyDefined(decl_token, var_name);
-            }
-            auto addr = _memory.get_variable(var_name)->address;
-            STATIC_MEMORY.unregister_object(addr);
-            _memory.delete_variable(var_name);
-
-        }
-
-        Type static_type = value.type;
-        if (is_static) {
-            if (!type_expr) ERROR::WaitedTypeExpression(type_end_token);
-
-            if (type_expr->NODE_TYPE == NodeTypes::NODE_LITERAL && ((NodeLiteral*)type_expr.get())->name == "auto") {
-                static_type = value.type;
-            } else {
-                auto type_value = type_expr->eval_from(_memory);
-
-                if (type_value.type != STANDART_TYPE::TYPE)
-                    ERROR::InvalidType(type_start_token, type_end_token);
-
-                static_type = any_cast<Type>(type_value.data);
-                if (nullable)
-                    static_type = static_type | STANDART_TYPE::NULL_T;
-
-            }
-
-            // Используем IsTypeCompatible вместо прямого сравнения
-            if (!IsTypeCompatible(static_type, value.type)) {
-                ERROR::IncompartableTypeVarDeclaration(type_start_token, type_end_token, start_expr_token, end_expr_token, static_type, value.type);
-            }
-        }
-
-        MemoryObject* object = CreateMemoryObject(value, static_type, &_memory, is_const, is_static, is_final, is_global, is_private);
-        STATIC_MEMORY.register_object(object);
-        _memory.add_object(var_name, object);
-    }
-};
-
-// + SUCCESS WORKS
-// NodeBaseOut:
-// Подробное описание:
-// Нода вывода без перевода строки. Содержит список выражений, которые нужно
-// вычислить и напечатать. Метод `print` форматирует значение в поток в
-// зависимости от типа Value.
-struct NodeBaseOut : public Node { NO_EVAL
-    vector<unique_ptr<Node>> expression;
-    NodeBaseOut(vector<unique_ptr<Node>> expr) : expression(std::move(expr)) {
-        this->NODE_TYPE = NodeTypes::NODE_OUT;
-    }
-
-    void print(std::ostream& buf, Value value, Memory& _memory) {
-        if (value.type == STANDART_TYPE::INT) {
-            buf << any_cast<int64_t&>(value.data);
-        } else if (value.type == STANDART_TYPE::DOUBLE) {
-            buf << any_cast<float&>(value.data);
-        } else if (value.type == STANDART_TYPE::BOOL) {
-            buf << (any_cast<bool&>(value.data) ? "true" : "false");
-        } else if (value.type == STANDART_TYPE::TYPE) {
-            buf << any_cast<Type&>(value.data).pool;
-        } else if (value.type == STANDART_TYPE::NULL_T) {
-            buf << "null";
-        } else if (value.type == STANDART_TYPE::NAMESPACE) {
-            buf << any_cast<Namespace&>(value.data).name;
-        } else if (value.type == STANDART_TYPE::STRING) {
-            buf << any_cast<string&>(value.data);
-        } else if (value.type == STANDART_TYPE::CHAR) {
-            buf << any_cast<char>(value.data);
-        } else if (value.type == STANDART_TYPE::LAMBDA) {
-            buf << "Lambda(";
-            auto lambda = any_cast<Lambda*>(value.data);
-            for (int i = 0; i < lambda->arguments.size(); i++) {
-                buf << lambda->arguments[i]->name;
-                if (i != lambda->arguments.size() - 1) buf << ", ";
-            }
-            buf << ")";
-        } else if (value.type.is_pointer()) {
-            buf << value.type.pool << "[0x" << any_cast<int>(value.data) << "]";
-        } else if (value.type.is_func()) {
-            auto f = any_cast<Function*>(value.data);
-            buf << "Func'" + f->name + "'(";
-            // ОПТИМИЗАЦИЯ: Кэшируем eval_from результаты вне цикла
-            for (int i = 0; i < f->arguments.size(); i++) {
-                auto arg_type_val = f->arguments[i]->type_expr->eval_from(_memory);
-                buf << f->arguments[i]->name << ":" << any_cast<Type>(arg_type_val.data).pool;
-
-                if (i != f->arguments.size() - 1) buf << ", ";
-            }
-            auto ret_type_val = f->return_type->eval_from(_memory);
-            buf << ") -> " << any_cast<Type>(ret_type_val.data).pool;
-        }
-    }
-
-    void exec_from(Memory& _memory) override {
-        for (auto& expr : expression) {
-            auto value = expr->eval_from(_memory);
-            print(std::cout, value, _memory);
-        }
-    }
-};
-
-// + SUCCESS WORKS
-// NodeBaseOutLn:
-// Подробное описание:
-// Нода вывода с переводом строки. Аналогична `NodeBaseOut`, но после печати
-// добавляет перевод строки и сбрасывает буфер.
-struct NodeBaseOutLn : public Node { NO_EVAL
-    vector<unique_ptr<Node>> expression;
-    NodeBaseOutLn(vector<unique_ptr<Node>> expr) : expression(std::move(expr)) {
-        this->NODE_TYPE = NodeTypes::NODE_OUTLN;
-    }
-
-    void print(std::ostream& buf, Value value, Memory& _memory) {
-        if (value.type == STANDART_TYPE::INT) {
-            buf << any_cast<int64_t>(value.data);
-        } else if (value.type == STANDART_TYPE::DOUBLE) {
-            buf << any_cast<float>(value.data);
-        } else if (value.type == STANDART_TYPE::BOOL) {
-            buf << (any_cast<bool>(value.data) ? "true" : "false");
-        } else if (value.type == STANDART_TYPE::TYPE) {
-            buf << any_cast<Type>(value.data).pool;
-        } else if (value.type == STANDART_TYPE::NULL_T) {
-            buf << "null";
-        } else if (value.type == STANDART_TYPE::NAMESPACE) {
-            buf << any_cast<Namespace>(value.data).name;
-        } else if (value.type == STANDART_TYPE::STRING) {
-            buf << any_cast<string>(value.data);
-        } else if (value.type == STANDART_TYPE::CHAR) {
-            buf << any_cast<char>(value.data);
-        } else if (value.type == STANDART_TYPE::LAMBDA) {
-            buf << "Lambda(";
-            auto lambda = any_cast<Lambda*>(value.data);
-            for (int i = 0; i < lambda->arguments.size(); i++) {
-                buf << lambda->arguments[i]->name;
-                if (i != lambda->arguments.size() - 1) buf << ", ";
-            }
-            buf << ")";
-        } else if (value.type.is_pointer()) {
-            buf << value.type.pool << "[0x" << any_cast<int>(value.data) << "]";
-        } else if (value.type.is_func()) {
-            auto f = any_cast<Function*>(value.data);
-            buf << "Func'" + f->name + "'(";
-            // ОПТИМИЗАЦИЯ: Кэшируем eval_from результаты вне цикла
-            for (int i = 0; i < f->arguments.size(); i++) {
-                auto arg_type_val = f->arguments[i]->type_expr->eval_from(_memory);
-                buf << f->arguments[i]->name << ":" << any_cast<Type>(arg_type_val.data).pool;
-
-                if (i != f->arguments.size() - 1) buf << ", ";
-            }
-            auto ret_type_val = f->return_type->eval_from(_memory);
-            buf << ") -> " << any_cast<Type>(ret_type_val.data).pool;
-        }
-    }
-
-    void exec_from(Memory& _memory) override {
-        for (auto& expr : expression) {
-            auto value = expr->eval_from(_memory);
-            print(std::cout, value, _memory);
-        }
-        std::cout << '\n';
-        std::cout.flush();
-    }
-};
 
 // + UNSTABLE WORKS
 // NodeVariableEqual:
@@ -873,8 +107,10 @@ struct NodeVariableEqual : public Node { NO_EVAL
             ERROR::ConstRedefinition(start_left_value_token, end_value_token, target_var_name);
         }
 
+        
         // Проверяем типизацию для статических переменных
         if (target_memory->is_static(target_var_name)) {
+            
             auto wait_type = target_memory->get_wait_type(target_var_name);
             auto value_type = right_value.type;
             if (!IsTypeCompatible(wait_type, value_type)) {
@@ -896,7 +132,7 @@ struct NodeVariableEqual : public Node { NO_EVAL
             return {&_memory, ((NodeLiteral*)node)->name};
         }
         else if (node->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
-            NodeNameResolution* resolution = (NodeNameResolution*)node;
+            NodeNamespaceResolution* resolution = (NodeNamespaceResolution*)node;
 
             // Получаем namespace
             Value ns_value = resolution->namespace_expr->eval_from(_memory);
@@ -944,63 +180,66 @@ struct NodeVariableEqual : public Node { NO_EVAL
             // Возвращаем память и имя последнего элемента
             return {current_memory, full_chain.back()};
         }
+        else if (node->NODE_TYPE == NodeTypes::NODE_OBJECT_RESOLUTION) {
+            NodeObjectResolution* resolution = (NodeObjectResolution*)node;
+
+            // Получаем значение объекта (структуры)
+            Value obj_value = resolution->obj_expr->eval_from(_memory);
+
+            // Проверяем, что это структура (не стандартный тип)
+            if (STANDART_TYPE::UNTYPED.is_sub_type(obj_value.type)) {
+                ERROR::InvalidAccessorType(resolution->start, resolution->end, obj_value.type.pool);
+            }
+
+            // Получаем ссылку на структуру
+            auto& obj = any_cast<Struct&>(obj_value.data);
+
+            // Получаем указатель на память
+            Memory* current_memory = obj.memory.get();
+
+            // Строим полную цепочку имён
+            vector<string> full_chain = resolution->remaining_chain;
+            full_chain.insert(full_chain.begin(), resolution->current_name);
+
+            // Проходим по цепочке, если она есть
+            if (full_chain.size() > 1) {
+                for (size_t i = 0; i < full_chain.size() - 1; i++) {
+                    const string& name = full_chain[i];
+
+                    if (!current_memory->check_literal(name)) {
+                        ERROR::UndefinedFieldInObject(resolution->start, resolution->end, name, obj.type.pool);
+                    }
+
+                    MemoryObject* field_obj = current_memory->get_variable(name);
+
+                    // Проверяем приватность
+                    if (field_obj->modifiers.is_private)
+                        ERROR::PrivatePropertyAccess(resolution->start, resolution->end, name);
+                    
+
+                    Value field_value = field_obj->value;
+
+                    // Проверяем, что поле является структурой (для продолжения цепочки)
+                    // Проверяем приватность
+                    if (field_obj->modifiers.is_private)
+                        ERROR::PrivateVariableAccess(start_left_value_token, end_left_value_token, name);
+
+                    if (field_obj->value.type != STANDART_TYPE::NAMESPACE) {
+                        ERROR::InvalidNamespaceChainType(resolution->start, resolution->end, name, field_obj->value.type.pool);
+                    }
+
+                    auto& next_obj = any_cast<Struct&>(field_value.data);
+                    current_memory = next_obj.memory.get();
+                }
+            }
+
+            // Возвращаем память и имя последнего поля
+            return {current_memory, full_chain.back()};
+        }
 
         // Ошибка для неизвестного типа ноды
         cout << "INTERNAL ERROR: Unknown assignment target node type" << endl;
         exit(0);
-    }
-};
-
-// + SUCCESS WORKS
-// NodeBlock:
-// Подробное описание:
-// Нода блока операторов: содержит массив нод и при `exec_from` последовательно
-// исполняет все ноды в текущей памяти.
-struct NodeBlock : public Node { NO_EVAL
-    vector<unique_ptr<Node>> nodes_array;
-
-    NodeBlock(vector<unique_ptr<Node>> &nodes_array) : nodes_array(std::move(nodes_array)) {
-        this->NODE_TYPE = NodeTypes::NODE_BLOCK_OF_NODES;
-    }
-
-    void exec_from(Memory& _memory) override {
-        for (int i = 0; i < nodes_array.size(); i++) {
-            nodes_array[i]->exec_from(_memory);
-        }
-    }
-};
-
-// + SUCCESS WORKS
-// NodeIf:
-// Подробное описание:
-// Нода условного оператора `if`: хранит условие, ветку true и опциональную
-// ветку else. При исполнении вычисляет условие и выбирает соответствующую
-// ветку для исполнения.
-struct NodeIf : public Node { NO_EVAL
-    unique_ptr<Node> eq_expression;
-    unique_ptr<Node> true_statement;
-    unique_ptr<Node> else_statement = nullptr;
-
-    NodeIf(unique_ptr<Node> eq_expression, unique_ptr<Node> true_statement, unique_ptr<Node> else_statement = nullptr) :
-        eq_expression(std::move(eq_expression)), true_statement(std::move(true_statement)),
-        else_statement(std::move(else_statement)) {
-        this->NODE_TYPE = NodeTypes::NODE_IF;
-    }
-
-    void exec_from(Memory& _memory) override {
-        auto value = eq_expression->eval_from(_memory);
-
-        if (value.type == STANDART_TYPE::BOOL) {
-            if (any_cast<bool>(value.data)) {
-                true_statement->exec_from(_memory);
-                return;
-            }
-            if (else_statement) else_statement->exec_from(_memory);
-        } else if (value.type == STANDART_TYPE::NULL_T) {
-            else_statement->exec_from(_memory);
-        } else {
-            true_statement->exec_from(_memory);
-        }
     }
 };
 
@@ -1030,201 +269,36 @@ struct NodeNamespaceDecl : public Node { NO_EVAL
         }
 
     void exec_from(Memory& _memory) override {
-        // Используем shared_ptr вместо unique_ptr
-        auto new_namespace_memory = make_shared<Memory>();
-
-        _memory.link_objects(*new_namespace_memory);
-        if (statement) {
-            statement->exec_from(*new_namespace_memory);
+    auto new_namespace_memory = make_shared<Memory>();
+    // Создаём Namespace с этой памятью
+    auto new_namespace = NewNamespace(new_namespace_memory, name);
+    
+    // Добавляем его в свою память (чтобы он был доступен внутри)
+    new_namespace_memory->add_object(name, new_namespace, STANDART_TYPE::NAMESPACE, is_const, is_static, is_final, is_global, is_private);
+    
+    // Линкуем глобальные объекты из родительской памяти
+    _memory.link_objects(*new_namespace_memory);
+    
+    if (statement) {
+        statement->exec_from(*new_namespace_memory);
+    }
+    
+    // Проверяем, не было ли уже объявлено имя namespace
+    if (_memory.check_literal(name)) {
+        if (_memory.is_final(name)) {
+            ERROR::VariableAlreadyDefined(decl_token, name);
         }
-
-        if (_memory.check_literal(name)) {
-            if (_memory.is_final(name)) {
-                ERROR::VariableAlreadyDefined(decl_token, name);
-            }
-            _memory.delete_variable(name);
-        }
-
-        auto new_namespace = NewNamespace(new_namespace_memory, name);
-        _memory.add_object(name, new_namespace, STANDART_TYPE::NAMESPACE, is_const, is_static, is_final, is_global, is_private);
+        _memory.delete_variable(name);
     }
-};
-
-struct Break {};
-
-// + SUCCESS WORKS
-// NodeBreak:
-// Подробное описание:
-// Нода оператора `break`. При исполнении бросает исключение `Break`, которое
-// обрабатывается циклами для выхода из них.
-struct NodeBreak : public Node { NO_EVAL
-    NodeBreak() {
-        this->NODE_TYPE = NodeTypes::NODE_BREAK;
-    }
-
-    void exec_from(Memory& _memory) override {
-        throw Break();
-    }
-};
-
-struct Continue {};
-
-// + SUCCESS WORKS
-// NodeContinue:
-// Подробное описание:
-// Нода оператора `continue`. При исполнении бросает исключение `Continue`,
-// которое обрабатывается циклами для перехода к следующей итерации.
-struct NodeContinue : public Node { NO_EVAL
-    NodeContinue() {
-        this->NODE_TYPE = NodeTypes::NODE_CONTINUE;
-    }
-
-    void exec_from(Memory& _memory) override {
-        throw Continue();
-    }
+    
+    // Добавляем namespace в родительскую память
+    _memory.add_object(name, new_namespace, STANDART_TYPE::NAMESPACE, is_const, is_static, is_final, is_global, is_private);
+}
 };
 
 
-// + SUCCESS WORKS
-// NodeWhile:
-// Подробное описание:
-// Нода цикла `while`: хранит условие и тело. В `exec_from` вычисляет условие
-// на каждой итерации и выполняет тело, обрабатывая `Break` и `Continue`.
-struct NodeWhile : public Node { NO_EVAL
-    unique_ptr<Node> eq_expression;
-    unique_ptr<Node> statement;
-
-    NodeWhile(unique_ptr<Node> eq_expression, unique_ptr<Node> statement) :
-        eq_expression(std::move(eq_expression)), statement(std::move(statement)) {
-        this->NODE_TYPE = NodeTypes::NODE_WHILE;
-    }
 
 
-    void exec_from(Memory& _memory) override {
-        while (true) {
-            auto value = eq_expression->eval_from(_memory);
-            if (value.type == STANDART_TYPE::BOOL) {
-                if (any_cast<bool>(value.data) == false)
-                    break;
-            } else if (value.type == STANDART_TYPE::INT) {
-                if (any_cast<int64_t>(value.data) == 0)
-                    break;
-            } else if (value.type == STANDART_TYPE::DOUBLE) {
-                if (any_cast<long double>(value.data) == 0)
-                    break;
-            } else {
-                break;
-            }
-
-            try {
-                statement->exec_from(_memory);
-            }
-            catch (Break) { break; }
-            catch (Continue) { continue; }
-        }
-    }
-};
-
-
-// + SUCCESS WORKS
-// NodeDoWhile:
-// Подробное описание:
-// Нода цикла `do...while`: выполняет тело хотя бы один раз, затем проверяет
-// условие и повторяет при истинном значении; обрабатывает `Break` и `Continue`.
-struct NodeDoWhile : public Node { NO_EVAL
-    unique_ptr<Node> eq_expression;
-    unique_ptr<Node> statement;
-
-    NodeDoWhile(unique_ptr<Node> eq_expression, unique_ptr<Node> statement) :
-        eq_expression(std::move(eq_expression)), statement(std::move(statement)) {
-        this->NODE_TYPE = NodeTypes::NODE_DO_WHILE;
-    }
-
-    void exec_from(Memory& _memory) override {
-        while (true) {
-            try { statement->exec_from(_memory); }
-            catch (Break) { break; }
-            catch (Continue) { continue; }
-
-            auto value = eq_expression->eval_from(_memory);
-            if (value.type == STANDART_TYPE::BOOL) {
-                if (any_cast<bool>(value.data) == false)
-                    break;
-            } else if (value.type == STANDART_TYPE::INT) {
-                if (any_cast<int64_t>(value.data) == 0)
-                    break;
-            } else if (value.type == STANDART_TYPE::DOUBLE) {
-                if (any_cast<long double>(value.data) == 0)
-                    break;
-            } else {
-                break;
-            }
-        }
-    }
-};
-
-
-// + SUCCESS WORKS
-// NodeFor:
-// Подробное описание:
-// Нода цикла `for`: содержит стартовое действие, условие, шаг обновления и
-// тело. Исполняет семантику классического for-цикла с обработкой `Break` и
-// `Continue` (гарантирует выполнение `update_state` при continue).
-struct NodeFor : public Node { NO_EVAL
-    unique_ptr<Node> start_state;
-    unique_ptr<Node> check_expr;
-    unique_ptr<Node> update_state;
-    unique_ptr<Node> body;
-
-    NodeFor(unique_ptr<Node> start_state, unique_ptr<Node> check_expr, unique_ptr<Node> update_state, unique_ptr<Node> body) :
-        start_state(std::move(start_state)), check_expr(std::move(check_expr)),
-        update_state(std::move(update_state)), body(std::move(body)) {
-        this->NODE_TYPE = NodeTypes::NODE_FOR;
-    }
-
-    void exec_from(Memory& _memory) override {
-        start_state->exec_from(_memory);
-
-        while (true) {
-            auto value = check_expr->eval_from(_memory);
-            if (value.type == STANDART_TYPE::BOOL) {
-                if (any_cast<bool>(value.data) == false)
-                    break;
-            } else if (value.type == STANDART_TYPE::INT) {
-                if (any_cast<int64_t>(value.data) == 0)
-                    break;
-            } else if (value.type == STANDART_TYPE::DOUBLE) {
-                if (any_cast<long double>(value.data) == 0)
-                    break;
-            } else {
-                break;
-            }
-
-            try {
-                body->exec_from(_memory);
-            }
-            catch (Break) { break; }
-            catch (Continue) {
-                // Пропускаем оставшуюся часть итерации
-                // но ВСЕГДА выполняем update_state перед continue
-                update_state->exec_from(_memory);
-                continue;
-            }
-
-            // Нормальное выполнение (без continue)
-
-            update_state->exec_from(_memory);
-
-
-        }
-    }
-};
-
-
-// NodeAddressOf:
-// Подробное описание:
-// Нода взятия адреса (`&`). Разрешает целевой идентификатор или разрешение
-// имени и возвращает `Value`-указатель (Pointer) на адрес в STATIC_MEMORY.
 struct NodeAddressOf : public Node { NO_EXEC
     unique_ptr<Node> expr;
 
@@ -1240,7 +314,7 @@ struct NodeAddressOf : public Node { NO_EXEC
             return {&_memory, ((NodeLiteral*)node)->name};
         }
         else if (node->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
-            NodeNameResolution* resolution = (NodeNameResolution*)node;
+            NodeNamespaceResolution* resolution = (NodeNamespaceResolution*)node;
 
             // Получаем namespace
             Value ns_value = resolution->namespace_expr->eval_from(_memory);
@@ -1249,7 +323,7 @@ struct NodeAddressOf : public Node { NO_EXEC
                 ERROR::InvalidAccessorType(resolution->start, resolution->end, ns_value.type.pool);
             }
 
-            // ИСПРАВЛЕНО: используем ссылку вместо копии
+           
             auto& ns = any_cast<Namespace&>(ns_value.data);
 
             // Получаем указатель на память из shared_ptr
@@ -1335,10 +409,11 @@ struct NodeDereference : public Node { NO_EXEC
             return object->value;
         }
         if (value.type == STANDART_TYPE::TYPE) {
-            //if (any_cast<Type>(value.data).is_union_type()) {
-            //    ERROR::InvalidDereferenceType(start, end);
-            //}
             return NewType(MakePointerType(any_cast<Type>(value.data)));
+        }
+        if (!STANDART_TYPE::UNTYPED.is_sub_type(value.type)) {
+            Type T = MakePointerType(any_cast<Struct>(value.data).type);
+            return Value(STANDART_TYPE::TYPE, T);
         }
         ERROR::InvalidDereferenceValue(start, end, value.type);
     }
@@ -1379,11 +454,23 @@ struct NodeLeftDereference : public Node { NO_EVAL
 
 
         if (value.type.is_pointer()) {
+            
             auto address = any_cast<int>(value.data);
+
+
+            if (STATIC_MEMORY.is_registered(address)) {}
+            
+            else {
+                cout << "ERROR ADDR " << address << endl;
+                exit(-1);
+            }
             auto object = STATIC_MEMORY.get_by_address(address);
+
             auto modifiers = object->modifiers;
+            
+            
 
-
+            
             // Проверяем константность
             if (modifiers.is_const) {
                 ERROR::ConstPointerRedefinition(start_left_value_token, end_left_value_token);
@@ -1408,6 +495,8 @@ struct NodeLeftDereference : public Node { NO_EVAL
 
 
         }
+
+        
     }
 };
 
@@ -1522,7 +611,7 @@ struct NodeDelete : public Node { NO_EVAL
             return {&_memory, ((NodeLiteral*)node)->name};
         }
         else if (node->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
-            NodeNameResolution* resolution = (NodeNameResolution*)node;
+            NodeNamespaceResolution* resolution = (NodeNamespaceResolution*)node;
 
             // Получаем namespace
             Value ns_value = resolution->namespace_expr->eval_from(_memory);
@@ -1827,16 +916,26 @@ struct NodeReturn : public Node { NO_EVAL
     }
 };
 
-// NodeCall:
-// Подробное описание:
-// Нода вызова: поддерживает вызов лямбд и функций. Выполняет валидацию
-// количества и типов аргументов, заполняет локальную память и вызывает тело.
-// Обрабатывает возврат через исключение `Return` и восстанавливает память.
 struct NodeCall : public Node { NO_EXEC
     unique_ptr<Node> callable;
     vector<unique_ptr<Node>> args;
     Token start_callable;
     Token end_callable;
+
+    static Type extract_type_from_value(const Value& val, 
+                                     const Token& start_token, 
+                                     const Token& end_token, 
+                                     const string& context) {
+        if (val.type == STANDART_TYPE::TYPE) {
+            return any_cast<Type>(val.data);
+        }
+        else if (!STANDART_TYPE::UNTYPED.is_sub_type(val.type)) {
+            // Пользовательский тип (структура) – возвращаем его тип
+            return val.type;
+        }
+        ERROR::WaitedTypeExpression(start_token);
+        // unreachable
+    }
 
     NodeCall(unique_ptr<Node> callable, vector<unique_ptr<Node>> args, Token start_callable, Token end_callable) :
         callable(std::move(callable)), args(std::move(args)), start_callable(start_callable), end_callable(end_callable) {
@@ -1883,7 +982,7 @@ struct NodeCall : public Node { NO_EXEC
 
     Value call_function(Value &value, Memory& _memory) {
         auto func = any_cast<Function*>(value.data);
-
+        _memory.link_objects(*func->memory);
         Memory saved_mem = *func->memory;
         func->memory->add_object_in_func(func->name, value, false, false, false, true);
 
@@ -1912,8 +1011,12 @@ struct NodeCall : public Node { NO_EXEC
 
                 // Проверка типа
                 if (param->type_expr) {
+                    
                     auto expected_type_val = param->type_expr->eval_from(*func->memory);
-                    Type expected = any_cast<Type>(expected_type_val.data);
+                    
+                    Type expected = extract_type_from_value(expected_type_val, 
+                                         func->start_args_token, func->end_args_token,
+                                         "parameter '" + param->name + "'");
                     if (!arg_value.type.is_sub_type(expected)) {
                         ERROR::InvalidFuncArgumentType(start_callable, end_callable,
                             func->start_args_token, func->end_args_token,
@@ -2012,26 +1115,85 @@ struct NodeCall : public Node { NO_EXEC
         catch (Return _value) {
             if (func->return_type) {
                 auto expected_ret = func->return_type->eval_from(*func->memory);
-                Type expected = any_cast<Type>(expected_ret.data);
+                Type expected = extract_type_from_value(expected_ret, 
+                                         func->start_return_type_token, func->end_return_type_token,
+                                         "return type");
                 if (!_value.value.type.is_sub_type(expected)) {
                     ERROR::InvalidLambdaReturnType(start_callable, end_callable,
                         func->start_return_type_token, func->end_return_type_token,
                         expected, _value.value.type);
                 }
             }
+            
             *func->memory = saved_mem;
             return _value.value;
         }
     }
 
+    Value call_struct(Value &value, Memory& _memory) {
+        // Убедимся, что вызываемый объект действительно является структурой
+        
+
+        Struct& src_struct = any_cast<Struct&>(value.data);
+        
+        
+        // Создаём новую память для копии структуры
+        auto new_memory = make_shared<Memory>();
+        
+        
+        // Копируем все объекты из исходной памяти структуры
+        for (const auto& [name, obj] : src_struct.memory->string_pool) {
+            // Создаём копию значения (используем конструктор копирования Value)
+            Value copied_value = Value(obj->value);  // Value копируется автоматически
+            
+            
+            
+            
+            MemoryObject* new_obj = CreateMemoryObject(
+                copied_value,
+                obj->wait_type,
+                new_memory.get(),
+                obj->modifiers.is_const,
+                obj->modifiers.is_static,
+                obj->modifiers.is_final,
+                obj->modifiers.is_global,
+                obj->modifiers.is_private
+            );
+            
+            STATIC_MEMORY.register_object(new_obj);
+            
+            // Добавляем объект в новую память структуры
+            new_memory->add_object(name, new_obj);
+        }
+        
+        // Создаём новую структуру с той же памятью и именем
+        Struct new_struct(std::move(new_memory), src_struct.name);
+        
+        return Value(value.type, std::move(new_struct));
+    }
+
     Value eval_from(Memory& _memory) override {
+        
         auto value = callable->eval_from(_memory);
+        
+        if (value.type == STANDART_TYPE::METHOD) {
+            auto method = any_cast<Method>(value.data);
+            auto saved_memory = method.func->memory;
+            method.func->memory = method.instance_memory;
+            Value func_val(method.func->type, method.func);
+            Value result = call_function(func_val, _memory);
+            method.func->memory = saved_memory;
+            return result;
+        }
 
         if (value.type == STANDART_TYPE::LAMBDA) {
             return call_lambda(value, _memory);
         }
         else if (value.type.is_func()) {
             return call_function(value, _memory);
+        }
+        else if (!STANDART_TYPE::UNTYPED.is_sub_type(value.type)) {
+            return call_struct(value, _memory);
         }
 
         ERROR::IvalidCallableType(start_callable, end_callable, value.type);
@@ -2176,43 +1338,57 @@ struct NodeFuncDecl : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_FUNCTION_DECLARATION;
     }
 
+    static Type extract_type_from_value(const Value& val, const Token& start_token, const Token& end_token, const string& entity_name) {
+        if (val.type == STANDART_TYPE::TYPE) {
+            return any_cast<Type>(val.data);
+        }
+        else if (!STANDART_TYPE::UNTYPED.is_sub_type(val.type)) {
+            // Это структура
+            return any_cast<Struct>(val.data).type;
+        }
+        // Иначе – ошибка: значение не является типом
+        cout << "ERROR_TYPE" << endl;
+        // return Type(); // unreachable
+    }
+
     Type construct_type(Memory& _memory) {
+        // Обработка возвращаемого типа (если есть)
+        Type ret_type;
         if (return_type) {
-            auto value = return_type->eval_from(_memory);
+            auto ret_val = return_type->eval_from(_memory);
+            ret_type = extract_type_from_value(ret_val, start_return_token, end_return_token, "return type");
+        }
 
-            if (value.type != STANDART_TYPE::TYPE)
-                ERROR::WaitedFuncTypeReturnTypeSpecifier(start_return_token, end_return_token);
-
-            Type return_type = any_cast<Type>(value.data);
-
-            vector<Type> args_types;
-            for (int i = 0; i < args.size(); i++) {
-                auto value = args[i]->type_expr->eval_from(_memory);
-                if (value.type != STANDART_TYPE::TYPE)
-                    ERROR::WaitedFuncTypeArgumentTypeSpecifier(start_args_token, end_args_token, args[i]->name);
-                args_types.push_back(any_cast<Type>(value.data));
+        // Собираем типы аргументов
+        vector<Type> arg_types;
+        for (size_t i = 0; i < args.size(); ++i) {
+            auto arg = args[i];
+            if (!arg->type_expr) {
+                // По логике парсера type_expr всегда присутствует, но на всякий случай
+                ERROR::WaitedFuncTypeArgumentTypeSpecifier(start_args_token, end_args_token, arg->name);
             }
-            return create_function_type(return_type, args_types);
+            auto arg_val = arg->type_expr->eval_from(_memory);
+            Type t = extract_type_from_value(arg_val, start_args_token, end_args_token, "argument '" + arg->name + "'");
+            arg_types.push_back(t);
+        }
+
+        // Создаём тип функции
+        if (return_type) {
+            return create_function_type(ret_type, arg_types);
         } else {
-            vector<Type> args_types;
-            for (int i = 0; i < args.size(); i++) {
-                auto value = args[i]->type_expr->eval_from(_memory);
-                if (value.type != STANDART_TYPE::TYPE)
-                    ERROR::WaitedFuncTypeArgumentTypeSpecifier(start_args_token, end_args_token, args[i]->name);
-                args_types.push_back(any_cast<Type>(value.data));
-            }
-            return create_function_type(args_types);
+            return create_function_type(arg_types);
         }
     }
 
     void exec_from(Memory& _memory) override {
         Type function_type = construct_type(_memory);
-
-        auto new_function_memory = make_shared<Memory>();
-        _memory.link_objects(*new_function_memory);
         
 
+        auto new_function_memory = make_shared<Memory>();
+        //_memory.link_objects(*new_function_memory);
+        
         auto func = NewFunction(name, new_function_memory, body.get(), args, std::move(return_type), function_type, start_args_token, end_args_token, start_return_token, end_return_token);
+        
         auto object = CreateMemoryObject(func, function_type,&new_function_memory, is_const, is_static, is_final, is_global, is_private);
         if (_memory.check_literal(name))
             _memory.delete_variable(name);
@@ -2483,7 +1659,7 @@ struct NodeArrayPush : public Node { NO_EXEC
         }
         // Если это доступ через namespace (NODE_NAME_RESOLUTION), тоже модифицируем напрямую
         else if (left_expr->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
-            NodeNameResolution* resolution = (NodeNameResolution*)left_expr.get();
+            NodeNamespaceResolution* resolution = (NodeNamespaceResolution*)left_expr.get();
             Value ns_value = resolution->namespace_expr->eval_from(_memory);
 
             if (ns_value.type == STANDART_TYPE::NAMESPACE) {
@@ -2596,6 +1772,54 @@ struct NodeArrayPush : public Node { NO_EXEC
 
 };
 
+struct NodeStructDecl : public Node { NO_EVAL
+    unique_ptr<Node> statement;
+    string name;
+
+    Token decl_token;
+
+    bool is_static = false;
+    bool is_final = false;
+    bool is_const = false;
+    bool is_global = true;
+    bool is_private = false;
+
+    NodeStructDecl(unique_ptr<Node> statement, string name, Token decl_token) :
+         statement(std::move(statement)), name(name), decl_token(decl_token) {
+            this->NODE_TYPE = NodeTypes::NODE_NAMESPACE_DECLARATION;
+        }
+
+    void exec_from(Memory& _memory) override {
+        auto new_struct_memory = make_shared<Memory>();
+        auto new_struct = NewStruct(name);
+        
+        // 1. Сначала устанавливаем память у самой структуры
+        any_cast<Struct&>(new_struct.data).memory = new_struct_memory;
+        
+        // 2. Теперь добавляем объект в память структуры (копия будет иметь тот же shared_ptr)
+        new_struct_memory->add_object_in_struct(name, new_struct, false, false, false, true);
+
+        // 3. Линкуем глобальные объекты
+        _memory.link_objects(*new_struct_memory);
+        
+        // 4. Выполняем тело структуры (поля добавляются в new_struct_memory)
+        if (statement) {
+            statement->exec_from(*new_struct_memory);
+        }
+
+        // 5. Проверяем, не было ли уже объявлено имя структуры
+        if (_memory.check_literal(name)) {
+            if (_memory.is_final(name)) {
+                ERROR::VariableAlreadyDefined(decl_token, name);
+            }
+            _memory.delete_variable(name);
+        }
+        
+        // 6. Регистрируем структуру в родительской памяти
+        _memory.add_object(name, new_struct, new_struct.type, is_const, is_static, is_final, is_global, is_private);
+    }
+};
+
 struct Context {
     Memory memory;
     vector<unique_ptr<Node>> nodes;
@@ -2641,6 +1865,7 @@ struct ASTGenerator {
     TokenWalker& walker;
     string file_name;
 
+    // Declarations
     unique_ptr<Node> ParseBaseVariableDecl();
     unique_ptr<Node> ParseFinalVariableDecl();
     unique_ptr<Node> ParseStaticVariableDecl();
@@ -2649,60 +1874,80 @@ struct ASTGenerator {
     unique_ptr<Node> ParsePrivateVariableDecl();
     unique_ptr<Node> ParseBlockDecl(string modifier);
 
+    // Input and outputs
     unique_ptr<Node> ParseOut();
     unique_ptr<Node> ParseOutLn();
     unique_ptr<Node> ParseInput();
 
+    // Delete and new
     unique_ptr<Node> ParseDelete();
+    unique_ptr<Node> ParseNew();
+
+    // Loops
     unique_ptr<Node> ParseWhile();
     unique_ptr<Node> ParseDoWhile();
     unique_ptr<Node> ParseFor();
 
+    // Block of instructs
     unique_ptr<Node> ParseBlock();
+    unique_ptr<Node> ParseScopes();
+
+    // Namespace
     unique_ptr<Node> ParseNameSpaceDecl();
     unique_ptr<Node> ParseNamespace();
+    unique_ptr<Node> ParseNameResolution(unique_ptr<Node> expression);
+    unique_ptr<Node> ParseObjectResolution(unique_ptr<Node> expression);
+
+    // Conditions
     unique_ptr<Node> ParseIf();
     unique_ptr<Node> ParseIfExpr();
 
+    // Call
     unique_ptr<Node> ParseCall(unique_ptr<Node> expr, Token start, Token end);
 
+    // Base literals
     unique_ptr<Node> ParseNumber();
     unique_ptr<Node> ParseString();
     unique_ptr<Node> ParseChar();
     unique_ptr<Node> ParseBool();
     unique_ptr<Node> ParseNull();
-    unique_ptr<Node> ParseBreak();
-    unique_ptr<Node> ParseContinue();
     unique_ptr<Node> ParseLiteral();
 
+    // Thread instructions
+    unique_ptr<Node> ParseBreak();
+    unique_ptr<Node> ParseContinue();
+    unique_ptr<Node> ParseExit();
+    unique_ptr<Node> ParseReturn();
+    
+    // Assert
     unique_ptr<Node> ParseAssert();
 
+    // Pointers
     unique_ptr<Node> ParseAddressOf();
     unique_ptr<Node> ParseDereference();
     unique_ptr<Node> ParseLeftDereference();
 
+    // Metafunctions
     unique_ptr<Node> ParseTypeof();
     unique_ptr<Node> ParseSizeof();
 
-    unique_ptr<Node> ParseScopes();
-
-    unique_ptr<Node> ParseNameResolution(unique_ptr<Node> expression);
-
+    // Lambda
     unique_ptr<Node> ParseLambda();
 
-    unique_ptr<Node> ParseNew();
-
+    // Functions
     unique_ptr<Node> ParseNewFunctionType();
     unique_ptr<Node> ParseFuncDecl();
 
+    // Special
     unique_ptr<Node> ParsePostfix(unique_ptr<Node> expr);
 
-    unique_ptr<Node> ParseExit();
-    unique_ptr<Node> ParseReturn();
-
+    // Arrays
     unique_ptr<Node> ParseNewArrayType();
     unique_ptr<Node> ParseArray();
     unique_ptr<Node> ParseGetIndex(unique_ptr<Node> expr, Token start, Token end);
+
+    // Structs
+    unique_ptr<Node> ParseStructDecl();
 
     Memory GLOBAL_MEMORY;
 
@@ -2916,6 +2161,10 @@ struct ASTGenerator {
         if (current.type == TokenType::KEYWORD && current.value == "func") {
             return ParseFuncDecl();
         }
+
+        if (current.type == TokenType::KEYWORD && current.value == "struct") {
+            return ParseStructDecl();
+        } 
         // block declaration
         if ((current.type == TokenType::KEYWORD) &&
             (current.value == "final" || current.value == "const" ||
@@ -3202,6 +2451,8 @@ unique_ptr<Node> ASTGenerator::ParsePostfix(unique_ptr<Node> expr) {
             expr = ParseGetIndex(std::move(expr), start, end);
         } else if (walker.CheckValue(":") && walker.CheckValue(":", 1)) {
             expr = ParseNameResolution(std::move(expr));
+        } else if (walker.CheckValue(".")) {
+            expr = ParseObjectResolution(std::move(expr));
         } else {
             break;
         }
@@ -3682,9 +2933,7 @@ unique_ptr<Node> ASTGenerator::ParseLeftDereference() {
     return make_unique<NodeLeftDereference>(std::move(left_expr), std::move(expr), start_left_value_token, end_left_value_token, start_value_token, end_value_token);
 }
 
-// Parse typeof expression
-//
-// typeof(expr)
+
 unique_ptr<Node> ASTGenerator::ParseTypeof() {
     walker.next(); // pass 'typeof' token
     walker.next(); // pass '(' token
@@ -3697,9 +2946,7 @@ unique_ptr<Node> ASTGenerator::ParseTypeof() {
     return make_unique<NodeTypeof>(std::move(expr));
 }
 
-// Parse sizeof expression
-//
-// sizeof(expr)
+
 unique_ptr<Node> ASTGenerator::ParseSizeof() {
     walker.next(); // pass 'sizeof' token
     walker.next(); // pass '(' token
@@ -3712,18 +2959,14 @@ unique_ptr<Node> ASTGenerator::ParseSizeof() {
     return make_unique<NodeSizeof>(std::move(expr));
 }
 
-// Parse address of expression
-//
-// &(address gettable object)
+
 unique_ptr<Node> ASTGenerator::ParseAddressOf() {
     walker.next(); // pass '&' token
     auto expr = parse_primary_expression();
     return make_unique<NodeAddressOf>(std::move(expr));
 }
 
-// Parse dereference expression
-//
-// *expr
+
 unique_ptr<Node> ASTGenerator::ParseDereference() {
     walker.next(); // pass '*' token
     if (walker.CheckValue("(")) {
@@ -3745,11 +2988,7 @@ unique_ptr<Node> ASTGenerator::ParseDereference() {
 }
 
 
-// Parse block declaration
-//
-// <static global final const {
-//     <statement>;
-// }
+
 unique_ptr<Node> ASTGenerator::ParseBlockDecl(string modifier) {
     if (!walker.CheckValue("{")) {
         ERROR::UnexpectedToken(*walker.get(), "'{' after block declaration");
@@ -3793,9 +3032,7 @@ unique_ptr<Node> ASTGenerator::ParseBlockDecl(string modifier) {
     return node;
 }
 
-// Parse continue statement
-//
-// continue;
+
 unique_ptr<Node> ASTGenerator::ParseContinue() {
     walker.next(); // pass 'break'
 
@@ -3806,9 +3043,7 @@ unique_ptr<Node> ASTGenerator::ParseContinue() {
     return make_unique<NodeContinue>();
 }
 
-// Parse break statement
-//
-// break;
+
 unique_ptr<Node> ASTGenerator::ParseBreak() {
     walker.next(); // pass 'break'
 
@@ -3819,9 +3054,7 @@ unique_ptr<Node> ASTGenerator::ParseBreak() {
     return make_unique<NodeBreak>();
 }
 
-// Parse for statement
-//
-// for (<init>; <check>; <update>;) <statement>;
+
 unique_ptr<Node> ASTGenerator::ParseFor() {
     walker.next(); // pass 'for' token
 
@@ -3851,9 +3084,7 @@ unique_ptr<Node> ASTGenerator::ParseFor() {
     return make_unique<NodeFor>(std::move(init_state), std::move(check_expr), std::move(update_state), std::move(body));
 }
 
-// Parse while statement
-//
-// while (<expr>) <statement>;
+
 unique_ptr<Node> ASTGenerator::ParseWhile() {
     walker.next(); // pass 'while' token
 
@@ -3872,9 +3103,7 @@ unique_ptr<Node> ASTGenerator::ParseWhile() {
     return make_unique<NodeWhile>(std::move(expr), std::move(state));
 }
 
-// Parse do-while statement
-//
-// do <statement> while (<expr>);
+
 unique_ptr<Node> ASTGenerator::ParseDoWhile() {
     walker.next(); // pass 'do' token
 
@@ -3897,9 +3126,7 @@ unique_ptr<Node> ASTGenerator::ParseDoWhile() {
     return make_unique<NodeDoWhile>(std::move(expr), std::move(state));
 }
 
-// Parse delete statement
-//
-// del <literal>;
+
 unique_ptr<Node> ASTGenerator::ParseDelete() {
     walker.next(); // pass 'del' token
 
@@ -3918,9 +3145,34 @@ unique_ptr<Node> ASTGenerator::ParseDelete() {
     return make_unique<NodeDelete>(std::move(target_expr), start_token, end_token);
 }
 
-// Parse name resolution
-//
-// A::B::C
+unique_ptr<Node> ASTGenerator::ParseObjectResolution(unique_ptr<Node> expression) {
+    vector<string> chain;
+    Token start = *walker.get(-1);
+    // Собираем всю цепочку имен
+    while (walker.CheckValue(".")) {
+        walker.next(); // pass first '.'
+
+        if (!walker.CheckType(TokenType::LITERAL))
+            ERROR::UnexpectedToken(*walker.get(), "literal");
+
+        string literal_name = walker.get()->value;
+        chain.push_back(literal_name);
+        walker.next();
+    }
+
+    // Если есть цепочка, создаем ноду разрешения
+    if (!chain.empty()) {
+        // Первый элемент цепочки становится первым уровнем
+        string first_name = chain[0];
+        vector<string> remaining_chain(chain.begin() + 1, chain.end());
+        Token end = *walker.get(-1);
+        expression = make_unique<NodeObjectResolution>(std::move(expression), first_name, start, end, remaining_chain);
+    }
+
+    return expression;
+}
+
+
 unique_ptr<Node> ASTGenerator::ParseNameResolution(unique_ptr<Node> expression) {
     vector<string> chain;
     Token start = *walker.get(-1);
@@ -3943,15 +3195,13 @@ unique_ptr<Node> ASTGenerator::ParseNameResolution(unique_ptr<Node> expression) 
         string first_name = chain[0];
         vector<string> remaining_chain(chain.begin() + 1, chain.end());
         Token end = *walker.get(-1);
-        expression = make_unique<NodeNameResolution>(std::move(expression), first_name, start, end, remaining_chain);
+        expression = make_unique<NodeNamespaceResolution>(std::move(expression), first_name, start, end, remaining_chain);
     }
 
     return expression;
 }
 
-// Parse namespace decl
-//
-// namespace <name> <statement>
+
 unique_ptr<Node> ASTGenerator::ParseNameSpaceDecl() {
     walker.next(); // pass 'namespace' token
 
@@ -3970,9 +3220,7 @@ unique_ptr<Node> ASTGenerator::ParseNameSpaceDecl() {
     return namespace_node;
 }
 
-// Parse if expression
-//
-// if (expr) { expr } else { expr }
+
 unique_ptr<Node> ASTGenerator::ParseIfExpr() {
     walker.next(); // pass 'if' token
 
@@ -4015,10 +3263,7 @@ unique_ptr<Node> ASTGenerator::ParseIfExpr() {
     return make_unique<NodeIfExpr>(std::move(eq_expr), std::move(true_expr), std::move(else_expr));
 }
 
-// Parse if
-//
-// if (expr) <statement>
-// else <statement>
+
 unique_ptr<Node> ASTGenerator::ParseIf() {
     walker.next(); // pass 'if' token
 
@@ -4047,12 +3292,7 @@ unique_ptr<Node> ASTGenerator::ParseIf() {
     return make_unique<NodeIf>(std::move(eq_expr), std::move(true_state), std::move(else_state));
 }
 
-// Parse block
-//
-// {
-//  <statement>
-//  ...
-// }
+
 unique_ptr<Node> ASTGenerator::ParseBlock() {
     walker.next();
     vector<unique_ptr<Node>> nodes_array;
@@ -4063,63 +3303,49 @@ unique_ptr<Node> ASTGenerator::ParseBlock() {
     return make_unique<NodeBlock>(nodes_array);
 }
 
-// Literal parsing
-//
-// value, a, name
+
 unique_ptr<Node> ASTGenerator::ParseLiteral() {
     auto node = make_unique<NodeLiteral>(*walker.get());
     walker.next();
     return node;
 }
 
-// Number parsing
-//
-// <expr> = <10, .10, 134.134>
+
 unique_ptr<Node> ASTGenerator::ParseNumber() {
     auto node = make_unique<NodeNumber>(*walker.get());
     walker.next();
     return node;
 }
 
-// String parsing
-//
-// <expr> = <"Hello", "World">
+
 unique_ptr<Node> ASTGenerator::ParseString() {
     auto node = make_unique<NodeString>(walker.get()->value);
     walker.next();
     return node;
 }
 
-// Char parsing
-//
-// <expr> = <'a', 'b', 'c'>
+
 unique_ptr<Node> ASTGenerator::ParseChar() {
     auto node = make_unique<NodeChar>(walker.get()->value[0]);
     walker.next();
     return node;
 }
 
-// Bool parsing
-//
-// <expr> = <true, false>
+
 unique_ptr<Node> ASTGenerator::ParseBool() {
     auto node = make_unique<NodeBool>(*walker.get());
     walker.next();
     return node;
 }
 
-// Null parsing
-//
-// <expr> = <true, false>
+
 unique_ptr<Node> ASTGenerator::ParseNull() {
     auto node = make_unique<NodeNull>();
     walker.next();
     return node;
 }
 
-// Scopes parsing
-//
-// (<expr>)
+
 unique_ptr<Node> ASTGenerator::ParseScopes() {
     walker.next(); // pass '(' token
     auto expr = parse_expression();
@@ -4134,20 +3360,16 @@ unique_ptr<Node> ASTGenerator::ParseScopes() {
 }
 
 
-// Variable declaration parsing
-// Parse base variable declaration
-//
-// let <name>:<type expr, none> = <expr>;
-//
+
 unique_ptr<Node> ASTGenerator::ParseBaseVariableDecl() {
     walker.next(); // pass 'let' token
 
-    // Check variable name
+   
     if (!walker.CheckType(TokenType::LITERAL)) {
         ERROR::UnexpectedToken(*walker.get(), "variable name");
     }
 
-    // save variable token
+    
     Token variable_token = *walker.get();
     string var_name = walker.get()->value;
     walker.next(); // pass variable name token
@@ -4203,11 +3425,7 @@ unique_ptr<Node> ASTGenerator::ParseBaseVariableDecl() {
                                              std::move(type_expr), type_start_token, type_end_token, nullable, start_expr_token, end_expr_token);
 }
 
-// Variable declaration parsing
-// Parse base variable declaration
-//
-// final let <name>:<type expr, none> = <expr>;
-//
+
 unique_ptr<Node> ASTGenerator::ParseFinalVariableDecl() {
     walker.next(); // pass 'final' token
 
@@ -4237,9 +3455,7 @@ unique_ptr<Node> ASTGenerator::ParseFinalVariableDecl() {
     return decl;
 }
 
-// Parsing static declarations
-//
-// static <statement>
+
 unique_ptr<Node> ASTGenerator::ParseStaticVariableDecl() {
     walker.next(); // pass 'static' token
 
@@ -4268,9 +3484,7 @@ unique_ptr<Node> ASTGenerator::ParseStaticVariableDecl() {
     return decl;
 }
 
-// Parsing const declarations
-//
-// const <statement>
+
 unique_ptr<Node> ASTGenerator::ParseConstVariableDecl() {
     walker.next(); // pass 'const' token
 
@@ -4299,9 +3513,7 @@ unique_ptr<Node> ASTGenerator::ParseConstVariableDecl() {
     return decl;
 }
 
-// Parsing global declarations
-//
-// global <statement>
+
 unique_ptr<Node> ASTGenerator::ParseGlobalVariableDecl() {
     walker.next(); // pass 'const' token
 
@@ -4329,9 +3541,7 @@ unique_ptr<Node> ASTGenerator::ParseGlobalVariableDecl() {
     return decl;
 }
 
-// Parsing global declarations
-//
-// private <statement>
+
 unique_ptr<Node> ASTGenerator::ParsePrivateVariableDecl() {
     walker.next(); // pass 'private' token
 
@@ -4359,9 +3569,7 @@ unique_ptr<Node> ASTGenerator::ParsePrivateVariableDecl() {
     return decl;
 }
 
-// Base out parsing
-//
-// out <expr>;
+
 unique_ptr<Node> ASTGenerator::ParseOut() {
     walker.next(); // pass 'out'
     vector<unique_ptr<Node>> args;
@@ -4386,9 +3594,7 @@ unique_ptr<Node> ASTGenerator::ParseOut() {
     return make_unique<NodeBaseOut>(std::move(args));
 }
 
-// Base out parsing
-//
-// outln <expr>;
+
 unique_ptr<Node> ASTGenerator::ParseOutLn() {
     walker.next(); // pass 'out'
     vector<unique_ptr<Node>> args;
@@ -4432,8 +3638,6 @@ unique_ptr<Node> ASTGenerator::ParseNewArrayType() {
     Token end = *walker.get();
     walker.next();
 
-    // Если после объявления типа массива идет '{', 
-    // то это объявление массива с статическим типом
     if (walker.CheckValue("{")) {
         auto type_node = make_unique<NodeNewArrayType>(std::move(type_expr), std::move(size_expr), start, end);
         auto array = ParseArray();
@@ -4486,4 +3690,19 @@ unique_ptr<Node> ASTGenerator::ParseGetIndex(unique_ptr<Node> expr, Token start,
     Token end_bracket = *walker.get();
     walker.next();
     return make_unique<NodeGetIndex>(std::move(expr), std::move(index), start, end_bracket);
+}
+
+unique_ptr<Node> ASTGenerator::ParseStructDecl() {
+    auto token = *walker.get();
+    walker.next(); // pass 'struct'
+
+    if (!walker.CheckType(TokenType::LITERAL)) 
+        ERROR::UnexpectedToken(*walker.get(), "structure name");
+
+    string name = walker.get()->value;
+    walker.next();
+    
+    auto body = parse_statement();
+
+    return make_unique<NodeStructDecl>(std::move(body), name, token);
 }

@@ -49,7 +49,8 @@
     _(NODE_ARRAY_TYPE) \
     _(NODE_ARRAY) \
     _(NODE_GET_BY_INDEX) \
-    _(NODE_ARRAY_PUSH)
+    _(NODE_ARRAY_PUSH) \
+    _(NODE_OBJECT_RESOLUTION)
 
 // Enum
 enum NodeTypes {
@@ -66,13 +67,24 @@ static const char* node_type_names[] = {
     #undef _
 };
 
-// Функция
+
 inline const char* get_node_type_name(NodeTypes type) {
     return (type >= 0 && type < NODE_COUNT) ? node_type_names[type] : "NODE_UNKNOWN";
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreturn-type"
+
+
+#define NO_EXEC \
+    void exec_from(Memory& _memory) override {} \
+
+#define NO_EVAL \
+    Value eval_from(Memory& _memory) override {} \
+
+
 struct Node {
-    NodeTypes NODE_TYPE;                    // Node name
+    NodeTypes NODE_TYPE;            // Node name
     virtual ~Node() = default;      // Destructor
     virtual Value eval_from(Memory& memory) = 0;
     virtual void exec_from(Memory& memory) = 0;

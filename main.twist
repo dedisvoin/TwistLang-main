@@ -1,5 +1,0 @@
-#include "include/types.twist"
-
-
-let T = union(Int, Double, *Null);
-out T;

@@ -45,31 +45,9 @@ private:
             : filename(f), line(l), lineContent(lc), message(m) {}
     };
     
-    // Функция для красивого вывода ошибки
-    void printError(const ErrorContext& err) const {
-        std::cerr << ".- [ err ] >> syntax >> '" << err.filename << "':" << err.line << std::endl;
-        std::cerr << "|" << std::endl;
-        
-        // Добавляем пробелы для выравнивания номера строки
-        std::string lineNumStr = std::to_string(err.line);
-        int lineNumPadding = lineNumStr.length();
-        
-        std::cerr << "| " << err.line << " | " << err.lineContent << std::endl;
-        
-        // Вычисляем позицию для каретки (^)
-        std::cerr << "| " << std::string(lineNumPadding, ' ') << "   " 
-                  << std::string(err.lineContent.length(), ' ') << "^ " << err.message << std::endl;
-        
-        std::cerr << "`---------------------------'" << std::endl << std::endl;
-    }
     
-    // Функция для вывода ошибки без контекста строки
-    void printSimpleError(const std::string& filename, const std::string& message) const {
-        std::cerr << ".- [ err ] >> syntax >> '" << filename << "'" << std::endl;
-        std::cerr << "|" << std::endl;
-        std::cerr << "| " << message << std::endl;
-        std::cerr << "`---------------------------'" << std::endl << std::endl;
-    }
+    
+    
     
     static std::string trim(const std::string& s) {
         size_t start = 0, end = s.length() - 1;
@@ -154,7 +132,7 @@ private:
             }
         }
         
-        printSimpleError(filename, "Include file not found: " + filename);
+        
         throw std::runtime_error("Include file not found: " + filename);
     }
     
@@ -211,8 +189,7 @@ private:
                 }
                 
                 if (braceCount > 0) {
-                    printError(ErrorContext(filename, lineNum, macroContent, 
-                                           "Unbalanced braces in macro definition"));
+                    
                     throw std::runtime_error("Unbalanced braces in macro definition");
                 }
             }
@@ -248,7 +225,7 @@ private:
                 try {
                     includeFile = extractIncludeFilename(line);
                 } catch (const std::runtime_error& e) {
-                    printError(ErrorContext(filename, lineNum, line, e.what()));
+                    
                     throw;
                 }
                 
@@ -331,16 +308,12 @@ private:
                     try {
                         processDefineDirective(info);
                     } catch (const std::runtime_error& e) {
-                        printError(ErrorContext(info.filename, info.originalLine, 
-                                               info.content, e.what()));
                         throw;
                     }
                 } else if (startsWith(trimmed, "#macro")) {
                     try {
                         processMacroDirective(info);
                     } catch (const std::runtime_error& e) {
-                        printError(ErrorContext(info.filename, info.originalLine, 
-                                               info.content, e.what()));
                         throw;
                     }
                 }
@@ -528,8 +501,6 @@ private:
                         break;
                     }
                 } catch (const std::runtime_error& e) {
-                    printError(ErrorContext(context.filename, context.originalLine, 
-                                           str, e.what()));
                     throw;
                 }
             }

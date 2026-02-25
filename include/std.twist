@@ -10,18 +10,17 @@ static const final namespace std {
     global final const let Literal = String | Char;
 
 
-    # min lambda
+ 
     let min = lambda (a: Number, b: Number) -> Number :
         if (a < b) { a } else { b }
     ;
 
-    # max lambda
+  
     let max = lambda (a: Number, b: Number) -> Number : 
         if (a > b) { a } else { b }
     ;
 
-    # перемещает значение в другую область динамической памяти
-    # старое значение удаляется из диначиской памяти
+ 
     let move = lambda(_value: AnyBasePtr) -> AnyBasePtr :
         namespace {
             let ptr = new<static, const> (*_value);
@@ -35,7 +34,7 @@ static const final namespace std {
         }::_value
     ;
     
-    # сравнение значений по типу 
+  
     let equal = lambda(a, b) :
         if (typeof(a) == typeof(b)) {
             a == b

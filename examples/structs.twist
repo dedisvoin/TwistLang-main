@@ -1,0 +1,33 @@
+#macro to_str(value) = {
+    if (typeof(value) == String) {
+        Str.from_string(value)
+    }
+}
+
+
+struct Str {
+    static let _buf: String = "";
+
+    func from_string(const _st: String) -> Str {
+        let _ = Str();
+        _._buf = _st;
+        ret _;
+    }
+
+    func sum(const other: *Str) -> Str {
+        let n = Str();
+        n._buf = _buf + (*other)._buf;
+        ret n;
+    }
+}
+
+let s1 = to_str("Hello ");
+let s2 = to_str("World");
+
+let s3 = s1.sum(&s2);
+
+let Str = 10;
+
+let s4 = to_str("World");
+
+outln s3._buf;

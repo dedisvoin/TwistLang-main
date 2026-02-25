@@ -2,6 +2,7 @@
 #include "twist-utils.cpp"
 #include "twist-values.cpp"
 
+#pragma once
 
 namespace ERROR_TYPES {
     const string PARSE_ERROR = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::RED + "parse" + TERMINAL_COLORS::RESET;
@@ -81,7 +82,7 @@ namespace ERROR {
     void ZeroDivision(const Token& start, const Token& end, const Token& op_t,
                             const Value& value_l, const Value& value_r) {
         string file_lines = PREPROCESSOR_OUTPUT;
-        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << op_t.pif << " >> Unsupported operator: '" << op_t.value << "'" << endl;
+        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::EXECUTION << " >> " << op_t.pif << " >> Invalid division" << endl;
         vector<string> lines = SplitString(file_lines, '\n');
         cout << TM::YELLOW << "|" << TM::RESET << endl;
         cout << TM::YELLOW << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(op_t.pif.index + op_t.pif.lenght - 1, ' ') << TM::RED << ".---- Zero division" << endl;
@@ -232,6 +233,45 @@ namespace ERROR {
         cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Variadic size must be of type `Int`, got `" << actual_type << "`" << endl;
         cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
         MSG("Variadic parameter syntax: `name[size_expr]: Type` or `name[]: Type` for dynamic size.");
+        exit(0);
+    }
+
+    // Ошибка: попытка использовать оператор . на не-структурном типе
+    void InvalidMemberAccessorType(const Token& start, const Token& end, const string& actual_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid member access" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Cannot use '.' accessor on type `" << actual_type << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        MSG("The '.' operator can only be used to access fields of a struct.");
+        exit(0);
+    }
+
+    // Ошибка: попытка доступа к несуществующему полю в объекте структуры
+    void UndefinedFieldInObject(const Token& start, const Token& end, const string& field_name, const string& object_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Undefined field" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Field '" << field_name << "' not found in object of type '" << object_type << "'" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        cout << endl;
+        exit(0);
+    }
+
+    // Ошибка: неверный тип в цепочке доступа к полям объекта (попытка обратиться к полю у не-структуры)
+    void InvalidObjectChainType(const Token& start, const Token& end, const string& chain_element, const string& actual_type) {
+        string file_lines = PREPROCESSOR_OUTPUT;
+        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << ERROR_TYPES::EXECUTION << " >> " << start.pif << " >> Invalid object chain" << endl;
+        vector<string> lines = SplitString(file_lines, '\n');
+        cout << TM::RED << "|" << TM::RESET << endl;
+        cout << TM::RED << "| " << TM::CYAN << start.pif.line << " | " << TM::RESET << lines[start.pif.global_line - 1] << endl;
+        cout << TM::RED << "| " << string(to_string(start.pif.line).length() + 3, ' ') << string(start.pif.index, ' ') << TM::RED << string(end.pif.index + end.pif.lenght - start.pif.index, '^') << " Error in field access chain at '" << chain_element << "': expected struct, but found `" << actual_type << "`" << endl;
+        cout << TM::RED << "`" << string(to_string(start.pif.line).length() + 4, '-') << string(start.pif.index, '-') << "'" << TM::RESET << endl;
+        MSG("Each element in a field access chain (a.b.c) must be a struct.");
         exit(0);
     }
 
@@ -436,7 +476,7 @@ namespace ERROR {
         cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << start_args.pif << " >> Invalid type specifier" << endl;
         cout << TM::YELLOW << "|" << TM::RESET << endl;
         cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.global_line - 1] << endl;
-        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid reurn type specifier" << endl;
+        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid return type specifier" << endl;
         cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
         
         exit(0);

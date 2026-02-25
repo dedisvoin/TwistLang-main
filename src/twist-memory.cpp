@@ -9,7 +9,6 @@
 
 typedef int Address;
 
-// Создайте отдельный класс для управления адресами
 class AddressManager {
 private:
     static int next_address;
@@ -33,11 +32,11 @@ int AddressManager::next_address = 0;
 
 
 struct Modifiers {
-    bool is_const;
-    bool is_static;
-    bool is_final;
-    bool is_global;
-    bool is_private;
+    bool is_const = false;
+    bool is_static = false;
+    bool is_final = false;
+    bool is_global = false;
+    bool is_private = false;
 };
 
 // memory object
@@ -85,8 +84,8 @@ struct Memory {
         }
     }
 
-    // add memory object in all pools
-    bool add_object(const string& literal, Value value, Type wait_type, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false, bool is_private = false) {
+
+    bool add_object(const string& literal, Value& value, Type wait_type, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false, bool is_private = false) {
         try {
             auto object = CreateMemoryObject(value, wait_type, this, is_const, is_static, is_final, is_global, is_private);
             string_pool.emplace(literal, object);
@@ -118,7 +117,6 @@ struct Memory {
     }
 
     bool add_object_in_lambda(const string& literal, Value value) {
-
         auto object = new MemoryObject(value, value.type, this, 0, false, true, false, true, false);
         if (check_literal(literal)) delete_variable(literal);
         try {
@@ -140,6 +138,17 @@ struct Memory {
         return true;
     }
 
+    bool add_object_in_struct(const string& literal, Value& value, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false, bool is_private = false) {
+        auto object = new MemoryObject(value, value.type, this, 0, is_const, is_static, is_final, is_global, is_private);
+        if (check_literal(literal)) delete_variable(literal);
+        try {
+            string_pool.emplace(literal, object);
+        } catch (...) {
+            return false;
+        }
+        return true;
+    }
+
     inline MemoryObject* get_variable(const string& literal){
         auto it = string_pool.find(literal);
         return it != string_pool.end() ? it->second : nullptr;
@@ -150,20 +159,10 @@ struct Memory {
     }
 
     inline void link_objects(Memory& target_memory) {
-        // Копируем все объекты из этой памяти в target_memory
         for (auto pair : string_pool) {
             if (!pair.second->modifiers.is_global)
                 continue;
             target_memory.string_pool[pair.first] = pair.second;
-        }
-    }
-
-    // Copy all non-global (local) objects into target memory as separate copies.
-    inline void copy_locals_to(Memory& target_memory) {
-        for (auto pair : string_pool) {
-            if (pair.second->modifiers.is_global)
-                continue;
-            target_memory.string_pool[pair.first] = new MemoryObject(*pair.second);
         }
     }
 
@@ -222,10 +221,6 @@ struct Memory {
         string_pool.erase(name);
     }
 
-
-
-
-
     void debug_print() {
         cout << MT::INFO + "Memory Dump:" << endl;
         for (const auto& [name, obj] : string_pool) {
@@ -243,6 +238,7 @@ struct Memory {
             } catch (...) {
                 cout << ", Value: <bad cast: "  << ">";
             }
+            cout << " static:" << obj->modifiers.is_static;
             cout << endl;
         }
     }
@@ -250,12 +246,6 @@ struct Memory {
 
 struct GlobalMemory {
     static unordered_map<int, MemoryObject*> all_objects;
-
-    static void debug_print() {
-        for (auto& pair : all_objects) {
-            cout << pair.first << ": " << pair.second->value.type.pool << endl;
-        }
-    }
 
     static void register_object(MemoryObject* obj) {
         all_objects[obj->address] = obj;

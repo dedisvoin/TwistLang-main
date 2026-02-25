@@ -28,7 +28,7 @@ inline static const bool IS_SEPP(const char c) { return InString(c, APT::SEPP); 
 vector<string> KEYWORDS = { "if", "else", "for", "while", 
     "do", "break", "continue", "let", 
     "static", "final", "const", "global", "typeof", "sizeof",
-     "del", "new" ,"true", "false", "null", "ret",
+     "del", "new" ,"true", "false", "null", "ret", "struct",
     "out", "outln", "input", "in" , "and", "or", "namespace", "assert", "lambda",  "func", "Func", "exit", "private"};
 
 struct Lexer {
@@ -330,23 +330,18 @@ struct Lexer {
         Parse comment
     */
     void parse_comment() {
-        char        C = this->get();
-
-        this->next();
+        char        C = this->get(); 
         
         while (C != '\n') {
             this->next();
             this->next_in_line();
             C = this->get();
         }
-        
-
 
     }
 
     void run() {
         while (pos < this->main_file_size) {
-        
             char _ = get();
             if (_ == '\n') {
                 next();
@@ -431,6 +426,11 @@ struct Lexer {
                 continue;
             }
 
+            if (_ == '/' && get(1) == '/') {
+                parse_comment();
+                continue;
+            }
+
             if (IS_OPER(_)) {
                 parse_operator();
                 continue;
@@ -441,9 +441,7 @@ struct Lexer {
                 continue;
             }
 
-            if (_ == '/' && get(1) == '/') {
-                parse_comment();
-            }
+            
         }
         add_token("EOF", TokenType::END_OF_FILE, PosInFile{.file_name = this->this_file, .line = this->line - 1, .global_line = this->global_line - 1, .index = this->pos_in_line, .lenght = 1});
     }
