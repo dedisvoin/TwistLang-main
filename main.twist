@@ -1,25 +1,6 @@
-static struct Person {
-    global static let name: String?;
-    global static let age: Int?;
-
-    func __new__(_name: String, _age: Int) -> *Person {
-        let this = new Person();
-        (*this).name = _name;
-        (*this).age = _age;
-        ret this;
+struct str {
+    let buff;
+    func __init__() {
+        let _ = str();
     }
-
-    func print() {
-        outln name, " ", age;
-    }
-}
-
-
-let persons = {
-    Person.__new__("Ivan", 19),
-    Person.__new__("Katy", 23)
-};
-
-for (let i = 0; i < sizeof(persons); i = i + 1;) {
-    (*persons[i]).test();
 }

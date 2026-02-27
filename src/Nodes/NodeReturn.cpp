@@ -1,10 +1,11 @@
 #include "../twist-nodetemp.cpp"
 
+#pragma once
+
 struct Return {
     Value value;
     Return(Value value) : value(value) {}
 };
-
 
 struct NodeReturn : public Node { NO_EVAL
     unique_ptr<Node> expr;

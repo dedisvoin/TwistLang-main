@@ -49,6 +49,15 @@
 		},
 		{
 			"include": "#numbers"
+		},
+		{
+			"include": "#object-access"
+		},
+		{
+			"include": "#dot-punctuation"
+		},
+		{
+			"include": "#identifiers"
 		}
 	],
 	"repository": {
@@ -139,6 +148,9 @@
 						},
 						{
 							"include": "#numbers"
+						},
+						{
+							"include": "#struct-declaration"
 						}
 					]
 				}
@@ -493,6 +505,29 @@
 					"end": "\\*/"
 				}
 			]
+		},
+		
+		"object-access": {
+			"name": "meta.object.access.twist",
+			"match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(\\.)",
+			"captures": {
+				"1": {
+					"name": "constant.regexp"
+				},
+				"2": {
+					"name": "punctuation.separator.dot.twist"
+				}
+			}
+		},
+		
+		"dot-punctuation": {
+			"match": "\\.",
+			"name": "punctuation.separator.dot.twist"
+		},
+		
+		"identifiers": {
+			"match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b",
+			"name": "variable.other.twist"
 		}
 	},
 	"scopeName": "source.twist"

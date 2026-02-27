@@ -173,8 +173,9 @@ class TwistLangLexer(QsciLexerCustom):
         self.STYLE_MODIFIER = 8
         self.STYLE_DIRECTIVE = 9
         self.STYLE_LITERAL = 10
-        self.STYLE_NAMESPACE_ID = 11
+        self.STYLE_NAMESPACE_ID = 11   # для имён пространств имён (в объявлениях и при использовании)
         self.STYLE_SPECIAL = 12
+        self.STYLE_OBJECT = 13          # для object.attr
 
         self.font_size = 12
         self.setup_styles()
@@ -185,8 +186,6 @@ class TwistLangLexer(QsciLexerCustom):
             'ret', 'assert', 'lambda',
             'struct', 'namespace', 'func', 'continue;', 'break;'
         }
-
-        
 
         # Модификаторы переменных
         self.modifiers = {
@@ -216,7 +215,6 @@ class TwistLangLexer(QsciLexerCustom):
         # Возвращаем символы, которые считаются частью слова (включая '#')
         return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#"
 
-
     def setup_styles(self):
         bg_color = QColor("#1e1e2e")
         fg_color = QColor("#cdd6f4")
@@ -239,7 +237,8 @@ class TwistLangLexer(QsciLexerCustom):
             self.STYLE_DIRECTIVE: QColor("#f5e0dc"),
             self.STYLE_LITERAL: QColor("#f9e2af"),
             self.STYLE_NAMESPACE_ID: QColor("#94e2d5"),
-            self.STYLE_SPECIAL: QColor("#f2b5b5")
+            self.STYLE_SPECIAL: QColor("#f2b5b5"),
+            self.STYLE_OBJECT: QColor("#f2cdcd")      # светло‑розовый для object.attr
         }
 
         for style, color in colors.items():
@@ -256,11 +255,12 @@ class TwistLangLexer(QsciLexerCustom):
         bold_font.setItalic(True)
         self.setFont(bold_font, self.STYLE_KEYWORD)
 
-        # Жирный курсив для модификаторов
-        bold_italic_font = self.get_safe_font("Consolas", self.font_size)
-        bold_italic_font.setUnderline(True)
-        self.setFont(bold_italic_font, self.STYLE_MODIFIER)
+        # Подчёркнутый для модификаторов
+        underline_font = self.get_safe_font("Consolas", self.font_size)
+        underline_font.setUnderline(True)
+        self.setFont(underline_font, self.STYLE_MODIFIER)
 
+        # Курсив для специальных
         specials_font = self.get_safe_font("Consolas", self.font_size)
         specials_font.setItalic(True)
         self.setFont(specials_font, self.STYLE_SPECIAL)
@@ -290,8 +290,9 @@ class TwistLangLexer(QsciLexerCustom):
             self.STYLE_MODIFIER: "Modifier",
             self.STYLE_DIRECTIVE: "Directive",
             self.STYLE_LITERAL: "Literal",
-            self.STYLE_NAMESPACE_ID: "NamespaceId",
-            self.STYLE_SPECIAL: "Special"
+            self.STYLE_NAMESPACE_ID: "Namespace",
+            self.STYLE_SPECIAL: "Special",
+            self.STYLE_OBJECT: "Object"
         }
         return descriptions.get(style, "")
 
@@ -480,8 +481,17 @@ class TwistLangLexer(QsciLexerCustom):
                         style = self.STYLE_LITERAL
                     elif word.startswith('#'):
                         style = self.STYLE_DIRECTIVE
+                    # Если после слова идут два двоеточия, это имя пространства имён
+                    elif j + 2 <= seg_len and segment[j:j+2] == b'::':
+                        style = self.STYLE_NAMESPACE_ID
+                    # Если следующий символ — открывающая скобка, это функция
                     elif j < seg_len and segment[j:j+1] == b'(':
                         style = self.STYLE_FUNCTION
+                    # Если следующий символ — точка, это имя объекта
+                    elif j < seg_len and segment[j:j+1] == b'.':
+                        style = self.STYLE_OBJECT
+                    else:
+                        style = self.STYLE_DEFAULT
 
                 self.setStyling(j - pos, style)
                 pos = j
@@ -507,7 +517,6 @@ class TwistLangLexer(QsciLexerCustom):
             # --- Всё остальное ---
             self.setStyling(char_len, self.STYLE_DEFAULT)
             pos += char_len
-
 
 # ----------------------------------------------------------------------
 # Виджет вкладок с редакторами

@@ -1,5 +1,7 @@
 #include "../twist-nodetemp.cpp"
 
+#pragma once
+
 /*
  * NodeScopes – узел группировки выражений в скобках ( ).
  *
