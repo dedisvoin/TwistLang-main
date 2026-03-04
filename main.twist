@@ -1,6 +1,5 @@
-struct str {
-    let buff;
-    func __init__() {
-        let _ = str();
-    }
+func main() {
+    static let a = 10;
 }
+
+main();

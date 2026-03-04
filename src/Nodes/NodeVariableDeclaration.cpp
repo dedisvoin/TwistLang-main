@@ -1,5 +1,6 @@
 #include "../twist-nodetemp.cpp"
 #include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 
 #include "NodeLiteral.cpp"
 
@@ -73,7 +74,7 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
 
         Type static_type = value.type;
         if (is_static) {
-            if (!type_expr) ERROR::WaitedTypeExpression(type_end_token);
+            if (!type_expr) throw ERROR_THROW::UnexpectedToken(type_end_token, "type expression with syntax `:type-expr<?>`");
 
             if (type_expr->NODE_TYPE == NodeTypes::NODE_LITERAL && ((NodeLiteral*)type_expr.get())->name == "auto") {
                 static_type = value.type;

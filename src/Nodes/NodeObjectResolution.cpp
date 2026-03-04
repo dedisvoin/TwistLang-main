@@ -3,8 +3,6 @@
 #include "../twist-structs.cpp"
 #include "../twist-functions.cpp"
 
-#include "NodeValueHolder.cpp"
-
 #pragma once
 
 /*
@@ -30,63 +28,39 @@
 struct NodeObjectResolution : public Node { NO_EXEC
     unique_ptr<Node>    obj_expr;
     string              current_name;
-    vector<string>      remaining_chain; // Оставшаяся цепочка имен
 
-    Token               start;
-    Token               end;
+    Token               start;  // токен имени (для ошибок)
+    Token               end;    // он же
 
-    NodeObjectResolution(unique_ptr<Node> obj_expr, const string& current_name, Token start, Token end,
-                      const vector<string>& remaining_chain = {}) :
-        obj_expr(std::move(obj_expr)), current_name(current_name), start(start), end(end) ,
-        remaining_chain(remaining_chain) {
+    NodeObjectResolution(unique_ptr<Node> obj_expr, const string& current_name, Token start, Token end)
+        : obj_expr(std::move(obj_expr)), current_name(current_name), start(start), end(end) {
         this->NODE_TYPE = NodeTypes::NODE_OBJECT_RESOLUTION;
     }
 
     Value eval_from(Memory& _memory) override {
-        // Получаем значение namespace
-        Value ns_value = obj_expr->eval_from(_memory);
+        Value obj_value = obj_expr->eval_from(_memory);
 
-        // Проверяем тип
-        if (STANDART_TYPE::UNTYPED.is_sub_type(ns_value.type)) 
-            ERROR::InvalidAccessorType(start, end, ns_value.type.pool);
-        
+        // Проверяем, что это структура (не стандартный тип)
+        if (STANDART_TYPE::UNTYPED.is_sub_type(obj_value.type))
+            ERROR::InvalidAccessorType(start, end, obj_value.type.pool);
 
-        // ИСПРАВЛЕНО: используем ссылку вместо копии
-        auto& ns = any_cast<Struct&>(ns_value.data);
+        auto& obj = any_cast<Struct&>(obj_value.data);
+        Memory* obj_memory = obj.memory.get();
 
-        // Теперь memory - shared_ptr, получаем доступ через get()
-        Memory* ns_memory = ns.memory.get();
+        if (!obj_memory->check_literal(current_name))
+            ERROR::UndefinedStructProperty(start, end, current_name, obj_value.type.pool);
 
-        // Проверяем существование переменной/namespace
-        if (!ns_memory->check_literal(current_name)) {
-            ERROR::UndefinedStructProperty(start, end, current_name, ns_value.type.pool);
-        }
-
-        // Получаем значение
-        auto result = ns_memory->get_variable(current_name);
+        auto result = obj_memory->get_variable(current_name);
 
         if (result->modifiers.is_private)
             ERROR::PrivatePropertyAccess(start, end, current_name);
 
+        // Если поле — функция, возвращаем метод
         if (result->value.type.is_func()) {
             Method m;
             m.func = any_cast<Function*>(result->value.data);
-            m.instance_memory = ns.memory;  // shared_ptr<Memory> экземпляра
+            m.instance_memory = obj.memory;
             return Value(STANDART_TYPE::METHOD, m);
-        }
-
-        // Если есть оставшаяся цепочка, продолжаем рекурсивно
-        if (!remaining_chain.empty()) {
-            // Создаем новую ноду для следующего уровня
-            vector<string> next_chain(remaining_chain.begin() + 1, remaining_chain.end());
-            auto next_node = make_unique<NodeObjectResolution>(
-                make_unique<NodeValueHolder>(result->value),
-                remaining_chain[0],
-                start, end,
-                next_chain
-            );
-
-            return next_node->eval_from(_memory);
         }
 
         return result->value;

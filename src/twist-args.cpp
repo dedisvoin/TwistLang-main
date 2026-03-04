@@ -10,6 +10,7 @@ struct Arg {
     unique_ptr<Node> type_expr = nullptr;
     unique_ptr<Node> default_parameter = nullptr;
     string name;
+    
     bool is_const = false;
     bool is_final = false;
     bool is_static = false;
@@ -19,9 +20,7 @@ struct Arg {
     bool is_variadic = false;
     unique_ptr<Node> variadic_size = nullptr;
 
-    Arg(string name) : name(name) {
-        
-    }
+    Arg(string name) : name(name) {}
 };
 
 

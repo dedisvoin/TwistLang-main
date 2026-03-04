@@ -2,10 +2,12 @@
 #include "../twist-nodetemp.cpp"
 #include "../twist-structs.cpp"
 #include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 #include "../twist-lambda.cpp"
 #include "../twist-array.cpp"
 
 #include "NodeReturn.cpp"
+
 
 struct NodeCall : public Node { NO_EXEC
     unique_ptr<Node> callable;
@@ -13,9 +15,9 @@ struct NodeCall : public Node { NO_EXEC
     Token start_callable;
     Token end_callable;
 
-    static Type extract_type_from_value(const Value& val, 
-                                     const Token& start_token, 
-                                     const Token& end_token, 
+    static Type extract_type_from_value(const Value& val,
+                                     const Token& start_token,
+                                     const Token& end_token,
                                      const string& context) {
         if (val.type == STANDART_TYPE::TYPE) {
             return any_cast<Type>(val.data);
@@ -75,7 +77,7 @@ struct NodeCall : public Node { NO_EXEC
         auto func = any_cast<Function*>(value.data);
         _memory.link_objects(*func->memory);
         Memory saved_mem = *func->memory;
-        func->memory->add_object_in_func(func->name, value, false, false, false, true);
+        func->memory->add_object_in_func(func->name, value, value.type, false, false, false, true);
 
         size_t arg_idx = 0;  // текущий индекс в списке переданных аргументов args
 
@@ -99,13 +101,13 @@ struct NodeCall : public Node { NO_EXEC
                         func->start_args_token, func->end_args_token,
                         param->name, param_idx);
                 }
-
+                Type expected;
                 // Проверка типа
                 if (param->type_expr) {
-                    
+
                     auto expected_type_val = param->type_expr->eval_from(*func->memory);
-                    
-                    Type expected = extract_type_from_value(expected_type_val, 
+
+                    expected = extract_type_from_value(expected_type_val,
                                          func->start_args_token, func->end_args_token,
                                          "parameter '" + param->name + "'");
                     if (!arg_value.type.is_sub_type(expected)) {
@@ -120,7 +122,7 @@ struct NodeCall : public Node { NO_EXEC
                         ERROR::ArgumentShadowsGlobal(start_callable, end_callable, func->name, param->name);
                     }
                 }
-                func->memory->add_object_in_func(param->name, arg_value,
+                func->memory->add_object_in_func(param->name, arg_value, expected,
                     param->is_const, param->is_static,
                     param->is_final, param->is_global);
             }
@@ -197,7 +199,7 @@ struct NodeCall : public Node { NO_EXEC
                 }
 
                 // Добавляем в память функции под именем параметра
-                func->memory->add_object_in_func(param->name, array_value,
+                func->memory->add_object_in_func(param->name, array_value, array_value.type,
                     param->is_const, param->is_static,
                     param->is_final, param->is_global);
             }
@@ -215,10 +217,13 @@ struct NodeCall : public Node { NO_EXEC
             ((Node*)(func->body))->exec_from(*func->memory);
             return NewNull();
         }
+        catch (Error err) {
+            throw  ERROR_THROW::CallError(start_callable, end_callable, func->name, new Error(err));
+        }
         catch (Return _value) {
             if (func->return_type) {
                 auto expected_ret = func->return_type->eval_from(*func->memory);
-                Type expected = extract_type_from_value(expected_ret, 
+                Type expected = extract_type_from_value(expected_ret,
                                          func->start_return_type_token, func->end_return_type_token,
                                          "return type");
                 if (!_value.value.type.is_sub_type(expected)) {
@@ -227,7 +232,7 @@ struct NodeCall : public Node { NO_EXEC
                         expected, _value.value.type);
                 }
             }
-            
+
             *func->memory = saved_mem;
             return _value.value;
         }
@@ -235,23 +240,23 @@ struct NodeCall : public Node { NO_EXEC
 
     Value call_struct(Value &value, Memory& _memory) {
         // Убедимся, что вызываемый объект действительно является структурой
-        
+
 
         Struct& src_struct = any_cast<Struct&>(value.data);
-        
-        
+
+
         // Создаём новую память для копии структуры
         auto new_memory = make_shared<Memory>();
-        
-        
+
+
         // Копируем все объекты из исходной памяти структуры
         for (const auto& [name, obj] : src_struct.memory->string_pool) {
             // Создаём копию значения (используем конструктор копирования Value)
             Value copied_value = Value(obj->value);  // Value копируется автоматически
-            
-            
-            
-            
+
+
+
+
             MemoryObject* new_obj = CreateMemoryObject(
                 copied_value,
                 obj->wait_type,
@@ -262,23 +267,25 @@ struct NodeCall : public Node { NO_EXEC
                 obj->modifiers.is_global,
                 obj->modifiers.is_private
             );
-            
+
             STATIC_MEMORY.register_object(new_obj);
-            
+
             // Добавляем объект в новую память структуры
             new_memory->add_object(name, new_obj);
         }
-        
+
         // Создаём новую структуру с той же памятью и именем
         Struct new_struct(std::move(new_memory), src_struct.name);
-        
+
         return Value(value.type, std::move(new_struct));
     }
 
     Value eval_from(Memory& _memory) override {
-        
+
         auto value = callable->eval_from(_memory);
-        
+
+
+
         if (value.type == STANDART_TYPE::METHOD) {
             auto method = any_cast<Method>(value.data);
             auto saved_memory = method.func->memory;
@@ -295,10 +302,11 @@ struct NodeCall : public Node { NO_EXEC
         else if (value.type.is_func()) {
             return call_function(value, _memory);
         }
-        else if (!STANDART_TYPE::UNTYPED.is_sub_type(value.type)) {
+        else if (STANDART_TYPE::UNTYPED.is_sub_type(value.type)) {
+
             return call_struct(value, _memory);
         }
 
-        ERROR::IvalidCallableType(start_callable, end_callable, value.type);
+        throw ERROR_THROW::UncallableType(start_callable, end_callable, value.type);
     }
 };

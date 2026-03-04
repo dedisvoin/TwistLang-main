@@ -1,6 +1,7 @@
 #include "../twist-nodetemp.cpp"
 #include "../twist-errors.cpp"
 
+#define sum2(a, b) (a + b)
 
 struct NodeNew : public Node { NO_EXEC
     unique_ptr<Node> expr;
@@ -54,5 +55,6 @@ struct NodeNew : public Node { NO_EXEC
         } else {
             ERROR::InvalidNewInstruction(start_type, end_type);
         }
+
     }
 };

@@ -32,15 +32,15 @@ struct NodeNumber : public Node { NO_EXEC
         if (dot_count > 1) ERROR::InvalidNumber(token, token.value);
 
         if (dot_count == 1) {
-                   
+
             std::istringstream iss(token.value);
-            iss.imbue(std::locale::classic()); // принудительно локаль с точкой
+            iss.imbue(std::locale::classic()); // принудительно меняем локаль с точкой
             NUMBER_ACCURACY val;
             if (!(iss >> val)) {
                 ERROR::InvalidNumber(token, token.value);
             }
             this->value = NewDouble(val);
-            
+
 
         } else {
             this->value = NewInt(stoll(token.value));

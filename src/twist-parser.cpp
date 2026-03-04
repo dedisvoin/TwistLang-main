@@ -1,25 +1,36 @@
 #include "twist-tokenwalker.cpp"
-#include "twist-namespace.cpp"
 #include "twist-tokens.cpp"
 #include "twist-errors.cpp"
+#include "twist-err.cpp"
 #include "twist-values.cpp"
 #include "twist-memory.cpp"
-#include "twist-array.cpp"
 #include "twist-args.cpp"
 
+// basic nodes
 #include "Nodes/NodeNumber.cpp"
 #include "Nodes/NodeString.cpp"
 #include "Nodes/NodeChar.cpp"
 #include "Nodes/NodeBool.cpp"
 #include "Nodes/NodeNull.cpp"
 #include "Nodes/NodeLiteral.cpp"
-
-#include "Nodes/NodeNamespaceResolution.cpp"
-#include "Nodes/NodeObjectResolution.cpp"
 #include "Nodes/NodeScopes.cpp"
+
+// binary and unary operators
 #include "Nodes/NodeUnary.cpp"
 #include "Nodes/NodeBinary.cpp"
+
+// declarations
 #include "Nodes/NodeVariableDeclaration.cpp"
+#include "Nodes/NodeNamespaceDeclaration.cpp"
+#include "Nodes/NodeFunctionDeclaration.cpp"
+#include "Nodes/NodeStructDeclaration.cpp"
+#include "Nodes/NodeBlockOfDeclarations.cpp"
+
+// resolutions
+#include "Nodes/NodeNamespaceResolution.cpp"
+#include "Nodes/NodeObjectResolution.cpp"
+
+
 #include "Nodes/NodeOut.cpp"
 #include "Nodes/NodeBlock.cpp"
 #include "Nodes/NodeIf.cpp"
@@ -36,25 +47,25 @@
 #include "Nodes/NodeAssert.cpp"
 #include "Nodes/NodeExit.cpp"
 #include "Nodes/NodeVariableEqual.cpp"
-#include "Nodes/NodeNamespaceDeclaration.cpp"
+
 #include "Nodes/NodeNamespaceAnonim.cpp"
 #include "Nodes/NodeNew.cpp"
-#include "Nodes/NodeFunctionDeclaration.cpp"
-#include "Nodes/NodeBlockOfDeclarations.cpp"
+
 #include "Nodes/NodeReturn.cpp"
 #include "Nodes/NodeExpressionState.cpp"
 #include "Nodes/NodeLambda.cpp"
-#include "Nodes/NodeStructDeclaration.cpp"
 #include "Nodes/NodeAddresOf.cpp"
 #include "Nodes/NodeDereference.cpp"
 #include "Nodes/NodeDelete.cpp"
 #include "Nodes/NodeLeftDereference.cpp"
 #include "Nodes/NodeCall.cpp"
 #include "Nodes/NodeFunctionType.cpp"
+#include "Nodes/NodeArrayType.cpp"
+#include "Nodes/NodeArray.cpp"
+#include "Nodes/NodeGetIndex.cpp"
+#include "Nodes/NodeArrayPush.cpp"
 
 #include <vcruntime_startup.h>
-#include <cstddef>
-#include <cstdint>
 #include <string>
 #include <vector>
 #include <memory>
@@ -66,352 +77,6 @@
 
 
 using namespace std;
-
-
-
-// NodeNewArrayType:
-// Подробное описание:
-// Нода для описания типа массива: принимает тип элемента и опциональный
-// размер. Возвращает объект Type в виде строкового представления типа.
-struct NodeNewArrayType : public Node { NO_EXEC
-    unique_ptr<Node> type_expr;
-    unique_ptr<Node> size_expr;
-    Token start_token;
-    Token end_token;
-
-    NodeNewArrayType(unique_ptr<Node> type_expr, unique_ptr<Node> size_expr, Token start_token, Token end_token)
-        : type_expr(std::move(type_expr)), size_expr(std::move(size_expr)), start_token(start_token), end_token(end_token) {
-        this->NODE_TYPE = NodeTypes::NODE_ARRAY_TYPE;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        if (type_expr) {
-            auto type_value = type_expr->eval_from(_memory);
-
-            if (type_value.type != STANDART_TYPE::TYPE) {
-                ERROR::InvalidArrayTypeExpression(start_token, end_token);
-            }
-
-            if (size_expr) {
-                auto size_value = size_expr->eval_from(_memory);
-                if (size_value.type != STANDART_TYPE::INT) {
-                    ERROR::InvalidArraySize(start_token);
-                }
-
-                auto ret_type = "[" + any_cast<Type>(type_value.data).pool + ", " + to_string(any_cast<int64_t>(size_value.data)) + "]";
-                return Value(STANDART_TYPE::TYPE, Type(ret_type));
-            }
-
-            auto ret_type = "[" + any_cast<Type>(type_value.data).pool + ", ~]";
-
-            return Value(STANDART_TYPE::TYPE, Type(ret_type));
-        } else {
-            auto ret_type = "[, ~]";
-
-            return Value(STANDART_TYPE::TYPE, Type(ret_type));
-        }
-    }
-};
-
-// NodeArray:
-// Подробное описание:
-// Нода литерала массива: содержит список выражений-элементов, вычисляет их
-// значения, выводит объединённый тип массива и возвращает Value с типом
-// массивa и самим массивом.
-struct NodeArray : public Node { NO_EXEC
-
-    vector<tuple<unique_ptr<Node>, Token, Token>> elements;
-    unique_ptr<Node> static_type;
-    bool is_static = false;
-
-    NodeArray(vector<tuple<unique_ptr<Node>, Token, Token>> elements, unique_ptr<Node> static_type = nullptr) : 
-        elements(std::move(elements)), static_type(std::move(static_type)) {
-        this->NODE_TYPE = NodeTypes::NODE_ARRAY;
-    }
-
-    Array construct_array(Memory& _memory) {
-        vector<Value> evaled_elements;
-        Type T = Type();
-        if (!is_static) {
-            if (elements.empty()) {
-                T = Type("[, ~]"); // пустой массив
-            } else {
-                auto first = get<0>(elements[0])->eval_from(_memory);
-                T = first.type;
-                evaled_elements.push_back(first);
-                for (size_t i = 1; i < elements.size(); ++i) {
-                    auto value = get<0>(elements[i])->eval_from(_memory);
-                    T = T | value.type;
-                    evaled_elements.push_back(value);
-                }
-                T = Type("[" + T.pool + ", ~]");
-            }
-          
-        } else {
-            T = any_cast<Type>(static_type->eval_from(_memory).data);
-            for (int i = 0; i < elements.size(); i++) {
-                auto value = get<0>(elements[i])->eval_from(_memory);
-                if (!IsTypeCompatible(T.parse_array_type().first, value.type)) {
-                    ERROR::InvalidArrayElementType(get<1>(elements[i]), get<2>(elements[i]), T.pool, value.type.pool, i);
-                }
-                evaled_elements.push_back(value);
-            }
-        }
-        return Array(T, std::move(evaled_elements));
-    }
-
-    Value eval_from(Memory& _memory) override {
-        auto arr = construct_array(_memory);
-
-        return Value(arr.type, arr);
-    }
-};
-
-// NodeGetIndex:
-// Подробное описание:
-// Нода индексирования массива/коллекции: вычисляет выражение и индекс,
-// проверяет тип индекса и диапазон, затем возвращает соответствующий элемент.
-struct NodeGetIndex : public Node { NO_EXEC
-    unique_ptr<Node> expr;
-    unique_ptr<Node> index_expr;
-    Token start_token;
-    Token end_token;
-
-    NodeGetIndex(unique_ptr<Node> expr, unique_ptr<Node> index_expr, Token start_token, Token end_token)
-        : expr(std::move(expr)), index_expr(std::move(index_expr)), start_token(start_token), end_token(end_token) {
-        this->NODE_TYPE = NodeTypes::NODE_GET_BY_INDEX;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        auto value = expr->eval_from(_memory);
-
-        auto index_value = index_expr->eval_from(_memory);
-
-        if (index_value.type != STANDART_TYPE::INT) {
-            ERROR::InvalidArrayIndex(start_token, index_value.type.pool);
-        }
-
-        if (value.type.is_array_type()) {
-            auto arr = any_cast<Array>(value.data);
-            int64_t idx = any_cast<int64_t>(index_value.data);
-
-            if (arr.get_size() <= idx) 
-                ERROR::ArrayIndexOutOfRange(start_token, idx, arr.get_size());
-            
-            return arr.values[idx];
-
-        } else if (value.type == STANDART_TYPE::STRING) {
-            auto arr = any_cast<string>(value.data);
-            int64_t idx = any_cast<int64_t>(index_value.data);
-
-            if (arr.size() <= idx) 
-                ERROR::ArrayIndexOutOfRange(start_token, idx, arr.size());
-            
-
-            return NewChar(arr[idx]);
-        }
-        
-    }
-};
-
-
-// NodeArrayPush:
-// Подробное описание:
-// Нода операции добавления элемента в массив (`<-`). Поддерживает оптимизацию
-// для простых переменных и namespace-доступа — модификация выполняется прямо
-// в памяти без копирования; для выражений использует копию массива.
-struct NodeArrayPush : public Node { NO_EXEC
-    unique_ptr<Node> left_expr;
-    unique_ptr<Node> right_expr;
-    Token start_token;
-    Token end_token;
-
-    NodeArrayPush(unique_ptr<Node> left_expr, unique_ptr<Node> right_expr, Token start_token, Token end_token)
-        : left_expr(std::move(left_expr)), right_expr(std::move(right_expr)), start_token(start_token), end_token(end_token) {
-        this->NODE_TYPE = NodeTypes::NODE_ARRAY_PUSH;
-    }
-
-    Value eval_from(Memory& _memory) override {
-        if (left_expr->NODE_TYPE == NodeTypes::NODE_SCOPES) {
-            left_expr = std::move(((NodeScopes*)(left_expr.get()))->expression);
-        }
-        // ОПТИМИЗАЦИЯ: Проверяем тип левого выражения
-        // Если это простая переменная (NODE_LITERAL), модифицируем её в памяти напрямую
-        if (left_expr->NODE_TYPE == NodeTypes::NODE_LITERAL) {
-            string var_name = ((NodeLiteral*)left_expr.get())->name;
-            MemoryObject* var_obj = _memory.get_variable(var_name);
-
-            if (var_obj && var_obj->value.type.is_array_type()) {
-                auto right_value = right_expr->eval_from(_memory);
-                // Проверка типа элемента массива
-                auto& arr = any_cast<Array&>(var_obj->value.data);
-                auto arr_type_pair = arr.type.parse_array_type();
-                string elem_type_str = arr_type_pair.first;
-                if (elem_type_str != "") {
-                    Type expected(elem_type_str);
-                    if (!IsTypeCompatible(expected, right_value.type)) {
-                        ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_value.type.pool);
-                    }
-                }
-                // Модифицируем массив ПРЯМО в памяти БЕЗ копирования
-                arr.values.emplace_back(right_value);
-                return var_obj->value;
-            }
-        }
-        // Если это доступ через namespace (NODE_NAME_RESOLUTION), тоже модифицируем напрямую
-        else if (left_expr->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
-            NodeNamespaceResolution* resolution = (NodeNamespaceResolution*)left_expr.get();
-            Value ns_value = resolution->namespace_expr->eval_from(_memory);
-
-            if (ns_value.type == STANDART_TYPE::NAMESPACE) {
-                auto& ns = any_cast<Namespace&>(ns_value.data);
-                string var_name = resolution->current_name;
-
-                if (ns.memory->check_literal(var_name)) {
-                    MemoryObject* var_obj = ns.memory->get_variable(var_name);
-                    if (var_obj && var_obj->value.type.is_array_type()) {
-                        auto right_value = right_expr->eval_from(_memory);
-                        auto& arr = any_cast<Array&>(var_obj->value.data);
-                        auto arr_type_pair = arr.type.parse_array_type();
-                        string elem_type_str = arr_type_pair.first;
-                        if (elem_type_str != "") {
-                            Type expected(elem_type_str);
-                            if (!IsTypeCompatible(expected, right_value.type)) {
-                                ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_value.type.pool);
-                            }
-                        }
-                        arr.values.emplace_back(right_value);
-                        return var_obj->value;
-                    }
-                }
-            }
-        }
-        // ОБРАБОТКА РАЗЫМЕНОВАНИЯ УКАЗАТЕЛЯ
-        else if (left_expr->NODE_TYPE == NodeTypes::NODE_DEREFERENCE) {
-            NodeDereference* deref = (NodeDereference*)left_expr.get();
-
-            // Вычисляем выражение, которое должно быть указателем
-            Value ptr_value = deref->expr->eval_from(_memory);
-
-            if (!ptr_value.type.is_pointer()) {
-                ERROR::InvalidArrayPushType(start_token, end_token, ptr_value.type.pool);
-            }
-
-            // Получаем адрес из указателя
-            int address = any_cast<int>(ptr_value.data);
-
-            // Находим объект в STATIC_MEMORY
-            MemoryObject* obj = STATIC_MEMORY.get_by_address(address);
-            if (!obj) {
-                ERROR::InvalidArrayPushType(start_token, end_token, "null pointer");
-            }
-
-            if (!obj->value.type.is_array_type()) {
-                ERROR::InvalidArrayPushType(start_token, end_token, obj->value.type.pool);
-            }
-
-            auto right_value = right_expr->eval_from(_memory);
-            auto& arr = any_cast<Array&>(obj->value.data);
-            auto arr_type_pair = arr.type.parse_array_type();
-            string elem_type_str = arr_type_pair.first;
-            if (elem_type_str != "") {
-                Type expected(elem_type_str);
-                if (!IsTypeCompatible(expected, right_value.type)) {
-                    ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_value.type.pool);
-                }
-            }
-            arr.values.emplace_back(right_value);
-
-            // Возвращаем значение из памяти (не копию)
-            return obj->value;
-        }
-        // ОБРАБОТКА СЛОЖНЫХ ВЫРАЖЕНИЙ С РАЗЫМЕНОВАНИЕМ И ДОСТУПОМ К ПОЛЯМ
-        else if (left_expr->NODE_TYPE == NodeTypes::NODE_GET_BY_INDEX) {
-            // Если это индексация, модифицируем копию
-            auto left_value = left_expr->eval_from(_memory);
-            auto right_value = right_expr->eval_from(_memory);
-
-            if (!left_value.type.is_array_type()) {
-                ERROR::InvalidArrayPushType(start_token, end_token, left_value.type.pool);
-            }
-            auto& arr = any_cast<Array&>(left_value.data);
-            auto arr_type_pair = arr.type.parse_array_type();
-            string elem_type_str = arr_type_pair.first;
-            if (elem_type_str != "") {
-                Type expected(elem_type_str);
-                if (!IsTypeCompatible(expected, right_value.type)) {
-                    ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_value.type.pool);
-                }
-            }
-            arr.values.emplace_back(right_value);
-            return left_value;
-        }
-        
-        // FALLBACK: Для других случаев (выражений) работаем с копией
-        auto left_value = left_expr->eval_from(_memory);
-        auto right_value = right_expr->eval_from(_memory);
-
-        if (!left_value.type.is_array_type()) {
-            ERROR::InvalidArrayPushType(start_token, end_token, left_value.type.pool);
-        }
-
-        // Модифицируем копию и возвращаем её
-        {
-            auto& arr = any_cast<Array&>(left_value.data);
-            auto arr_type_pair = arr.type.parse_array_type();
-            string elem_type_str = arr_type_pair.first;
-            if (elem_type_str != "") {
-                Type expected(elem_type_str);
-                if (!IsTypeCompatible(expected, right_value.type)) {
-                    ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_value.type.pool);
-                }
-            }
-            arr.values.emplace_back(right_value);
-        }
-        return left_value;
-    }
-
-};
-
-
-struct Context {
-    Memory memory;
-    vector<unique_ptr<Node>> nodes;
-
-    Context() = default;
-
-    // Конструктор перемещения
-    Context(vector<unique_ptr<Node>>&& nodes, Memory&& mem)
-        : nodes(std::move(nodes)), memory(std::move(mem)) {}
-
-    Context(vector<unique_ptr<Node>>&& nodes, Memory& mem)
-        : nodes(std::move(nodes)), memory(std::move(mem)) {}
-
-    // Запрещаем копирование
-    Context(const Context&) = delete;
-
-    Context& operator=(const Context&) = delete;
-
-    // Разрешаем перемещение
-    Context(Context&& other) noexcept
-        : nodes(std::move(other.nodes)), memory(std::move(other.memory)) {}
-
-    Context& operator=(Context&& other) noexcept {
-        if (this != &other) {
-            nodes = std::move(other.nodes);
-            memory = std::move(other.memory);
-        }
-        return *this;
-    }
-
-    void set_nodes(vector<unique_ptr<Node>>&& new_nodes) {
-        nodes = std::move(new_nodes);  // Используем move
-    }
-
-    void set_memory(Memory&& new_memory) {
-        memory = std::move(new_memory);  // Используем move
-    }
-};
 
 
 struct ASTGenerator {
@@ -472,7 +137,7 @@ struct ASTGenerator {
     unique_ptr<Node> ParseContinue();
     unique_ptr<Node> ParseExit();
     unique_ptr<Node> ParseReturn();
-    
+
     // Assert
     unique_ptr<Node> ParseAssert();
 
@@ -718,7 +383,7 @@ struct ASTGenerator {
 
         if (current.type == TokenType::KEYWORD && current.value == "struct") {
             return ParseStructDecl();
-        } 
+        }
         // block declaration
         if ((current.type == TokenType::KEYWORD) &&
             (current.value == "final" || current.value == "const" ||
@@ -860,74 +525,8 @@ struct ASTGenerator {
         }
     }
 
-    void GenerateStandartTypes(Memory& _memory) {
-        auto OBJ_TYPE_INT = CreateMemoryObject(NewType("Int"), STANDART_TYPE::TYPE, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("Int",OBJ_TYPE_INT);
-        STATIC_MEMORY.register_object(OBJ_TYPE_INT);
-
-        auto OBJ_TYPE_DOUBLE = CreateMemoryObject(NewType("Double"), STANDART_TYPE::TYPE, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("Double",OBJ_TYPE_DOUBLE);
-        STATIC_MEMORY.register_object(OBJ_TYPE_DOUBLE);
-
-        auto OBJ_TYPE_CHAR = CreateMemoryObject(NewType("Char"), STANDART_TYPE::TYPE, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("Char",OBJ_TYPE_CHAR);
-        STATIC_MEMORY.register_object(OBJ_TYPE_CHAR);
-
-        auto OBJ_TYPE_STRING = CreateMemoryObject(NewType("String"), STANDART_TYPE::TYPE, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("String",OBJ_TYPE_STRING);
-        STATIC_MEMORY.register_object(OBJ_TYPE_STRING);
-
-        auto OBJ_TYPE_BOOL = CreateMemoryObject(NewType("Bool"), STANDART_TYPE::TYPE, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("Bool",OBJ_TYPE_BOOL);
-        STATIC_MEMORY.register_object(OBJ_TYPE_BOOL);
-
-        auto OBJ_TYPE_TYPE = CreateMemoryObject(NewType("Type"), STANDART_TYPE::TYPE, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("Type",OBJ_TYPE_TYPE);
-        STATIC_MEMORY.register_object(OBJ_TYPE_TYPE);
-
-        auto OBJ_TYPE_NULL = CreateMemoryObject(NewType("Null"), STANDART_TYPE::TYPE, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("Null",OBJ_TYPE_NULL);
-        STATIC_MEMORY.register_object(OBJ_TYPE_NULL);
-
-
-        auto OBJ_TYPE_NAMESPACE = CreateMemoryObject(NewType("Namespace"), STANDART_TYPE::TYPE, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("Namespace",OBJ_TYPE_NAMESPACE);
-        STATIC_MEMORY.register_object(OBJ_TYPE_NAMESPACE);
-
-        auto OBJ_TYPE_LAMBDA = CreateMemoryObject(NewType("Lambda"), STANDART_TYPE::TYPE, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("Lambda",OBJ_TYPE_LAMBDA);
-        STATIC_MEMORY.register_object(OBJ_TYPE_LAMBDA);
-
-        auto OBJ_TYPE_AUTO = CreateMemoryObject(NewType("auto"), STANDART_TYPE::TYPE, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("auto",OBJ_TYPE_AUTO);
-        STATIC_MEMORY.register_object(OBJ_TYPE_AUTO);
-
-        auto __TWIST_FILE__ = CreateMemoryObject(Value(STANDART_TYPE::STRING, string(file_name)), STANDART_TYPE::STRING, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("__FILE__", __TWIST_FILE__);
-        STATIC_MEMORY.register_object(__TWIST_FILE__);
-
-        auto __TWIST_ADDR__ = CreateMemoryObject(NewPointer(AddressManager::get_current_address() + 2, STANDART_TYPE::NULL_T), STANDART_TYPE::STRING, &GLOBAL_MEMORY,
-            true, true, true, true, false);
-        GLOBAL_MEMORY.add_object("__PTR__", __TWIST_ADDR__);
-        STATIC_MEMORY.register_object(__TWIST_ADDR__);
-        // STATIC_MEMORY.register_object(__TWIST_FILE__);
-
-        // STATIC_MEMORY.debug_print();
-    }
-
     inline void parse() {
-        GenerateStandartTypes(GLOBAL_MEMORY);
+
 
         while (!walker.isEnd()) {
             auto stmt = parse_statement();
@@ -937,37 +536,78 @@ struct ASTGenerator {
         }
     }
 
-    // В ASTGenerator
-    Context run() {
-        parse();
-
-        // Создаем копию GLOBAL_MEMORY
-        Memory memory_copy;
-
-        // Копируем все переменные
-        for (const auto& [name, obj] : GLOBAL_MEMORY.string_pool) {
-            memory_copy.copy_object(name, obj->value, obj->wait_type,
-                                    obj->modifiers.is_const, obj->modifiers.is_static,
-                                    obj->modifiers.is_final, obj->modifiers.is_global, obj->address);
-        }
-
-        return Context(std::move(nodes), std::move(memory_copy));
-    }
 };
 
+void GenerateStandartTypes(Memory* g_memory, string g_file_name) {
+    auto OBJ_TYPE_INT = CreateMemoryObject(NewType("Int"), STANDART_TYPE::TYPE, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("Int",OBJ_TYPE_INT);
+    STATIC_MEMORY.register_object(OBJ_TYPE_INT);
 
-struct ContextExecutor {
-    Context context;
+    auto OBJ_TYPE_DOUBLE = CreateMemoryObject(NewType("Double"), STANDART_TYPE::TYPE, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("Double",OBJ_TYPE_DOUBLE);
+    STATIC_MEMORY.register_object(OBJ_TYPE_DOUBLE);
 
-    ContextExecutor(Context context) : context(std::move(context)) {}
-    void run() {
-        Memory dump = context.memory;
-        for (int i = 0; i < (context.nodes).size(); i++) {
-            (context.nodes)[i]->exec_from(context.memory);
-        }
-        context.memory = dump;
-    }
-};
+    auto OBJ_TYPE_CHAR = CreateMemoryObject(NewType("Char"), STANDART_TYPE::TYPE, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("Char",OBJ_TYPE_CHAR);
+    STATIC_MEMORY.register_object(OBJ_TYPE_CHAR);
+
+    auto OBJ_TYPE_STRING = CreateMemoryObject(NewType("String"), STANDART_TYPE::TYPE, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("String",OBJ_TYPE_STRING);
+    STATIC_MEMORY.register_object(OBJ_TYPE_STRING);
+
+    auto OBJ_TYPE_BOOL = CreateMemoryObject(NewType("Bool"), STANDART_TYPE::TYPE, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("Bool",OBJ_TYPE_BOOL);
+    STATIC_MEMORY.register_object(OBJ_TYPE_BOOL);
+
+    auto OBJ_TYPE_TYPE = CreateMemoryObject(NewType("Type"), STANDART_TYPE::TYPE, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("Type",OBJ_TYPE_TYPE);
+    STATIC_MEMORY.register_object(OBJ_TYPE_TYPE);
+
+    auto OBJ_TYPE_NULL = CreateMemoryObject(NewType("Null"), STANDART_TYPE::TYPE, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("Null",OBJ_TYPE_NULL);
+    STATIC_MEMORY.register_object(OBJ_TYPE_NULL);
+
+
+    auto OBJ_TYPE_NAMESPACE = CreateMemoryObject(NewType("Namespace"), STANDART_TYPE::TYPE, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("Namespace",OBJ_TYPE_NAMESPACE);
+    STATIC_MEMORY.register_object(OBJ_TYPE_NAMESPACE);
+
+    auto OBJ_TYPE_LAMBDA = CreateMemoryObject(NewType("Lambda"), STANDART_TYPE::TYPE, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("Lambda",OBJ_TYPE_LAMBDA);
+    STATIC_MEMORY.register_object(OBJ_TYPE_LAMBDA);
+
+    auto OBJ_TYPE_AUTO = CreateMemoryObject(NewType("auto"), STANDART_TYPE::TYPE, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("auto",OBJ_TYPE_AUTO);
+    STATIC_MEMORY.register_object(OBJ_TYPE_AUTO);
+
+    auto __TWIST_FILE__ = CreateMemoryObject(Value(STANDART_TYPE::STRING, string(g_file_name)), STANDART_TYPE::STRING, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("__FILE__", __TWIST_FILE__);
+    STATIC_MEMORY.register_object(__TWIST_FILE__);
+
+    auto __TWIST_ADDR__ = CreateMemoryObject(NewPointer(AddressManager::get_current_address() + 2, STANDART_TYPE::NULL_T), STANDART_TYPE::STRING, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("__PTR__", __TWIST_ADDR__);
+    STATIC_MEMORY.register_object(__TWIST_ADDR__);
+    // STATIC_MEMORY.register_object(__TWIST_FILE__);
+
+    // STATIC_MEMORY.debug_print();
+}
+
+
+///
+/// Nodes definitions
+///
 
 unique_ptr<Node> ASTGenerator::ParseReturn() {
     walker.next();
@@ -1032,7 +672,7 @@ unique_ptr<Node> ASTGenerator::ParseFuncDecl() {
 
 
     vector<Arg*> arguments;
-  
+
     while (true) {
         if (walker.CheckValue(")")) {
             walker.next();
@@ -1700,29 +1340,25 @@ unique_ptr<Node> ASTGenerator::ParseDelete() {
 }
 
 unique_ptr<Node> ASTGenerator::ParseObjectResolution(unique_ptr<Node> expression) {
-    vector<string> chain;
-    
-    // Собираем всю цепочку имен
     while (walker.CheckValue(".")) {
-        walker.next(); // pass first '.'
+        Token dot_token = *walker.get(); // токен точки (может пригодиться для ошибок)
+        walker.next(); // pass '.'
 
         if (!walker.CheckType(TokenType::LITERAL))
             ERROR::UnexpectedToken(*walker.get(), "literal");
 
-        string literal_name = walker.get()->value;
-        chain.push_back(literal_name);
-        walker.next();
-    }
-    Token start = *walker.get(-1);
-    // Если есть цепочка, создаем ноду разрешения
-    if (!chain.empty()) {
-        // Первый элемент цепочки становится первым уровнем
-        string first_name = chain[0];
-        vector<string> remaining_chain(chain.begin() + 1, chain.end());
-        Token end = *walker.get(-1);
-        expression = make_unique<NodeObjectResolution>(std::move(expression), first_name, start, end, remaining_chain);
-    }
+        Token name_token = *walker.get(); // токен имени поля
+        string literal_name = name_token.value;
+        walker.next(); // pass literal
 
+        // Создаём узел, сохраняя токены имени для точного указания ошибки
+        expression = make_unique<NodeObjectResolution>(
+            std::move(expression),
+            literal_name,
+            name_token,   // start = токен имени
+            name_token    // end = токен имени
+        );
+    }
     return expression;
 }
 
@@ -1918,12 +1554,13 @@ unique_ptr<Node> ASTGenerator::ParseScopes() {
 unique_ptr<Node> ASTGenerator::ParseBaseVariableDecl() {
     walker.next(); // pass 'let' token
 
-   
-    if (!walker.CheckType(TokenType::LITERAL)) {
-        ERROR::UnexpectedToken(*walker.get(), "variable name");
-    }
+
+    if (!walker.CheckType(TokenType::LITERAL)) 
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "variable name");
 
     
+
+
     Token variable_token = *walker.get();
     string var_name = walker.get()->value;
     walker.next(); // pass variable name token
@@ -1963,16 +1600,19 @@ unique_ptr<Node> ASTGenerator::ParseBaseVariableDecl() {
     }
 
     if (!walker.CheckValue("="))
-        ERROR::UnexpectedToken(*walker.get(), "'='");
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "'='");
+
     walker.next(); // pass '=' token
 
     start_expr_token = *walker.get();
     auto expr = parse_expression();
     end_expr_token = *walker.get(-1);
 
+    if (!expr)
+        throw ERROR_THROW::ExpectedExpression(*walker.get());
 
     if (!walker.CheckValue(";"))
-        ERROR::UnexpectedToken(*walker.get(), "';'");
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
     walker.next(); // pass ';' token
 
     return make_unique<NodeVariableDeclaration>(var_name, std::move(expr), variable_token,
@@ -1987,7 +1627,7 @@ unique_ptr<Node> ASTGenerator::ParseFinalVariableDecl() {
         !walker.CheckValue("const") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
         !walker.CheckValue("private") && !walker.CheckValue("struct")) {
-        ERROR::UnexpectedStatement(*walker.get(), "variable declaration");
+        throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
 
 
@@ -2005,7 +1645,7 @@ unique_ptr<Node> ASTGenerator::ParseFinalVariableDecl() {
         } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
         ((NodeFunctionDeclaration*)decl.get())->is_final = true;
     } else {
-        ERROR::UnexpectedStatement(token, "variable declaration");
+        throw ERROR_THROW::ExpectedDeclarationStatement(token);
     }
 
     return decl;
@@ -2019,7 +1659,7 @@ unique_ptr<Node> ASTGenerator::ParseStaticVariableDecl() {
         !walker.CheckValue("const") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
         !walker.CheckValue("private") && !walker.CheckValue("struct")) {
-        ERROR::UnexpectedStatement(*walker.get(), "variable declaration");
+        throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
 
     auto token = *walker.get();
@@ -2036,7 +1676,7 @@ unique_ptr<Node> ASTGenerator::ParseStaticVariableDecl() {
     } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
         ((NodeStructDeclaration*)decl.get())->is_static = true;
     } else {
-        ERROR::UnexpectedStatement(token, "variable declaration");
+        throw ERROR_THROW::ExpectedDeclarationStatement(token);
     }
 
     return decl;
@@ -2050,7 +1690,7 @@ unique_ptr<Node> ASTGenerator::ParseConstVariableDecl() {
         !walker.CheckValue("final") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
         !walker.CheckValue("private") && !walker.CheckValue("struct")) {
-        ERROR::UnexpectedStatement(*walker.get(), "variable declaration");
+        throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
 
     auto token = *walker.get();
@@ -2067,9 +1707,9 @@ unique_ptr<Node> ASTGenerator::ParseConstVariableDecl() {
         } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
         ((NodeStructDeclaration*)decl.get())->is_const = true;
     } else {
-        ERROR::UnexpectedStatement(token, "variable declaration");
+        throw ERROR_THROW::ExpectedDeclarationStatement(token);
     }
-    
+
     return decl;
 }
 
@@ -2081,7 +1721,7 @@ unique_ptr<Node> ASTGenerator::ParseGlobalVariableDecl() {
         !walker.CheckValue("const") && !walker.CheckValue("final") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
         !walker.CheckValue("private") && !walker.CheckValue("struct")) {
-        ERROR::UnexpectedStatement(*walker.get(), "variable declaration");
+        throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
 
     auto token = *walker.get();
@@ -2098,7 +1738,7 @@ unique_ptr<Node> ASTGenerator::ParseGlobalVariableDecl() {
         } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
         ((NodeStructDeclaration*)decl.get())->is_global = true;
     } else {
-        ERROR::UnexpectedStatement(token, "variable declaration");
+        throw ERROR_THROW::ExpectedDeclarationStatement(token);
     }
     return decl;
 }
@@ -2111,7 +1751,7 @@ unique_ptr<Node> ASTGenerator::ParsePrivateVariableDecl() {
         !walker.CheckValue("const") && !walker.CheckValue("final") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
         !walker.CheckValue("global") && !walker.CheckValue("struct")) {
-        ERROR::UnexpectedStatement(*walker.get(), "variable declaration");
+        throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
 
     auto token = *walker.get();
@@ -2128,7 +1768,7 @@ unique_ptr<Node> ASTGenerator::ParsePrivateVariableDecl() {
     } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
         ((NodeStructDeclaration*)decl.get())->is_private = true;
     } else {
-        ERROR::UnexpectedStatement(token, "variable declaration");
+        throw ERROR_THROW::ExpectedDeclarationStatement(token);
     }
     return decl;
 }
@@ -2142,18 +1782,18 @@ unique_ptr<Node> ASTGenerator::ParseOut() {
         if (walker.CheckValue(",")) {
             walker.next(); // pass ',' token
             auto expr = parse_expression();
-            if (!expr) {
-                ERROR::UnexpectedToken(*walker.get(), "expression");
-            }
+            if (!expr) 
+                throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+            
             args.push_back(std::move(expr));
             continue;
         }
         break;
     }
 
-    if (!walker.CheckValue(";")) {
-        ERROR::UnexpectedToken(*walker.get(), "';'");
-    }
+    if (!walker.CheckValue(";")) 
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
+    
     walker.next();
     return make_unique<NodeBaseOut>(std::move(args));
 }
@@ -2167,18 +1807,18 @@ unique_ptr<Node> ASTGenerator::ParseOutLn() {
         if (walker.CheckValue(",")) {
             walker.next(); // pass ',' token
             auto expr = parse_expression();
-            if (!expr) {
-                ERROR::UnexpectedToken(*walker.get(), "expression");
-            }
+            if (!expr) 
+                throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+            
             args.push_back(std::move(expr));
             continue;
         }
         break;
     }
 
-    if (!walker.CheckValue(";")) {
-        ERROR::UnexpectedToken(*walker.get(), "';'");
-    }
+    if (!walker.CheckValue(";")) 
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
+    
     walker.next();
     return make_unique<NodeBaseOutLn>(std::move(args));
 }
@@ -2193,21 +1833,21 @@ unique_ptr<Node> ASTGenerator::ParseNewArrayType() {
     if (walker.CheckValue(",")) {
         walker.next(); // pass ',' token
         size_expr = parse_expression();
-        if (!size_expr) {
-            ERROR::UnexpectedToken(*walker.get(), "vector size expression");
-        }
+        if (!size_expr) 
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "vector size expression");
+        
     }
     if (!walker.CheckValue("]"))
-        ERROR::UnexpectedToken(*walker.get(), "']'");
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "']'");
     Token end = *walker.get();
     walker.next();
 
     if (walker.CheckValue("{")) {
         auto type_node = make_unique<NodeNewArrayType>(std::move(type_expr), std::move(size_expr), start, end);
         auto array = ParseArray();
-        if (!array) {
-            ERROR::UnexpectedToken(*walker.get(), "array");
-        }
+        if (!array) 
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "array");
+        
         ((NodeArray*)array.get())->static_type = std::move(type_node);
         ((NodeArray*)array.get())->is_static = true;
         return array;
@@ -2227,9 +1867,9 @@ unique_ptr<Node> ASTGenerator::ParseArray() {
         Token start_value = *walker.get();
         auto expr = parse_expression();
         Token end_value = *walker.get(-1);
-        if (!expr) {
-            ERROR::UnexpectedToken(*walker.get(), "expression");
-        }
+        if (!expr) 
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+        
         values.push_back(std::make_tuple(std::move(expr), start_value, end_value));
         if (walker.CheckValue(",")) {
             walker.next(); // pass ',' token
@@ -2238,7 +1878,7 @@ unique_ptr<Node> ASTGenerator::ParseArray() {
         break;
     }
     if (!walker.CheckValue("}"))
-        ERROR::UnexpectedToken(*walker.get(), "'}'");
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "'}'");
     walker.next();
     return make_unique<NodeArray>(std::move(values));
 }
@@ -2246,11 +1886,12 @@ unique_ptr<Node> ASTGenerator::ParseArray() {
 unique_ptr<Node> ASTGenerator::ParseGetIndex(unique_ptr<Node> expr, Token start, Token end) {
     walker.next(); // pass '[' token
     auto index = parse_expression();
-    if (!index) {
-        ERROR::UnexpectedToken(*walker.get(), "expression");
-    }
+    if (!index) 
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+    
     if (!walker.CheckValue("]"))
-        ERROR::UnexpectedToken(*walker.get(), "']'");
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "']'");
+
     Token end_bracket = *walker.get();
     walker.next();
     return make_unique<NodeGetIndex>(std::move(expr), std::move(index), start, end_bracket);
@@ -2260,12 +1901,12 @@ unique_ptr<Node> ASTGenerator::ParseStructDecl() {
     auto token = *walker.get();
     walker.next(); // pass 'struct'
 
-    if (!walker.CheckType(TokenType::LITERAL)) 
-        ERROR::UnexpectedToken(*walker.get(), "structure name");
+    if (!walker.CheckType(TokenType::LITERAL))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "structure name");
 
     string name = walker.get()->value;
     walker.next();
-    
+
     auto body = parse_statement();
 
     return make_unique<NodeStructDeclaration>(std::move(body), name, token);

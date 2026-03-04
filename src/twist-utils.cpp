@@ -371,10 +371,10 @@ struct ArgsParser {
     string file_path;
     bool save_preprocessed = false;
     bool save_token = false;
-    bool interp_time = false;
+    bool run_time = false;
     bool compile_mod = false;
     bool delete_precompiled = true;
-    bool math_middle_run_time = false;
+    bool middle_run_time = false;
     bool print_ast = false;
     bool save_ast = false;
 
@@ -398,7 +398,7 @@ struct ArgsParser {
                     continue;
                 }
                 if (args[i] == "-rt") {
-                    interp_time = true;
+                    run_time = true;
                     continue;
                 }
                 if (args[i] == "-c") {
@@ -410,7 +410,7 @@ struct ArgsParser {
                     continue;
                 }
                 if (args[i] == "-mrt") {
-                    math_middle_run_time = true;
+                    middle_run_time = true;
                     continue;
                 }
                 if (args[i] == "-print-ast") {

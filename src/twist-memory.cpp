@@ -127,8 +127,8 @@ struct Memory {
         return true;
     }
 
-    bool add_object_in_func(const string& literal, Value value, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false, bool is_private = false) {
-        auto object = new MemoryObject(value, value.type, this, 0, is_const, is_static, is_final, is_global, is_private);
+    bool add_object_in_func(const string& literal, Value value, Type type, bool is_const = false, bool is_static = false, bool is_final = false, bool is_global = false, bool is_private = false) {
+        auto object = new MemoryObject(value, type, this, 0, is_const, is_static, is_final, is_global, is_private);
         if (check_literal(literal)) delete_variable(literal);
         try {
             string_pool.emplace(literal, object);
