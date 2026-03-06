@@ -1,3 +1,4 @@
+#include "twist-nodetemp.cpp"
 #include "twist-tokenwalker.cpp"
 #include "twist-tokens.cpp"
 #include "twist-errors.cpp"
@@ -473,56 +474,57 @@ struct ASTGenerator {
         // Общий случай: выражение, которое может быть присваиванием или expression statement
         auto start_left_value_token = *walker.get();
         auto left_expr = parse_expression();
-
-        if (!left_expr) 
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
         
+        if (left_expr) {
+            
+    
+            auto end_left_value_token = *walker.get(-1);
 
-        auto end_left_value_token = *walker.get(-1);
+            // Проверяем оператор присваивания
+            if (walker.CheckValue("=")) {
+                // Обычное присваивание
+                walker.next();
+                auto start_value_token = *walker.get();
+                auto expr = parse_expression();
 
-        // Проверяем оператор присваивания
-        if (walker.CheckValue("=")) {
-            // Обычное присваивание
-            walker.next();
-            auto start_value_token = *walker.get();
-            auto expr = parse_expression();
+                if (!expr)
+                    throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
 
-            if (!expr)
-                throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+                if (!walker.CheckValue(";"))
+                    throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
+                auto end_value_token = *walker.get();
+                walker.next();
 
-            if (!walker.CheckValue(";"))
-                throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
-            auto end_value_token = *walker.get();
-            walker.next();
+                return make_unique<NodeVariableEqual>(std::move(left_expr), std::move(expr),
+                                                    start_left_value_token, end_left_value_token,
+                                                    start_value_token, end_value_token);
+            } else if (walker.CheckValue("<-")) {
+                // Оператор push в массив
+                Token op_token = *walker.get();
+                walker.next();
+                auto start_value_token = *walker.get();
+                auto expr = parse_expression();
 
-            return make_unique<NodeVariableEqual>(std::move(left_expr), std::move(expr),
-                                                start_left_value_token, end_left_value_token,
-                                                start_value_token, end_value_token);
-        } else if (walker.CheckValue("<-")) {
-            // Оператор push в массив
-            Token op_token = *walker.get();
-            walker.next();
-            auto start_value_token = *walker.get();
-            auto expr = parse_expression();
+                if (!expr)
+                    throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
 
-            if (!expr)
-                throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+                if (!walker.CheckValue(";"))
+                    throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
+                auto end_value_token = *walker.get();
+                walker.next();
 
-            if (!walker.CheckValue(";"))
-                throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
-            auto end_value_token = *walker.get();
-            walker.next();
-
-            // Создаем NodeArrayPush вместо NodeVariableEqual
-            return make_unique<NodeArrayPush>(std::move(left_expr), std::move(expr),
-                                            op_token, end_value_token);
-        } else {
-            // Просто expression statement
-            if (!walker.CheckValue(";"))
-                throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
-            walker.next();
-            return make_unique<NodeExpressionStatement>(std::move(left_expr));
+                // Создаем NodeArrayPush вместо NodeVariableEqual
+                return make_unique<NodeArrayPush>(std::move(left_expr), std::move(expr),
+                                                op_token, end_value_token);
+            } else {
+                // Просто expression statement
+                if (!walker.CheckValue(";"))
+                    throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
+                walker.next();
+                return make_unique<NodeExpressionStatement>(std::move(left_expr));
+            }
         }
+        return nullptr;
     }
 
     inline void parse() {
@@ -1276,9 +1278,10 @@ unique_ptr<Node> ASTGenerator::ParseFor() {
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
     walker.next();
 
+    auto body_token = *walker.get();
     auto body = parse_statement();
 
-    return make_unique<NodeFor>(std::move(init_state), std::move(check_expr), std::move(update_state), std::move(body));
+    return make_unique<NodeFor>(std::move(init_state), std::move(check_expr), std::move(update_state), std::move(body), body_token);
 }
 
 
@@ -1295,16 +1298,22 @@ unique_ptr<Node> ASTGenerator::ParseWhile() {
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
     walker.next();
 
-    auto state = parse_statement();
+    
+    auto body_token = *walker.get();
+    auto body = parse_statement();
 
-    return make_unique<NodeWhile>(std::move(expr), std::move(state));
+    return make_unique<NodeWhile>(std::move(expr), std::move(body), body_token);
 }
 
 
 unique_ptr<Node> ASTGenerator::ParseDoWhile() {
     walker.next(); // pass 'do' token
 
+    auto body_token = *walker.get();
     auto state = parse_statement();
+    
+    if (state->NODE_TYPE != NODE_BLOCK_OF_NODES)
+        throw ERROR_THROW::UnexpectedToken(body_token, "block of statements");
 
     if (!walker.CheckValue("while"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "'while'");

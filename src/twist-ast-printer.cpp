@@ -354,9 +354,9 @@ public:
 
                 std::string new_prefix = prefix + (is_last ? "    " : "│   ");
                 output << new_prefix << colorize("├── Condition:", Colors::STRUCTURE_COLOR) << std::endl;
-                print_node(n->eq_expression.get(), new_prefix + "│   ", true);
+                print_node(n->condition.get(), new_prefix + "│   ", true);
                 output << new_prefix << colorize("└── Body:", Colors::STRUCTURE_COLOR) << std::endl;
-                print_node(n->statement.get(), new_prefix + "    ", true);
+                print_node(n->body.get(), new_prefix + "    ", true);
                 return;
             }
 
@@ -367,7 +367,7 @@ public:
 
                 std::string new_prefix = prefix + (is_last ? "    " : "│   ");
                 output << new_prefix << colorize("├── Body:", Colors::STRUCTURE_COLOR) << std::endl;
-                print_node(n->statement.get(), new_prefix + "│   ", true);
+                print_node(n->body.get(), new_prefix + "│   ", true);
                 output << new_prefix << colorize("└── Condition:", Colors::STRUCTURE_COLOR) << std::endl;
                 print_node(n->eq_expression.get(), new_prefix + "    ", true);
                 return;
@@ -382,7 +382,7 @@ public:
                 output << new_prefix << colorize("├── Init:", Colors::STRUCTURE_COLOR) << std::endl;
                 print_node(n->start_state.get(), new_prefix + "│   ", true);
                 output << new_prefix << colorize("├── Condition:", Colors::STRUCTURE_COLOR) << std::endl;
-                print_node(n->check_expr.get(), new_prefix + "│   ", true);
+                print_node(n->condition.get(), new_prefix + "│   ", true);
                 output << new_prefix << colorize("├── Update:", Colors::STRUCTURE_COLOR) << std::endl;
                 print_node(n->update_state.get(), new_prefix + "│   ", true);
                 output << new_prefix << colorize("└── Body:", Colors::STRUCTURE_COLOR) << std::endl;

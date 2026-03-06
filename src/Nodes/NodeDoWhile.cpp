@@ -26,31 +26,34 @@
 
 struct NodeDoWhile : public Node { NO_EVAL
     unique_ptr<Node> eq_expression;
-    unique_ptr<Node> statement;
+    unique_ptr<Node> body;
+    
 
-    NodeDoWhile(unique_ptr<Node> eq_expression, unique_ptr<Node> statement) :
-        eq_expression(std::move(eq_expression)), statement(std::move(statement)) {
+    NodeDoWhile(unique_ptr<Node> condition, unique_ptr<Node> body) :
+        eq_expression(std::move(condition)), body(std::move(body)) {
         this->NODE_TYPE = NodeTypes::NODE_DO_WHILE;
     }
 
     void exec_from(Memory& _memory) override {
         while (true) {
-            try { statement->exec_from(_memory); }
+            try { body->exec_from(_memory); }
             catch (Break) { break; }
             catch (Continue) { continue; }
 
-            auto value = eq_expression->eval_from(_memory);
-            if (value.type == STANDART_TYPE::BOOL) {
-                if (any_cast<bool>(value.data) == false)
+            if (eq_expression) {
+                auto value = eq_expression->eval_from(_memory);
+                if (value.type == STANDART_TYPE::BOOL) {
+                    if (any_cast<bool>(value.data) == false)
+                        break;
+                } else if (value.type == STANDART_TYPE::INT) {
+                    if (any_cast<int64_t>(value.data) == 0)
+                        break;
+                } else if (value.type == STANDART_TYPE::DOUBLE) {
+                    if (any_cast<long double>(value.data) == 0)
+                        break;
+                } else {
                     break;
-            } else if (value.type == STANDART_TYPE::INT) {
-                if (any_cast<int64_t>(value.data) == 0)
-                    break;
-            } else if (value.type == STANDART_TYPE::DOUBLE) {
-                if (any_cast<long double>(value.data) == 0)
-                    break;
-            } else {
-                break;
+                }
             }
         }
     }

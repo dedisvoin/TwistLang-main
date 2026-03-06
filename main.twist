@@ -1,7 +1,1 @@
-func sum(a: Int, b: String) {
-    let a = 0;
-    a();
-}
-
-
-sum(10, "ded");
+do  while ()

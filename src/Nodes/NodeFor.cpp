@@ -3,6 +3,8 @@
 #include "NodeBreak.cpp"
 #include "NodeContinue.cpp"
 
+#include "../twist-err.cpp"
+
 /*
  * NodeFor – цикл со счётчиком (for).
  *
@@ -27,21 +29,26 @@
 
 struct NodeFor : public Node { NO_EVAL
     unique_ptr<Node> start_state;
-    unique_ptr<Node> check_expr;
+    unique_ptr<Node> condition;
     unique_ptr<Node> update_state;
     unique_ptr<Node> body;
 
-    NodeFor(unique_ptr<Node> start_state, unique_ptr<Node> check_expr, unique_ptr<Node> update_state, unique_ptr<Node> body) :
-        start_state(std::move(start_state)), check_expr(std::move(check_expr)),
-        update_state(std::move(update_state)), body(std::move(body)) {
+    Token body_token;
+
+    NodeFor(unique_ptr<Node> start_state, unique_ptr<Node> condition, unique_ptr<Node> update_state, unique_ptr<Node> body, Token body_token) :
+        start_state(std::move(start_state)), condition(std::move(condition)),
+        update_state(std::move(update_state)), body(std::move(body)), body_token(body_token) {
         this->NODE_TYPE = NodeTypes::NODE_FOR;
     }
 
     void exec_from(Memory& _memory) override {
+        if (!body) 
+            throw ERROR_THROW::UnexpectedToken(body_token, "statement");
+
         start_state->exec_from(_memory);
 
         while (true) {
-            auto value = check_expr->eval_from(_memory);
+            auto value = condition->eval_from(_memory);
             if (value.type == STANDART_TYPE::BOOL) {
                 if (any_cast<bool>(value.data) == false)
                     break;

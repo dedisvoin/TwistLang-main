@@ -1,4 +1,5 @@
 #include "../twist-nodetemp.cpp"
+#include "../twist-err.cpp"
 
 #include "NodeBreak.cpp"
 #include "NodeContinue.cpp"
@@ -22,33 +23,40 @@
  */
 
 struct NodeWhile : public Node { NO_EVAL
-    unique_ptr<Node> eq_expression;
-    unique_ptr<Node> statement;
+    unique_ptr<Node> condition;
 
-    NodeWhile(unique_ptr<Node> eq_expression, unique_ptr<Node> statement) :
-        eq_expression(std::move(eq_expression)), statement(std::move(statement)) {
+    unique_ptr<Node> body;
+    Token body_token;
+
+    NodeWhile(unique_ptr<Node> eq_expression, unique_ptr<Node> condition, Token body_token) :
+        condition(std::move(eq_expression)), body(std::move(condition)), body_token(body_token) {
         this->NODE_TYPE = NodeTypes::NODE_WHILE;
     }
 
 
     void exec_from(Memory& _memory) override {
+        if (!body)
+            throw ERROR_THROW::UnexpectedToken(body_token, "statement");
+
         while (true) {
-            auto value = eq_expression->eval_from(_memory);
-            if (value.type == STANDART_TYPE::BOOL) {
-                if (any_cast<bool>(value.data) == false)
+            if (condition) {
+                auto value = condition->eval_from(_memory);
+                if (value.type == STANDART_TYPE::BOOL) {
+                    if (any_cast<bool>(value.data) == false)
+                        break;
+                } else if (value.type == STANDART_TYPE::INT) {
+                    if (any_cast<int64_t>(value.data) == 0)
+                        break;
+                } else if (value.type == STANDART_TYPE::DOUBLE) {
+                    if (any_cast<long double>(value.data) == 0)
+                        break;
+                } else {
                     break;
-            } else if (value.type == STANDART_TYPE::INT) {
-                if (any_cast<int64_t>(value.data) == 0)
-                    break;
-            } else if (value.type == STANDART_TYPE::DOUBLE) {
-                if (any_cast<long double>(value.data) == 0)
-                    break;
-            } else {
-                break;
+                }
             }
 
             try {
-                statement->exec_from(_memory);
+                body->exec_from(_memory);
             }
             catch (Break) { break; }
             catch (Continue) { continue; }

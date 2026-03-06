@@ -183,7 +183,7 @@ class TwistLangLexer(QsciLexerCustom):
         # Ключевые слова
         self.keywords = {
             'if', 'else', 'for', 'while', 'let', 'in', 'and', 'or',
-            'ret', 'assert', 'lambda',
+            'ret', 'assert', 'lambda', 'do',
             'struct', 'namespace', 'func', 'continue;', 'break;'
         }
 
