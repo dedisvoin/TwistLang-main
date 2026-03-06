@@ -1081,19 +1081,20 @@ unique_ptr<Node> ASTGenerator::ParseNamespace() {
     return namespace_node;
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseInput() {
     auto start_token = *walker.get();
     walker.next(); // pass 'input' token
     auto end_token = *walker.get(-1);
     unique_ptr<Node> expr = nullptr;
+
     if (walker.CheckValue("(")) {
         walker.next();
-        auto start_token = *walker.get();
+        start_token = *walker.get(-1);
         expr = parse_expression();
         if (!walker.CheckValue(")"))
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
-        auto end_token = *walker.get();
+        end_token = *walker.get();
         walker.next();
     }
     return make_unique<NodeInput>(std::move(expr), start_token, end_token);
@@ -1130,30 +1131,32 @@ unique_ptr<Node> ASTGenerator::ParseLeftDereference() {
     return make_unique<NodeLeftDereference>(std::move(left_expr), std::move(expr), start_left_value_token, end_left_value_token, start_value_token, end_value_token);
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseTypeof() {
     walker.next(); // pass 'typeof' token
     walker.next(); // pass '(' token
+
+    auto expr_token = *walker.get();
     auto expr = parse_expression();
-    if (!expr)
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+
     if (!walker.CheckValue(")"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "')' after typeof");
     walker.next();
-    return make_unique<NodeTypeof>(std::move(expr));
+    return make_unique<NodeTypeof>(std::move(expr), expr_token);
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseSizeof() {
     walker.next(); // pass 'sizeof' token
     walker.next(); // pass '(' token
+
+    auto expr_token = *walker.get();
     auto expr = parse_expression();
-    if (!expr)
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+    
     if (!walker.CheckValue(")"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "')' after sizeof");
     walker.next();
-    return make_unique<NodeSizeof>(std::move(expr));
+    return make_unique<NodeSizeof>(std::move(expr), expr_token);
 }
 
 
@@ -1188,12 +1191,9 @@ unique_ptr<Node> ASTGenerator::ParseDereference() {
 }
 
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseBlockDecl(string modifier) {
-    if (!walker.CheckValue("{")) 
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "'{' after block declaration");
-    
-    walker.next();
+    walker.next(); // pass '{'
 
     // Создаем блок для хранения всех объявлений
     vector<unique_ptr<Node>> declarations;
@@ -1202,8 +1202,7 @@ unique_ptr<Node> ASTGenerator::ParseBlockDecl(string modifier) {
     while (!walker.CheckValue("}")) {
         auto stmt = parse_statement();
         if (!stmt) 
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "statement");
-        
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "'}'");
 
         declarations.push_back(std::move(stmt));
     }
@@ -1231,7 +1230,7 @@ unique_ptr<Node> ASTGenerator::ParseBlockDecl(string modifier) {
     return node;
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseContinue() {
     walker.next(); // pass 'break'
 
@@ -1242,7 +1241,7 @@ unique_ptr<Node> ASTGenerator::ParseContinue() {
     return make_unique<NodeContinue>();
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseBreak() {
     walker.next(); // pass 'break'
 
@@ -1253,7 +1252,7 @@ unique_ptr<Node> ASTGenerator::ParseBreak() {
     return make_unique<NodeBreak>();
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseFor() {
     walker.next(); // pass 'for' token
 
@@ -1284,7 +1283,7 @@ unique_ptr<Node> ASTGenerator::ParseFor() {
     return make_unique<NodeFor>(std::move(init_state), std::move(check_expr), std::move(update_state), std::move(body), body_token);
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseWhile() {
     walker.next(); // pass 'while' token
 
@@ -1305,7 +1304,7 @@ unique_ptr<Node> ASTGenerator::ParseWhile() {
     return make_unique<NodeWhile>(std::move(expr), std::move(body), body_token);
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseDoWhile() {
     walker.next(); // pass 'do' token
 

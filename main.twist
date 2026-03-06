@@ -1,1 +1,5 @@
-do  while ()
+func test() {
+    ret input(10);
+}
+
+test();

@@ -100,4 +100,9 @@ namespace ERROR_THROW {
         Error err = Error("Uncallable type `" + type.pool + "`", start.pif, stop.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
+
+    Error IncompartableInputType(const Token& start, const Token& end, Type found_type) {
+        Error err = Error("Input instruction wait `String` or `Char` type but found `" + found_type.pool + "`", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
 }

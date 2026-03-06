@@ -36,9 +36,9 @@ struct NodeNumber : public Node { NO_EXEC
             std::istringstream iss(token.value);
             iss.imbue(std::locale::classic()); // принудительно меняем локаль с точкой
             NUMBER_ACCURACY val;
-            if (!(iss >> val)) {
+            if (!(iss >> val)) 
                 ERROR::InvalidNumber(token, token.value);
-            }
+            
             this->value = NewDouble(val);
 
 

@@ -1,5 +1,5 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 
 struct NodeInput : public Node { NO_EXEC
     unique_ptr<Node> expr;
@@ -21,7 +21,7 @@ struct NodeInput : public Node { NO_EXEC
             } else if (value.type == STANDART_TYPE::CHAR) {
                 cout << any_cast<char>(value.data);
             } else {
-                ERROR::IncompartableTypeInput(start_token, end_token, value.type);
+                throw ERROR_THROW::IncompartableInputType(start_token, end_token, value.type);
             }
         }
 
@@ -56,7 +56,13 @@ struct NodeInput : public Node { NO_EXEC
             }
             if (isNumber) {
                 if (isDOuble) {
-                    auto value = NewDouble(atof(_input.c_str()));
+                    std::istringstream iss(_input.c_str());
+                    iss.imbue(std::locale::classic()); // принудительно меняем локаль с точкой
+                    NUMBER_ACCURACY val;
+                    if (!(iss >> val)) 
+                        return NewString(_input);
+                        
+                    auto value = NewDouble(val);
                     return value;
                 } else {
                     auto value = NewInt(atoi(_input.c_str()));
