@@ -377,6 +377,7 @@ struct ArgsParser {
     bool middle_run_time = false;
     bool print_ast = false;
     bool save_ast = false;
+    bool as_debuger = false;
 
     ArgsParser(vector<string> args) : args(args) {}
 
@@ -419,6 +420,10 @@ struct ArgsParser {
                 }
                 if (args[i] == "-sa") {
                     save_ast = true;
+                    continue;
+                }
+                if (args[i] == "-d") {
+                    as_debuger = true;
                     continue;
                 }
             }

@@ -1,5 +1,7 @@
-func main() {
-    static let a = 10;
+func sum(a: Int, b: String) {
+    let a = 0;
+    a();
 }
 
-main();
+
+sum(10, "ded");

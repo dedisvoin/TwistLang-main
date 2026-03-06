@@ -296,14 +296,15 @@ struct NodeCall : public Node { NO_EXEC
             return result;
         }
 
+        
         if (value.type == STANDART_TYPE::LAMBDA) {
             return call_lambda(value, _memory);
         }
         else if (value.type.is_func()) {
             return call_function(value, _memory);
         }
-        else if (STANDART_TYPE::UNTYPED.is_sub_type(value.type)) {
-
+        else if (!value.type.is_sub_type(STANDART_TYPE::UNTYPED)) {
+            
             return call_struct(value, _memory);
         }
 

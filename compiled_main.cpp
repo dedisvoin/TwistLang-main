@@ -17,10 +17,40 @@ int main() {
     std::string file_path = "main.twist";
     
     // Сохраняем вывод препроцессора как строковый литерал (raw string)
-    std::string preprocessor_output = R"(let a = new 10;
+    std::string preprocessor_output = R"twist(global func _print(args[]: auto) -> Null {
+    let size = sizeof(args);
+    for (let i = 0; i < size; i = i + 1;) {
+        out args[i];
+    }
+    out "\n";
+}
 
-outln *a;
-)";
+
+struct Vec2 {
+    static const let Number: Type = Int | Double;
+    static let x: Number?;
+    static let y: Number?;
+
+    func __init__(_x: Number, _y: Number) -> Vec2 {
+        let v = Vec2();
+        v.x = _x;
+        v.y = _y;
+        ret v;
+    }
+
+    func print() {
+        _print("Vec(", x, ", ", y, ")");
+    }
+
+
+}
+
+let v1 = Vec2.__init__(10, 20);
+let v2 = Vec2.__init__(3.14, 10);
+
+v2.print();
+v1.print();
+)twist";
     
     // Устанавливаем глобальный вывод препроцессора для отчётов об ошибках
     ERROR::PREPROCESSOR_OUTPUT = preprocessor_output;

@@ -3,6 +3,7 @@
 
 #include "NodeLiteral.cpp"
 #include "NodeNamespaceResolution.cpp"
+#include "NodeObjectResolution.cpp"
 
 
 struct NodeVariableEqual : public Node { NO_EVAL
@@ -75,6 +76,16 @@ struct NodeVariableEqual : public Node { NO_EVAL
                 ERROR::UndefinedLeftVariable(start_left_value_token, end_left_value_token, ((NodeLiteral*)node)->name);
             }
             return {&_memory, ((NodeLiteral*)node)->name};
+        }
+        else if (node->NODE_TYPE == NodeTypes::NODE_OBJECT_RESOLUTION) {
+            NodeObjectResolution* resolution = (NodeObjectResolution*)node;
+
+            Value obj_value = resolution->obj_expr->eval_from(_memory);
+
+            auto& obj = any_cast<Struct&>(obj_value.data);
+
+            return {obj.memory.get(), resolution->current_name};
+            
         }
         else if (node->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
             NodeNamespaceResolution* resolution = (NodeNamespaceResolution*)node;

@@ -134,11 +134,11 @@ class CustomScintilla(QsciScintilla):
 
     def isIncludeLine(self, line):
         text = self.text(line).strip()
-        return text.startswith('@include')
+        return text.startswith('#include')
 
     def extractIncludePath(self, line):
         text = self.text(line).strip()
-        if not text.startswith('@include'):
+        if not text.startswith('#include'):
             return None
         # Поиск пути в кавычках или угловых скобках
         start_quote = text.find('"')
