@@ -24,7 +24,7 @@ const ArgsParser GenerateArgsParser(const int argc, char** const argv) noexcept 
 }
 
 void write_error_to_file(std::ostream& out, const Error& err) {
-    out << "pif: " << err.pif
+    out << "pif: " << err.pif << ":" << err.pif.lenght
         << " message: " << err.message << "\n";
     if (err.sub_error)
         write_error_to_file(out, *err.sub_error);
@@ -67,7 +67,7 @@ void run_debug_mode(const std::string& file_path) {
             GenerateStandartTypes(&g_memory, file_path);
 
 
-            run_with(&nodes, g_memory);
+            // run_with(&nodes, g_memory);
 
             // Если дошли сюда – ошибок нет. Можно ничего не делать или удалить файл err.dbg.
             // По желанию можно очистить файл (например, создать пустой).
@@ -86,7 +86,7 @@ void run_debug_mode(const std::string& file_path) {
         }
 
         // Задержка перед следующей итерацией (1 секунда)
-        std::this_thread::sleep_for(1s);
+        std::this_thread::sleep_for(0.1s);
     }
 }
 

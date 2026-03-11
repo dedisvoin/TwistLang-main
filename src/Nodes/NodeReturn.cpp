@@ -11,7 +11,9 @@ struct NodeReturn : public Node { NO_EVAL
     unique_ptr<Node> expr;
     Token start_token;
     Token end_token;
-    NodeReturn(unique_ptr<Node> expr, Token start_token, Token end_token) : expr(std::move(expr)), start_token(start_token), end_token(end_token) {
+
+    NodeReturn(unique_ptr<Node> expr, Token start_token, Token end_token) : 
+        expr(std::move(expr)), start_token(start_token), end_token(end_token) {
         this->NODE_TYPE = NodeTypes::NODE_RETURN;
     }
 

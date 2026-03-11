@@ -1,5 +1,56 @@
-func test() {
-    ret input(10);
+
+static struct Date {
+
+    static global {
+        let day: Int? = 0;
+        let mounth: Int? = 0;
+        let year: Int? = 0;
+    }
+
+    func print() {
+        outln "Day: ", day, ", Mounth: ", mounth, ", Year: ", year;
+    }
+
+    func __new__(_day: Int, _mounth: Int, _year: Int) -> Date {
+        let d = Date();
+        d.day = _day;
+        d.mounth = _mounth;
+        d.year = _year;
+        ret d;
+    }
 }
 
-test();
+static struct Person {
+
+    global static {
+        let name: String?;
+        let age: Date?;
+    }
+
+    func __new__(_name: String, _age: Date) -> Person {
+        let p = Person();
+        p.name = _name;
+        p.age = _age;
+        ret p;
+    }
+
+    func copy() {
+        let dummy = Person();
+        dummy.name = name;
+        dummy.age = Date.__new__(age.day, age.mounth, age.year);
+        ret dummy;
+    }
+
+    func print() {
+        out "Name: ", name, ", Age: ";
+        age.print();
+    }
+}
+
+
+let p1 = Person.__new__("Ivan", Date.__new__(1, 1, 2000));
+let p3 = p1.copy();
+p1.name = "Jon";
+p1.age.day = 10000;
+p1.print();
+p3.print();

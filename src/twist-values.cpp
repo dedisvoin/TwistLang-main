@@ -34,7 +34,7 @@ struct ArrayType {
 
 struct FunctionType {
     vector<TypePtr> arg_types;
-    TypePtr return_type;  
+    TypePtr return_type;
 };
 
 struct UnionType {
@@ -54,14 +54,14 @@ struct Type {
 
     string pool;
 
-    
+
     Type() : m_data(monostate{}) {}
-    
+
 
     Type(const string& str) {
         parse_from_string(str);
     }
-    
+
 
     explicit Type(PrimitiveType pt) : m_data(std::move(pt)) { update_pool(); }
     explicit Type(PointerType pt) : m_data(std::move(pt)) { update_pool(); }
@@ -69,13 +69,13 @@ struct Type {
     explicit Type(FunctionType ft) : m_data(std::move(ft)) { update_pool(); }
     explicit Type(UnionType ut) : m_data(std::move(ut)) { update_pool(); }
 
- 
+
     Type(const Type&) = default;
     Type(Type&&) = default;
     Type& operator=(const Type&) = default;
     Type& operator=(Type&&) = default;
 
-  
+
     bool operator==(const Type& other) const {
         return compare(*this, other);
     }
@@ -83,22 +83,22 @@ struct Type {
         return !(*this == other);
     }
 
- 
+
     bool is_sub_type(const Type& other) const;
     bool is_union_type() const;
     bool is_array_type() const;
     bool is_func() const;
     bool is_pointer() const;
-    
+
     // Парсинг массива (возвращает строки)
     pair<string, string> parse_array_type() const;
-    
+
     // Парсинг функции (возвращает строки)
     pair<vector<Type>, Type> parse_func_type() const;
-    
+
     // Разбиение union на компоненты (возвращает строки)
     vector<string> split_union_components() const;
-    
+
     // Оператор объединения
     Type operator|(const Type& other) const;
 
@@ -119,12 +119,12 @@ public:
     >;
     Data m_data;
 
-  
+
     void parse_from_string(const string& str);
     void update_pool();
     static bool compare(const Type& a, const Type& b);
     bool is_sub_type_impl(const Type& other, const UnionType* other_union = nullptr) const;
-    
+
     // Получение компонентов union в виде TypePtr
     vector<TypePtr> get_union_components() const;
 };
@@ -133,7 +133,7 @@ bool Type::compare(const Type& a, const Type& b) {
     return std::visit([](const auto& lhs, const auto& rhs) -> bool {
         using L = std::decay_t<decltype(lhs)>;
         using R = std::decay_t<decltype(rhs)>;
-        
+
         if constexpr (!std::is_same_v<L, R>) {
             return false;
         } else {
@@ -226,7 +226,7 @@ static bool compare(const Type& a, const Type& b) {
     return std::visit([](const auto& lhs, const auto& rhs) -> bool {
         using L = std::decay_t<decltype(lhs)>;
         using R = std::decay_t<decltype(rhs)>;
-        
+
         if constexpr (!std::is_same_v<L, R>) {
             return false;
         } else {
@@ -293,7 +293,7 @@ bool Type::is_func() const {
 bool Type::is_pointer() const {
     // Если это прямой указатель
     if (holds_alternative<PointerType>(m_data)) return true;
-    
+
     // Если это объединение (union)
     if (holds_alternative<UnionType>(m_data)) {
         const auto& u = get<UnionType>(m_data);
@@ -301,10 +301,10 @@ bool Type::is_pointer() const {
         for (const auto& comp : u.components) {
             if (!comp->is_pointer()) return false;
         }
-        
+
         return !u.components.empty();
     }
-    
+
     return false;
 }
 
@@ -361,7 +361,7 @@ bool Type::is_sub_type_impl(const Type& other, const UnionType* other_union) con
         }
         return false;
     }
-    
+
     // Если this - union
     if (is_union_type()) {
         const auto& this_union = get<UnionType>(m_data);
@@ -370,7 +370,7 @@ bool Type::is_sub_type_impl(const Type& other, const UnionType* other_union) con
         }
         return true;
     }
-    
+
     // Оба не union
     if (m_data.index() != other.m_data.index()) {
         // Проверка на auto
@@ -378,12 +378,12 @@ bool Type::is_sub_type_impl(const Type& other, const UnionType* other_union) con
         if (holds_alternative<PointerAutoType>(other.m_data) && is_pointer()) return true;
         return false;
     }
-    
+
     bool result = false;
     std::visit([&](const auto& lhs, const auto& rhs) {
         using L = std::decay_t<decltype(lhs)>;
         using R = std::decay_t<decltype(rhs)>;
-        
+
         if constexpr (!std::is_same_v<L, R>) {
             result = false;
         } else {
@@ -435,7 +435,7 @@ Type Type::operator|(const Type& other) const {
     // Получаем компоненты обоих типов
     auto comps1 = get_union_components();
     auto comps2 = other.get_union_components();
-    
+
     // Объединяем, убирая дубликаты
     vector<TypePtr> result;
     for (const auto& c : comps1) {
@@ -452,7 +452,7 @@ Type Type::operator|(const Type& other) const {
         }
         if (!found) result.push_back(c);
     }
-    
+
     if (result.size() == 1) {
         return *result[0];
     } else {
@@ -544,7 +544,7 @@ void Type::parse_from_string(const string& str) {
 
     // Проверка на массив
     if (s[0] == '[') {
-        
+
         size_t close = s.find(']');
         if (close != string::npos) {
             string inner = s.substr(1, close - 1);
@@ -566,7 +566,7 @@ void Type::parse_from_string(const string& str) {
 
     // Проверка на функцию
     if (s.find("Func") != string::npos) {
-        
+
         size_t lparen = s.find('(');
         if (lparen != string::npos) {
             size_t rparen = s.find(')', lparen);
@@ -583,7 +583,7 @@ void Type::parse_from_string(const string& str) {
                 if (arrow != string::npos) {
                     string ret_str = s.substr(arrow + 2);
                     ret_str = trim(ret_str);
-                    
+
                     if (!ret_str.empty() && ret_str.front() == '(' && ret_str.back() == ')') {
                         ret_str = ret_str.substr(1, ret_str.size() - 2);
                     }
@@ -628,7 +628,7 @@ Type create_function_type(vector<Type> argument_types) {
     for (auto& a : argument_types) {
         args.push_back(make_type_ptr(a));
     }
-    
+
     return Type(FunctionType{args, nullptr});
 }
 
@@ -649,7 +649,7 @@ namespace STANDART_TYPE {
     const Type AUTO = Type("auto");
     const Type METHOD = Type("Method");
 
-    const Type UNTYPED = INT | BOOL | STRING | CHAR | DOUBLE | NAMESPACE | NULL_T | LAMBDA;
+    const Type UNTYPED = INT | BOOL | STRING | CHAR | DOUBLE | NAMESPACE | NULL_T | LAMBDA | TYPE;
 }
 
 bool IsTypeCompatible(const Type& target_type, const Type& source_type) {
@@ -660,13 +660,13 @@ struct Value {
     Type type;
     std::any data;
 
-    Value(const Type type, std::any data) 
+    Value(const Type type, std::any data)
         : type(std::move(type)), data(std::move(data)) {}
-    
-    Value(const Value& other) 
-        : type(other.type), 
+
+    Value(const Value& other)
+        : type(other.type),
           data(other.data) {}
-  
+
     Value(Value&& other) = default;
 
     Value& operator=(const Value& other) {
@@ -676,7 +676,7 @@ struct Value {
         }
         return *this;
     }
-    
+
     Value& operator=(Value&& other) = default;
 
     Value copy() const {

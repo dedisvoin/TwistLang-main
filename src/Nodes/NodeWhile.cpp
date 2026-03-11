@@ -1,6 +1,4 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-err.cpp"
-
 #include "NodeBreak.cpp"
 #include "NodeContinue.cpp"
 
@@ -26,18 +24,14 @@ struct NodeWhile : public Node { NO_EVAL
     unique_ptr<Node> condition;
 
     unique_ptr<Node> body;
-    Token body_token;
 
     NodeWhile(unique_ptr<Node> eq_expression, unique_ptr<Node> condition, Token body_token) :
-        condition(std::move(eq_expression)), body(std::move(condition)), body_token(body_token) {
+        condition(std::move(eq_expression)), body(std::move(condition)) {
         this->NODE_TYPE = NodeTypes::NODE_WHILE;
     }
 
 
     void exec_from(Memory& _memory) override {
-        if (!body)
-            throw ERROR_THROW::UnexpectedToken(body_token, "statement");
-
         while (true) {
             if (condition) {
                 auto value = condition->eval_from(_memory);

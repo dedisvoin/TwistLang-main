@@ -1,5 +1,5 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 
 struct NodeExit : public Node { NO_EVAL
     unique_ptr<Node> expr;
@@ -12,12 +12,13 @@ struct NodeExit : public Node { NO_EVAL
     }
 
     void exec_from(Memory& _memory) override {
-        auto value = expr->eval_from(_memory);
-
-        if (value.type != STANDART_TYPE::INT) {
-            ERROR::InvalidExitType(start_token, end_token, value.type.pool);
+        if (expr) {
+            auto value = expr->eval_from(_memory);
+            if (value.type != STANDART_TYPE::INT) 
+                throw ERROR_THROW::ExitInvalidCode(start_token, end_token, value.type);
+            exit(any_cast<int64_t>(value.data));
+        } else {
+            exit(0);
         }
-
-        exit(any_cast<int64_t>(value.data));
     }
 };

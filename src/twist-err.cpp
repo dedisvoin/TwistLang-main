@@ -21,6 +21,7 @@ struct Error {
     PosInFile pif;
     ErrorType type;
     string code;
+    bool assertion = false;
 
     Error* sub_error = nullptr;
 
@@ -50,12 +51,19 @@ struct Error {
         if (sub_error)
             sub_error->print();
 
-        cout << TM::RED << ".- " << TM::RESET << MT::ERROR << ">> " << this->type << " >> " << pif << endl;
+        auto color = TM::RED;
+        auto err = MT::ERROR;
+        if (assertion) {
+            color = TM::YELLOW;
+            err = MT::WARNING;
+        }
+
+        cout << color << ".- " << TM::RESET << err << ">> " << this->type << " >> " << pif << endl;
         vector<string> lines = SplitString(this->code, '\n');
-        cout << TM::RED << "|" << TM::RESET << endl;
-        cout << TM::RED << "| " << TM::CYAN << pif.line << " | " << TM::RESET << lines[pif.global_line - 1] << endl;
-        cout << TM::RED << "| " << string(to_string(pif.line).length() + 3, ' ') << string(pif.index, ' ') << TERMINAL_COLORS::RED << string(pif.lenght, '^') << " " << this->message << endl;
-        cout << TM::RED << "`" << string(to_string(pif.line).length() + 4, '-') << string(pif.index, '-') << "'" << TM::RESET << endl;
+        cout << color << "|" << TM::RESET << endl;
+        cout << color << "| " << TM::CYAN << pif.line << " | " << TM::RESET << lines[pif.global_line - 1] << endl;
+        cout << color << "| " << string(to_string(pif.line).length() + 3, ' ') << string(pif.index, ' ') << color << string(pif.lenght, '^') << " " << this->message << endl;
+        cout << color << "`" << string(to_string(pif.line).length() + 4, '-') << string(pif.index, '-') << "'" << TM::RESET << endl;
         cout << endl;
     }
 };
@@ -103,6 +111,33 @@ namespace ERROR_THROW {
 
     Error IncompartableInputType(const Token& start, const Token& end, Type found_type) {
         Error err = Error("Input instruction wait `String` or `Char` type but found `" + found_type.pool + "`", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error AssertionInvalidArgument(const Token& start, const Token& end) {
+        Error err = Error("Invalid assertion argument, waited `Bool` type", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error AssertionInvalidMessage(const Token& start, const Token& end) {
+        Error err = Error("Invalid assertion message, waited `String` type, or `Char` type", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error AssertionFailed(const Token& start, const Token& end) {
+        Error err = Error("Assertion failed", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        err.assertion = true;
+        return err;
+    }
+
+    Error AssertionFailed(const Token& start, const Token& end, string message) {
+        Error err = Error("Assertion failed : " + message, start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        err.assertion = true;
+        return err;
+    }
+
+    Error ExitInvalidCode(const Token& start, const Token& end, Type type) {
+        Error err = Error("Invalid exit code, waited `Int` type, but found `" + type.pool + "` type", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
 }

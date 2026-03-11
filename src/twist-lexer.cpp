@@ -45,7 +45,17 @@ struct Lexer {
 
     Lexer(string main_file_name, string file_data) {
         this->main_file_name = main_file_name;
-        this->file_data = file_data;
+        
+        // Удаление пробельных символов в конце строки
+        while (!file_data.empty()) {
+            char last = file_data.back();
+            if (last == ' ' || last == '\t' || last == '\n' || last == '\r')
+                file_data.pop_back();
+            else
+                break;
+        }
+        
+        this->file_data = file_data + "\n";
         this->main_file_size = this->file_data.size();
         this->this_file = this->main_file_name;
     }
@@ -443,7 +453,31 @@ struct Lexer {
 
             
         }
-        add_token("EOF", TokenType::END_OF_FILE, PosInFile{.file_name = this->this_file, .line = this->line - 1, .global_line = this->global_line - 1, .index = this->pos_in_line, .lenght = 1});
+         if (!tokens.empty()) {
+        // Берём последний реальный токен
+        Token& last_token = tokens.back();
+        PosInFile last_pos = last_token.pif;
+        // Вычисляем позицию его последнего символа
+        int last_char_index = last_pos.index + last_pos.lenght - 1;
+        PosInFile eof_pos = {
+            .file_name = this->this_file,
+            .line = last_pos.line,
+            .global_line = last_pos.global_line,
+            .index = last_char_index,
+            .lenght = 1               // длина 1, указывает на последний символ
+        };
+        add_token("END_OF_FILE", TokenType::END_OF_FILE, eof_pos);
+    } else {
+        // Файл пуст – указываем на самое начало (позиция 0, длина 1)
+        PosInFile eof_pos = {
+            .file_name = this->this_file,
+            .line = 1,
+            .global_line = 1,
+            .index = 0,
+            .lenght = 1
+        };
+        add_token("END_OF_FILE", TokenType::END_OF_FILE, eof_pos);
+    }
     }
 
 };

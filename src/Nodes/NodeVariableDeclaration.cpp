@@ -3,6 +3,7 @@
 #include "../twist-err.cpp"
 
 #include "NodeLiteral.cpp"
+#include <any>
 
 #pragma once
 
@@ -81,10 +82,15 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
             } else {
                 auto type_value = type_expr->eval_from(_memory);
 
-                if (type_value.type != STANDART_TYPE::TYPE)
+                if (!type_value.type.is_sub_type(STANDART_TYPE::UNTYPED))
+                    static_type = type_value.type;
+                else if (type_value.type == STANDART_TYPE::TYPE) {
+                    static_type = any_cast<Type>(type_value.data);
+                } else {
                     ERROR::InvalidType(type_start_token, type_end_token);
+                }
 
-                static_type = any_cast<Type>(type_value.data);
+
                 if (nullable)
                     static_type = static_type | STANDART_TYPE::NULL_T;
 

@@ -378,7 +378,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.twist",
-				"match": "\\b(for|while|let|in|and|or|if|else|ret|auto|assert|lambda|break|continue|out|outln|struct)\\b"
+				"match": "\\b(for|while|let|in|and|or|if|else|ret|auto|assert|lambda|break|continue|out|outln|struct|exit)\\b"
 			}]
 		},
 		
