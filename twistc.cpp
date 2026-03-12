@@ -67,7 +67,7 @@ void run_debug_mode(const std::string& file_path) {
             GenerateStandartTypes(&g_memory, file_path);
 
 
-            // run_with(&nodes, g_memory);
+            run_with(&nodes, g_memory);
 
             // Если дошли сюда – ошибок нет. Можно ничего не делать или удалить файл err.dbg.
             // По желанию можно очистить файл (например, создать пустой).

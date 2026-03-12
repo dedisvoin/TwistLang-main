@@ -140,4 +140,49 @@ namespace ERROR_THROW {
         Error err = Error("Invalid exit code, waited `Int` type, but found `" + type.pool + "` type", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
+
+    Error VariableAlreadyDefined(const Token& token) {
+        Error err = Error("Variable '" + token.value + "' already defined (as final)", token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error VariableUndefined(const Token& token) {
+        Error err = Error("Undefined variable '" + token.value + "'", token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error NamespaceInvalidAccessorType(const Token& start, const Token& end, Type type) {
+        Error err = Error("Cannot use '::' accessor on type `" + type.pool + "`", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error VariableDeclarationInvalidType(const Token& start, const Token& end, Type type) {
+        Error err = Error("Invalid variable static declaration type `" + type.pool + "`", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error VariableStaticIncompatibleType(const Token& start, const Token& end, Type wait_type, Type found_type) {
+        Error err = Error("Incompatible type `" + found_type.pool + "` (expected `" + wait_type.pool + "`)", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error NamespaceUndefinedVariable(const Token& start, const Token& end, string name) {
+        Error err = Error("Undefined variable '" + name + "'", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error NamespacePrivateVariable(const Token& start, const Token& end, string name) {
+        Error err = Error("Variable '" + name + "' is private", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error UnsupportedUnaryOperator(const Token& operator_token, const Token& start, const Token& end, const Type& type) {
+        Error err = Error("Unsupported unary operator '" + operator_token.value + "' for `" + type.pool + "` type", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error UnsupportedBinaryOperator(const Token& start_token, const Token& end_token, const Token& op_token, const Type& left_type, const Type& right_type) {
+        Error err = Error("Unsupported binary operator '" + op_token.value + "' for `" + left_type.pool + "` and `" + right_type.pool + "` types", start_token.pif, end_token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
 }

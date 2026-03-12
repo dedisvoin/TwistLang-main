@@ -262,7 +262,14 @@ struct ASTGenerator {
         if (walker.CheckType(TokenType::DEREFERENCE) && walker.CheckValue("*")) {
             return ParseDereference();
         }
+        
         auto expr = parse_primary_expression();
+        if (!expr) {
+            if (walker.CheckType(TokenType::OPERATOR) && walker.CheckValue(":") && walker.CheckType(TokenType::OPERATOR, 1) && walker.CheckValue(":", 1))
+                throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+            else 
+                return nullptr;
+        }
         return ParsePostfix(std::move(expr));
     }
 
@@ -475,8 +482,9 @@ struct ASTGenerator {
 
         // Общий случай: выражение, которое может быть присваиванием или expression statement
         auto start_left_value_token = *walker.get();
+        
         auto left_expr = parse_expression();
-
+        
         if (left_expr) {
             auto end_left_value_token = *walker.get(-1);
 
@@ -524,6 +532,7 @@ struct ASTGenerator {
                 return make_unique<NodeExpressionStatement>(std::move(left_expr));
             }
         }
+        
         return nullptr;
     }
 
@@ -1503,15 +1512,19 @@ unique_ptr<Node> ASTGenerator::ParseIf() {
     return make_unique<NodeIf>(std::move(eq_expr), std::move(true_state), std::move(else_state));
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseBlock() {
-    walker.next();
+    walker.next(); // pass '{'
     vector<unique_ptr<Node>> nodes_array;
-    int err_c = 0;
+    if (walker.CheckType(TokenType::R_CURVE_BRACKET)) {
+        walker.next(); // pass '}'
+        return make_unique<NodeBlock>(nodes_array);
+    }
+    
     while (true) {
-        auto st = parse_statement();
-        if (!st) break;
-        nodes_array.push_back(std::move(st));
+        auto statement = parse_statement();
+        if (!statement) break;
+        nodes_array.push_back(std::move(statement));
     }
     if (!walker.CheckType(TokenType::R_CURVE_BRACKET))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "}");
@@ -1519,49 +1532,49 @@ unique_ptr<Node> ASTGenerator::ParseBlock() {
     return make_unique<NodeBlock>(nodes_array);
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseLiteral() {
     auto node = make_unique<NodeLiteral>(*walker.get());
     walker.next();
     return node;
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseNumber() {
     auto node = make_unique<NodeNumber>(*walker.get());
     walker.next();
     return node;
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseString() {
     auto node = make_unique<NodeString>(walker.get()->value);
     walker.next();
     return node;
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseChar() {
     auto node = make_unique<NodeChar>(walker.get()->value[0]);
     walker.next();
     return node;
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseBool() {
     auto node = make_unique<NodeBool>(*walker.get());
     walker.next();
     return node;
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseNull() {
     auto node = make_unique<NodeNull>();
     walker.next();
     return node;
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseScopes() {
     walker.next(); // pass '(' token
     auto expr = parse_expression();
@@ -1583,10 +1596,6 @@ unique_ptr<Node> ASTGenerator::ParseBaseVariableDecl() {
 
     if (!walker.CheckType(TokenType::LITERAL))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "variable name");
-
-
-
-
     Token variable_token = *walker.get();
     string var_name = walker.get()->value;
     walker.next(); // pass variable name token
@@ -1595,12 +1604,13 @@ unique_ptr<Node> ASTGenerator::ParseBaseVariableDecl() {
     Token type_start_token;
     Token type_end_token;
 
-
-
     if (walker.CheckValue(":")) {
         walker.next(); // pass ':' token
         type_start_token = *walker.get();
         type_expr = parse_expression();
+        if (!type_expr) 
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "type expression");
+        
         type_end_token = *walker.get(-1);
     } else {
         type_start_token = *walker.get();

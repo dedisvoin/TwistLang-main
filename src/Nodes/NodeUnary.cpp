@@ -1,5 +1,5 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 
 /*
  * NodeUnary – узел унарной операции.
@@ -47,15 +47,15 @@ struct NodeUnary : public Node { NO_EXEC
                 int64_t v = any_cast<int64_t>(value.data);
                 return NewInt(+v);
             }
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
+            throw ERROR_THROW::UnsupportedUnaryOperator(operator_token, start, end, value.type);
         } else if (value.type == STANDART_TYPE::BOOL) {
             if (op == "!" || op == "not")
                 return NewBool(!any_cast<bool>(value.data));
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
+            throw ERROR_THROW::UnsupportedUnaryOperator(operator_token, start, end, value.type);
         } else if (value.type == STANDART_TYPE::NULL_T) {
             if (op == "!")
                 return NewBool(true);
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
+            throw ERROR_THROW::UnsupportedUnaryOperator(operator_token, start, end, value.type);
         } else if (value.type == STANDART_TYPE::DOUBLE) {
             if (op == "-") {
                 NUMBER_ACCURACY v = any_cast<NUMBER_ACCURACY>(value.data);
@@ -64,7 +64,7 @@ struct NodeUnary : public Node { NO_EXEC
                 NUMBER_ACCURACY v = any_cast<NUMBER_ACCURACY>(value.data);
                 return NewDouble(+v);
             }
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
+            throw ERROR_THROW::UnsupportedUnaryOperator(operator_token, start, end, value.type);
         } else if (value.type.is_pointer()) {
             if (op == "--") {
                 long double v = any_cast<int>(value.data);
@@ -73,9 +73,9 @@ struct NodeUnary : public Node { NO_EXEC
                 long double v = any_cast<int>(value.data);
                 return NewPointer(v + 1, value.type, false);
             }
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
+            throw ERROR_THROW::UnsupportedUnaryOperator(operator_token, start, end, value.type);
         } else
-            ERROR::UnsupportedUnaryOperator(operator_token, start, end, value);
+            throw ERROR_THROW::UnsupportedUnaryOperator(operator_token, start, end, value.type);
 
 
 

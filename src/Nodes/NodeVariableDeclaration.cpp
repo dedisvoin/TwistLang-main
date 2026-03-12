@@ -1,5 +1,4 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
 #include "../twist-err.cpp"
 
 #include "NodeLiteral.cpp"
@@ -65,7 +64,7 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
 
         if (_memory.check_literal(var_name)) {
             if (_memory.is_final(var_name)) {
-                ERROR::VariableAlreadyDefined(decl_token, var_name);
+                throw ERROR_THROW::VariableAlreadyDefined(decl_token);
             }
             auto addr = _memory.get_variable(var_name)->address;
             STATIC_MEMORY.unregister_object(addr);
@@ -87,7 +86,7 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
                 else if (type_value.type == STANDART_TYPE::TYPE) {
                     static_type = any_cast<Type>(type_value.data);
                 } else {
-                    ERROR::InvalidType(type_start_token, type_end_token);
+                    throw ERROR_THROW::VariableDeclarationInvalidType(type_start_token, type_end_token, type_value.type);
                 }
 
 
@@ -98,7 +97,7 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
 
             // Используем IsTypeCompatible вместо прямого сравнения
             if (!IsTypeCompatible(static_type, value.type)) {
-                ERROR::IncompartableTypeVarDeclaration(type_start_token, type_end_token, start_expr_token, end_expr_token, static_type, value.type);
+                throw ERROR_THROW::VariableStaticIncompatibleType(start_expr_token, end_expr_token, static_type, value.type);
             }
         }
 

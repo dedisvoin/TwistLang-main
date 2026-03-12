@@ -1,5 +1,5 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 #pragma once
 
 /*
@@ -24,7 +24,7 @@ struct NodeLiteral : public Node { NO_EXEC
 
     Value eval_from(Memory& _memory) override {
         if (!_memory.check_literal(name))
-            ERROR::UndefinedVariable(token);
+            throw ERROR_THROW::VariableUndefined(token);
 
         return _memory.get_variable(name)->value;
     }

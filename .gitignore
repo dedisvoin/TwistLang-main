@@ -2,3 +2,5 @@ twistc.exe
 main.exe
 main.twist
 tokens.txt
+.vs
+.vscode

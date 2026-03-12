@@ -1,5 +1,5 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 
 #include "../twist-namespace.cpp"
 #include "NodeValueHolder.cpp"
@@ -43,9 +43,9 @@ struct NodeNamespaceResolution : public Node { NO_EXEC
         Value ns_value = namespace_expr->eval_from(_memory);
 
         // Проверяем тип
-        if (ns_value.type != STANDART_TYPE::NAMESPACE) {
-            ERROR::InvalidAccessorType(start, end, ns_value.type.pool);
-        }
+        if (ns_value.type != STANDART_TYPE::NAMESPACE)
+            throw ERROR_THROW::NamespaceInvalidAccessorType(start, end, ns_value.type);
+
 
         // ИСПРАВЛЕНО: используем ссылку вместо копии
         auto& ns = any_cast<Namespace&>(ns_value.data);
@@ -54,15 +54,14 @@ struct NodeNamespaceResolution : public Node { NO_EXEC
         Memory* ns_memory = ns.memory.get();
 
         // Проверяем существование переменной/namespace
-        if (!ns_memory->check_literal(current_name)) {
-            ERROR::UndefinedProperty(start, end, current_name, "namespace");
-        }
+        if (!ns_memory->check_literal(current_name))
+            throw ERROR_THROW::NamespaceUndefinedVariable(start, end, current_name);
 
         // Получаем значение
         auto result = ns_memory->get_variable(current_name);
 
         if (result->modifiers.is_private)
-            ERROR::PrivatePropertyAccess(start, end, current_name);
+            throw ERROR_THROW::NamespacePrivateVariable(start, end, current_name);
 
         // Если есть оставшаяся цепочка, продолжаем рекурсивно
         if (!remaining_chain.empty()) {

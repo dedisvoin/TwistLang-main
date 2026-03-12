@@ -1,6 +1,7 @@
 #include "../twist-nodetemp.cpp"
 #include "../twist-errors.cpp"
 #include "../twist-array.cpp"
+#include "../twist-err.cpp"
 
 #include "NodeLiteral.cpp"
 
@@ -31,7 +32,7 @@
  * eval_from() вычисляет левый операнд, затем, если требуется, правый, и возвращает
  * результат операции в виде нового Value.
  */
- 
+
 struct NodeBinary : public Node { NO_EXEC
     unique_ptr<Node> left;
     unique_ptr<Node> right;
@@ -89,7 +90,7 @@ struct NodeBinary : public Node { NO_EXEC
                 return NewBool(l < r);
             else if (op == ">")
                 return NewBool(l > r);
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+            throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
 
         } else if ((left_val.type == STANDART_TYPE::DOUBLE || left_val.type == STANDART_TYPE::INT) &&
                  (right_val.type == STANDART_TYPE::DOUBLE || right_val.type == STANDART_TYPE::INT)) {
@@ -123,7 +124,7 @@ struct NodeBinary : public Node { NO_EXEC
             else if (op == ">")
                 return NewBool(l > r);
 
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+            throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
 
         } else if (left_val.type == STANDART_TYPE::BOOL && right_val.type == STANDART_TYPE::BOOL) {
             bool l = any_cast<bool>(left_val.data);
@@ -136,7 +137,7 @@ struct NodeBinary : public Node { NO_EXEC
                 return NewBool(l || r);
             else if (op == "&&" || op == "and")
                 return NewBool(l && r);
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+            throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
         } else if (left_val.type == STANDART_TYPE::TYPE && right_val.type == STANDART_TYPE::TYPE) {
             Type l = any_cast<Type>(left_val.data);
             Type r = any_cast<Type>(right_val.data);
@@ -151,7 +152,7 @@ struct NodeBinary : public Node { NO_EXEC
                 return NewBool(r.is_sub_type(l));
             if (op == ">>")
                 return NewBool(l.is_sub_type(r));
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+            throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
         } else if ((left_val.type == STANDART_TYPE::NULL_T && right_val.type != STANDART_TYPE::NULL_T) ||
                    (left_val.type != STANDART_TYPE::NULL_T && right_val.type == STANDART_TYPE::NULL_T) ||
                    (left_val.type == STANDART_TYPE::NULL_T && right_val.type == STANDART_TYPE::NULL_T)) {
@@ -167,7 +168,7 @@ struct NodeBinary : public Node { NO_EXEC
                 else
                     return NewBool(true);
             }
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+            throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
         } else if (left_val.type == STANDART_TYPE::STRING && right_val.type == STANDART_TYPE::STRING) {
             if (op == "==")
                 return NewBool(any_cast<string>(left_val.data) == any_cast<string>(right_val.data));
@@ -177,7 +178,7 @@ struct NodeBinary : public Node { NO_EXEC
 
             if (op == "+")
                 return NewString(any_cast<string>(left_val.data) + any_cast<string>(right_val.data));
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+            throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
 
         } else if (left_val.type == STANDART_TYPE::CHAR && right_val.type == STANDART_TYPE::CHAR) {
             if (op == "==")
@@ -188,17 +189,16 @@ struct NodeBinary : public Node { NO_EXEC
 
             if (op == "+")
                 return NewString(string()+any_cast<char>(left_val.data) + string()+any_cast<char>(right_val.data));
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+            throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
         } else if (left_val.type == STANDART_TYPE::STRING && right_val.type == STANDART_TYPE::INT) {
             if (op == "*") {
                 string dummy;
-
                 for (int i = 0; i < any_cast<int64_t>(right_val.data); i++) {
                     dummy += any_cast<string>(left_val.data);
                 }
                 return NewString(dummy);
             }
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+            throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
 
         } else if (left_val.type == STANDART_TYPE::CHAR && right_val.type == STANDART_TYPE::INT) {
             if (op == "*") {
@@ -209,7 +209,7 @@ struct NodeBinary : public Node { NO_EXEC
                 }
                 return NewString(dummy);
             }
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+            throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
 
         } else if (left_val.type.is_pointer() && right_val.type.is_pointer()) {
             if (op == "==")
@@ -224,7 +224,7 @@ struct NodeBinary : public Node { NO_EXEC
                 return NewBool(any_cast<int>(left_val.data) >= any_cast<int>(right_val.data));
             if (op == "<=")
                 return NewBool(any_cast<int>(left_val.data) <= any_cast<int>(right_val.data));
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
+            throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
         } else if (left_val.type.is_pointer() && right_val.type == STANDART_TYPE::INT) {
 
             if (op == "+")
@@ -240,13 +240,15 @@ struct NodeBinary : public Node { NO_EXEC
                 Type T = Type("");
 
                 auto& left_arr = any_cast<Array&>(left_val.data);
-                for (int i = 0; i < left_arr.values.size(); i++) {
-                    T = T | left_arr.values[i].type;
+                const auto& left_values = left_arr.values;
+                for (const auto& val : left_values) {
+                    T = T | val.type;  // val.type уже доступен без каста
                 }
 
                 auto& right_arr = any_cast<Array&>(right_val.data);
-                for (int i = 0; i < right_arr.values.size(); i++) {
-                    T = T | right_arr.values[i].type;
+                const auto& right_values = right_arr.values;
+                for (const auto& val : right_values) {
+                    T = T | val.type;  // val.type уже доступен без каста
                 }
 
                 T = Type("[" + T.pool + ", ~]");
@@ -294,8 +296,8 @@ struct NodeBinary : public Node { NO_EXEC
                 return left_val;
             }
         } else
-            ERROR::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val, right_val);
-        exit(-10);
+            throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
+        throw ERROR_THROW::UnsupportedBinaryOperator(start_token, end_token, op_token, left_val.type, right_val.type);
     }
-    
+
 };
