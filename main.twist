@@ -1,3 +1,10 @@
-let sum = lambda(a: Int, b: Int) -> Int : a + b;
+struct Person {
+    let name = "Ivan";
+}
 
-outln sum(10, 20);
+let sum = lambda(global a: typeof(Person)) -> Namespace : namespace {};
+
+
+let test = sum(Person());
+
+outln test::a.name;

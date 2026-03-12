@@ -22,7 +22,7 @@ struct NodeCall : public Node { NO_EXEC
         if (val.type == STANDART_TYPE::TYPE) {
             return any_cast<Type>(val.data);
         }
-        else if (!STANDART_TYPE::UNTYPED.is_sub_type(val.type)) {
+        else if (!STANDART_TYPE::TYPES.is_sub_type(val.type)) {
             // Пользовательский тип (структура) – возвращаем его тип
             return val.type;
         }
@@ -49,14 +49,14 @@ struct NodeCall : public Node { NO_EXEC
             if (lambda->arguments[i]->type_expr) {
 
                 auto super_type_value = lambda->arguments[i]->type_expr->eval_from(*lambda->memory);
-
+                
                 if (!settable_value.type.is_sub_type(any_cast<Type>(super_type_value.data))) {
                     ERROR::InvalidLambdaArgumentType(start_callable, end_callable, lambda->start_args_token, lambda->end_args_token,
                         any_cast<Type>(super_type_value.data), settable_value.type, lambda->arguments[i]->name);
                 }
             }
-
-            lambda->memory->add_object_in_lambda(lambda->arguments[i]->name, settable_value);
+            
+            lambda->memory->add_object_in_lambda(lambda->arguments[i]->name, settable_value, lambda->arguments[i]->is_global);
         }
 
         auto result = ((Node*)(lambda->expr))->eval_from(*lambda->memory);
@@ -286,15 +286,15 @@ struct NodeCall : public Node { NO_EXEC
 
 
 
-        if (value.type == STANDART_TYPE::METHOD) {
-            auto method = any_cast<Method>(value.data);
-            auto saved_memory = method.func->memory;
-            method.func->memory = method.instance_memory;
-            Value func_val(method.func->type, method.func);
-            Value result = call_function(func_val, _memory);
-            method.func->memory = saved_memory;
-            return result;
-        }
+        // if (value.type == STANDART_TYPE::METHOD) {
+        //     auto method = any_cast<Method>(value.data);
+        //     auto saved_memory = method.func->memory;
+        //     method.func->memory = method.instance_memory;
+        //     Value func_val(method.func->type, method.func);
+        //     Value result = call_function(func_val, _memory);
+        //     method.func->memory = saved_memory;
+        //     return result;
+        // }
 
         
         if (value.type == STANDART_TYPE::LAMBDA) {
@@ -303,7 +303,7 @@ struct NodeCall : public Node { NO_EXEC
         else if (value.type.is_func()) {
             return call_function(value, _memory);
         }
-        else if (!value.type.is_sub_type(STANDART_TYPE::UNTYPED)) {
+        else if (!value.type.is_sub_type(STANDART_TYPE::TYPES)) {
             
             return call_struct(value, _memory);
         }

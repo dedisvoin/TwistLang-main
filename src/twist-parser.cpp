@@ -86,7 +86,7 @@ struct ASTGenerator {
     string file_name;
 
     // Declarations
-    unique_ptr<Node> ParseBaseVariableDecl();
+    unique_ptr<Node> ParseVariableDecl();
     unique_ptr<Node> ParseFinalVariableDecl();
     unique_ptr<Node> ParseStaticVariableDecl();
     unique_ptr<Node> ParseConstVariableDecl();
@@ -407,7 +407,7 @@ struct ASTGenerator {
             // Если не блочная декларация, продолжаем как обычно
         }
         if (current.type == TokenType::KEYWORD && current.value == "let") {
-            return ParseBaseVariableDecl();
+            return ParseVariableDecl();
         }
         if (current.type == TokenType::KEYWORD && current.value == "final") {
             return ParseFinalVariableDecl();
@@ -971,9 +971,9 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
         if (walker.CheckType(TokenType::LITERAL)) {
             name = walker.get()->value;
             walker.next();
-        } else {
+        } else 
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "literal (not `String` or `Char`)");
-        }
+        
         if (!walker.CheckValue("]"))
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "']'");
         walker.next();
@@ -990,6 +990,19 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
             walker.next();
             break;
         }
+
+        
+        bool arg_is_global = false;
+        
+
+        
+        if (walker.CheckValue("global")) {
+            arg_is_global = true;
+            walker.next();
+        }
+        
+        
+
         if (!walker.CheckType(TokenType::LITERAL))
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "variable name");
         string arg_name = walker.get()->value;
@@ -998,12 +1011,15 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
         unique_ptr<Node> type_expr = nullptr;
         unique_ptr<Node> default_expr = nullptr;
 
-        if (walker.CheckValue(":")) {
-            walker.next();
-            type_expr = parse_expression();
-            if (!type_expr)
-                throw ERROR_THROW::UnexpectedToken(*walker.get(), "type expression");
-        }
+        if (!walker.CheckValue(":"))
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "':'");
+        walker.next();
+
+
+        type_expr = parse_expression();
+        if (!type_expr)
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "type expression");
+
 
         if (walker.CheckValue("=")) {
             walker.next();
@@ -1015,25 +1031,27 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
         auto arg = new Arg(arg_name);
         arg->type_expr = std::move(type_expr);
         arg->default_parameter = std::move(default_expr);
+        arg->is_global = arg_is_global;
+
         arguments.push_back(arg);
 
-        if (!walker.CheckValue(",") && !walker.CheckValue(")")) {
+        if (!walker.CheckValue(",") && !walker.CheckValue(")"))
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "',' or ')'");
-        }
+
         if (walker.CheckValue(",")) walker.next();
     }
 
     Token end_args_token = *walker.get(-1);
 
-    Token type_start_token;
-    Token type_end_token;
+    Token return_type_start_token;
+    Token return_type_end_token;
 
     unique_ptr<Node> return_type = nullptr;
     if (walker.CheckValue("->")) {
         walker.next();
-        type_start_token = *walker.get();
+        return_type_start_token = *walker.get();
         return_type = parse_expression();
-        type_end_token = *walker.get(-1);
+        return_type_end_token = *walker.get(-1);
         if (!return_type)
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "return type expression");
     }
@@ -1045,12 +1063,11 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
 
 
     auto lambda_node = make_unique<NodeLambda>(nullptr, arguments, std::move(return_type),
-        start_args_token, end_args_token, type_start_token, type_end_token);
+        start_args_token, end_args_token, return_type_start_token, return_type_end_token);
     lambda_node->name = name;
 
-    auto block = parse_expression();
 
-    lambda_node->body = std::move(block);
+    lambda_node->body = parse_expression();
 
     return lambda_node;
 }
@@ -1387,7 +1404,7 @@ unique_ptr<Node> ASTGenerator::ParseObjectResolution(unique_ptr<Node> expression
     return expression;
 }
 
-
+// PASS
 unique_ptr<Node> ASTGenerator::ParseNameResolution(unique_ptr<Node> expression) {
     // Ожидаем, что текущий токен — ':' и следующий тоже ':'
     Token start = *walker.get();            // первый ':'
@@ -1585,8 +1602,7 @@ unique_ptr<Node> ASTGenerator::ParseScopes() {
 }
 
 
-
-unique_ptr<Node> ASTGenerator::ParseBaseVariableDecl() {
+unique_ptr<Node> ASTGenerator::ParseVariableDecl() {
     walker.next(); // pass 'let' token
 
 
@@ -1888,6 +1904,7 @@ unique_ptr<Node> ASTGenerator::ParseNewArrayType() {
     return make_unique<NodeNewArrayType>(std::move(type_expr), std::move(size_expr), start, end);
 }
 
+
 unique_ptr<Node> ASTGenerator::ParseArray() {
     walker.next(); // pass '{'
     vector<tuple<unique_ptr<Node>, Token, Token>> values;
@@ -1915,6 +1932,7 @@ unique_ptr<Node> ASTGenerator::ParseArray() {
     return make_unique<NodeArray>(std::move(values));
 }
 
+
 unique_ptr<Node> ASTGenerator::ParseGetIndex(unique_ptr<Node> expr, Token start, Token end) {
     walker.next(); // pass '[' token
     auto index = parse_expression();
@@ -1928,6 +1946,7 @@ unique_ptr<Node> ASTGenerator::ParseGetIndex(unique_ptr<Node> expr, Token start,
     walker.next();
     return make_unique<NodeGetIndex>(std::move(expr), std::move(index), start, end_bracket);
 }
+
 
 unique_ptr<Node> ASTGenerator::ParseStructDecl() {
     auto token = *walker.get();

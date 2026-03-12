@@ -17,7 +17,7 @@ pair<Memory*, string> resolveTargetMemory(Node* node, Memory& current_memory) {
     else if (node->NODE_TYPE == NodeTypes::NODE_OBJECT_RESOLUTION) {
         NodeObjectResolution* resolution = static_cast<NodeObjectResolution*>(node);
         Value obj_value = resolution->obj_expr->eval_from(current_memory);
-        if (STANDART_TYPE::UNTYPED.is_sub_type(obj_value.type)) {
+        if (STANDART_TYPE::TYPES.is_sub_type(obj_value.type)) {
             ERROR::InvalidAccessorType(resolution->start, resolution->end, obj_value.type.pool);
         }
         auto& obj = any_cast<Struct&>(obj_value.data);

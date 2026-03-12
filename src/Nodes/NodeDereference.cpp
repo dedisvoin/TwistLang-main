@@ -25,7 +25,7 @@ struct NodeDereference : public Node { NO_EXEC
         if (value.type == STANDART_TYPE::TYPE) {
             return NewType(MakePointerType(any_cast<Type>(value.data)));
         }
-        if (!STANDART_TYPE::UNTYPED.is_sub_type(value.type)) {
+        if (!STANDART_TYPE::TYPES.is_sub_type(value.type)) {
             Type T = MakePointerType(any_cast<Struct>(value.data).type);
             return Value(STANDART_TYPE::TYPE, T);
         }

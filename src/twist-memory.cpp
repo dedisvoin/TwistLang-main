@@ -87,7 +87,7 @@ struct Memory {
     bool copy_object(const std::string& literal, Value value, Type wait_type, Address address = 0,
                      bool is_const = false, bool is_static = false, bool is_final = false,
                      bool is_global = false, bool is_private = false);
-    bool add_object_in_lambda(const std::string& literal, Value value);
+    bool add_object_in_lambda(const std::string& literal, Value value, bool is_global = false);
     bool add_object_in_func(const std::string& literal, Value value, Type type,
                             bool is_const = false, bool is_static = false, bool is_final = false,
                             bool is_global = false, bool is_private = false);
@@ -242,9 +242,9 @@ bool Memory::copy_object(const std::string& literal, Value value, Type wait_type
     }
 }
 
-bool Memory::add_object_in_lambda(const std::string& literal, Value value) {
+bool Memory::add_object_in_lambda(const std::string& literal, Value value, bool is_global) {
     auto object = new MemoryObject(value, value.type, this, 0,
-                                   false, true, false, true, false,
+                                   false, true, false, is_global, false,
                                    literal, this);
     if (check_literal(literal)) delete_variable(literal);
     try {

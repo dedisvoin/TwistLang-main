@@ -41,7 +41,7 @@ struct NodeObjectResolution : public Node { NO_EXEC
         Value obj_value = obj_expr->eval_from(_memory);
 
         // Проверяем, что это структура (не стандартный тип)
-        if (STANDART_TYPE::UNTYPED.is_sub_type(obj_value.type))
+        if (STANDART_TYPE::TYPES.is_sub_type(obj_value.type))
             ERROR::InvalidAccessorType(start, end, obj_value.type.pool);
 
         auto& obj = any_cast<Struct&>(obj_value.data);
@@ -56,12 +56,12 @@ struct NodeObjectResolution : public Node { NO_EXEC
             ERROR::PrivatePropertyAccess(start, end, current_name);
 
         // Если поле — функция, возвращаем метод
-        if (result->value.type.is_func()) {
-            Method m;
-            m.func = any_cast<Function*>(result->value.data);
-            m.instance_memory = obj.memory;
-            return Value(STANDART_TYPE::METHOD, m);
-        }
+        // if (result->value.type.is_func()) {
+        //     Method m;
+        //     m.func = any_cast<Function*>(result->value.data);
+        //     m.instance_memory = obj.memory;
+        //     return Value(STANDART_TYPE::METHOD, m);
+        // }
 
         return result->value;
     }

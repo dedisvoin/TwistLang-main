@@ -647,13 +647,16 @@ namespace STANDART_TYPE {
     const Type NULL_T = Type("Null");
     const Type LAMBDA = Type("Lambda");
     const Type AUTO = Type("auto");
-    const Type METHOD = Type("Method");
 
-    const Type UNTYPED = INT | BOOL | STRING | CHAR | DOUBLE | NAMESPACE | NULL_T | LAMBDA | TYPE;
+    const Type TYPES = INT | BOOL | STRING | CHAR | DOUBLE | NAMESPACE | NULL_T | LAMBDA | TYPE;
 }
 
 bool IsTypeCompatible(const Type& target_type, const Type& source_type) {
     return source_type.is_sub_type(target_type);
+}
+
+bool IsStructure(const Type& type) {
+    return !STANDART_TYPE::TYPES.is_sub_type(type);
 }
 
 struct Value {

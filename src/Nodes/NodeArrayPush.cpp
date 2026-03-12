@@ -50,7 +50,7 @@ struct NodeArrayPush : public Node { NO_EXEC
             NodeObjectResolution* resolution = (NodeObjectResolution*)left_expr.get();
             Value ns_value = resolution->obj_expr->eval_from(_memory);
 
-            if (!STANDART_TYPE::UNTYPED.is_sub_type(ns_value.type)) {
+            if (!STANDART_TYPE::TYPES.is_sub_type(ns_value.type)) {
                 auto& ns = any_cast<Struct&>(ns_value.data);
                 string var_name = resolution->current_name;
 

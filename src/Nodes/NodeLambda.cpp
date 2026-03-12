@@ -32,15 +32,15 @@ struct NodeLambda : public Node { NO_EXEC
         for (auto arg : args) {
             if (arg->type_expr) {
                 auto super_type_value = arg->type_expr->eval_from(*new_lambda_memory);
-                if (super_type_value.type != STANDART_TYPE::TYPE) {
+                if (super_type_value.type != STANDART_TYPE::TYPE && !IsStructure(super_type_value.type)) {
                     ERROR::WaitedLambdaArgumentTypeSpecifier(start_args_token, end_args_token, arg->name);
                 }
             }
         }
 
         if (return_type) {
-            auto super_type_value = return_type->eval_from(*new_lambda_memory);
-            if (super_type_value.type != STANDART_TYPE::TYPE) {
+            auto super_type_value = return_type->eval_from(*new_lambda_memory); 
+            if (super_type_value.type != STANDART_TYPE::TYPE && !IsStructure(super_type_value.type)) {
                 ERROR::WaitedLambdaReturnTypeSpecifier(start_type_token, end_type_token);
             }
         }

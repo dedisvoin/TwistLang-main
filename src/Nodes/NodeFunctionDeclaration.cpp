@@ -35,7 +35,7 @@ struct NodeFunctionDeclaration : public Node { NO_EVAL
         if (val.type == STANDART_TYPE::TYPE) {
             return any_cast<Type>(val.data);
         }
-        else if (!STANDART_TYPE::UNTYPED.is_sub_type(val.type)) {
+        else if (!STANDART_TYPE::TYPES.is_sub_type(val.type)) {
             // Это структура
             return any_cast<Struct>(val.data).type;
         }

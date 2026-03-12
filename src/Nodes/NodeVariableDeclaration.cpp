@@ -81,7 +81,7 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
             } else {
                 auto type_value = type_expr->eval_from(_memory);
 
-                if (!type_value.type.is_sub_type(STANDART_TYPE::UNTYPED))
+                if (!type_value.type.is_sub_type(STANDART_TYPE::TYPES))
                     static_type = type_value.type;
                 else if (type_value.type == STANDART_TYPE::TYPE) {
                     static_type = any_cast<Type>(type_value.data);
