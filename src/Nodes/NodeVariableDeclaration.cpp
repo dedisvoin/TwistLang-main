@@ -101,7 +101,7 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
             }
         }
 
-        MemoryObject* object = CreateMemoryObject(value, static_type, &_memory, is_const, is_static, is_final, is_global, is_private);
+        MemoryObject* object = CreateMemoryObject(value, static_type, &_memory, is_const, is_static, is_final, is_global, is_private, var_name,& _memory);
         STATIC_MEMORY.register_object(object);
         _memory.add_object(var_name, object);
     }

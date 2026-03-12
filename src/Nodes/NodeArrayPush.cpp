@@ -6,7 +6,7 @@
 #include "NodeScopes.cpp"
 #include "NodeLiteral.cpp"
 #include "NodeDereference.cpp"
-#include "NodeNamespaceResolution.cpp"
+
 
 struct NodeArrayPush : public Node { NO_EXEC
     unique_ptr<Node> left_expr;
@@ -46,35 +46,6 @@ struct NodeArrayPush : public Node { NO_EXEC
                 return var_obj->value;
             }
         }
-        // Если это доступ через namespace (NODE_NAME_RESOLUTION), тоже модифицируем напрямую
-        else if (left_expr->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
-            NodeNamespaceResolution* resolution = (NodeNamespaceResolution*)left_expr.get();
-            Value ns_value = resolution->namespace_expr->eval_from(_memory);
-
-            if (ns_value.type == STANDART_TYPE::NAMESPACE) {
-                auto& ns = any_cast<Namespace&>(ns_value.data);
-                string var_name = resolution->current_name;
-
-                if (ns.memory->check_literal(var_name)) {
-                    MemoryObject* var_obj = ns.memory->get_variable(var_name);
-                    if (var_obj && var_obj->value.type.is_array_type()) {
-                        auto right_value = right_expr->eval_from(_memory);
-                        auto& arr = any_cast<Array&>(var_obj->value.data);
-                        auto arr_type_pair = arr.type.parse_array_type();
-                        string elem_type_str = arr_type_pair.first;
-                        if (elem_type_str != "") {
-                            Type expected(elem_type_str);
-                            if (!IsTypeCompatible(expected, right_value.type)) {
-                                ERROR::InvalidArrayElementTypeOnPush(start_token, end_token, expected.pool, right_value.type.pool);
-                            }
-                        }
-                        arr.values.emplace_back(right_value);
-                        return var_obj->value;
-                    }
-                }
-            }
-        }
-
         else if (left_expr->NODE_TYPE == NodeTypes::NODE_OBJECT_RESOLUTION) {
             NodeObjectResolution* resolution = (NodeObjectResolution*)left_expr.get();
             Value ns_value = resolution->obj_expr->eval_from(_memory);

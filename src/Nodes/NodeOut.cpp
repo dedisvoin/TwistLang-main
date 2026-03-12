@@ -1,7 +1,7 @@
-#include "../twist-nodetemp.cpp"
-#include "../twist-namespace.cpp"
-#include "../twist-lambda.cpp"
 #include "../twist-functions.cpp"
+#include "../twist-namespace.cpp"
+#include "../twist-nodetemp.cpp"
+#include "../twist-lambda.cpp"
 #include "../twist-array.cpp"
 
 #include <any>
@@ -77,10 +77,14 @@ struct NodeBaseOut : public Node { NO_EVAL
     }
 
     void exec_from(Memory& _memory) override {
-        for (auto& expr : expression) {
-            auto value = expr->eval_from(_memory);
-            print(std::cout, value, _memory);
-        }
+        
+            for (auto& expr : expression) {
+                auto value = expr->eval_from(_memory);
+                #ifndef SERVER
+                    print(std::cout, value, _memory);
+                #endif
+            }
+        
     }
 };
 
@@ -135,11 +139,18 @@ struct NodeBaseOutLn : public Node { NO_EVAL
     }
 
     void exec_from(Memory& _memory) override {
-        for (auto& expr : expression) {
-            auto value = expr->eval_from(_memory);
-            print(std::cout, value, _memory);
-        }
-        std::cout << '\n';
-        std::cout.flush();
+        
+            for (auto& expr : expression) {
+                auto value = expr->eval_from(_memory);
+                #ifndef SERVER
+                    print(std::cout, value, _memory);
+                #endif
+            }
+            #ifndef SERVER
+                std::cout << '\n';
+                std::cout.flush();
+            #endif
+            
+        
     }
 };

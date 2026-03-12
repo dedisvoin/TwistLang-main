@@ -1389,31 +1389,27 @@ unique_ptr<Node> ASTGenerator::ParseObjectResolution(unique_ptr<Node> expression
 
 
 unique_ptr<Node> ASTGenerator::ParseNameResolution(unique_ptr<Node> expression) {
-    vector<string> chain;
-    Token start = *walker.get(-1);
-    // Собираем всю цепочку имен
-    while (walker.CheckValue(":") && walker.CheckValue(":", 1)) {
-        walker.next(); // pass first ':'
-        walker.next(); // pass second ':'
+    // Ожидаем, что текущий токен — ':' и следующий тоже ':'
+    Token start = *walker.get();            // первый ':'
+    walker.next();                           // пропускаем первый ':'
+    walker.next();                           // пропускаем второй ':'
 
-        if (!walker.CheckType(TokenType::LITERAL))
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "literal");
+    if (!walker.CheckType(TokenType::LITERAL))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "literal");
 
-        string literal_name = walker.get()->value;
-        chain.push_back(literal_name);
-        walker.next();
-    }
+    Token name_token = *walker.get();
+    string literal_name = name_token.value;
+    walker.next();                           // пропускаем имя
 
-    // Если есть цепочка, создаем ноду разрешения
-    if (!chain.empty()) {
-        // Первый элемент цепочки становится первым уровнем
-        string first_name = chain[0];
-        vector<string> remaining_chain(chain.begin() + 1, chain.end());
-        Token end = *walker.get(-1);
-        expression = make_unique<NodeNamespaceResolution>(std::move(expression), first_name, start, end, remaining_chain);
-    }
+    Token end = *walker.get(-1);              // последний считанный токен (имя)
 
-    return expression;
+    // Создаём узел только для одного уровня разрешения
+    return make_unique<NodeNamespaceResolution>(
+        std::move(expression),
+        literal_name,
+        start,
+        end
+    );
 }
 
 

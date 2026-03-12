@@ -5,7 +5,6 @@
 #include "src/twist-tokenwalker.cpp"
 #include "src/twist-parser.cpp"
 
-
 #include "fstream"
 #include <filesystem>
 #include <fstream>
@@ -56,6 +55,7 @@ void run_debug_mode(const std::string& file_path) {
             // 3. Лексический анализ
             Lexer lexer(file_path, preprocessed);
             lexer.run();
+            
 
             // 4. Синтаксический анализ
             TokenWalker walker(&lexer.tokens);

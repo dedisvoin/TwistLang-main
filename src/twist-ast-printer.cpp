@@ -181,20 +181,7 @@ public:
                 break;
             }
 
-            case NodeTypes::NODE_NAME_RESOLUTION: {
-                auto* n = static_cast<NodeNamespaceResolution*>(node);
-                output << colorize("NameResolution", Colors::STRUCTURE_COLOR) << ": "
-                       << colorize(n->current_name, Colors::IDENTIFIER_COLOR);
-                if (!n->remaining_chain.empty()) {
-                    output << " " << colorize("->", Colors::OPERATOR_COLOR) << " ";
-                    for (size_t i = 0; i < n->remaining_chain.size(); i++) {
-                        output << colorize(n->remaining_chain[i], Colors::IDENTIFIER_COLOR);
-                        if (i != n->remaining_chain.size() - 1)
-                            output << colorize("::", Colors::OPERATOR_COLOR);
-                    }
-                }
-                break;
-            }
+            
 
             case NodeTypes::NODE_SCOPES: {
                 auto* n = static_cast<NodeScopes*>(node);
