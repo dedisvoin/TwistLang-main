@@ -1,2 +1,4 @@
-pif: 'main.twist':5:28:1 message: Expected expression after addition/subtraction operator, but found ')'
+pif: 'main.twist':4:11:7:1 message: Assertion failed
+
+pif: 'main.twist':7:7:19:1 message: Assertion failed : Пэпэ шнеле ватафа
 

@@ -25,28 +25,27 @@ struct NodeLambda : public Node { NO_EXEC
 
     Value eval_from(Memory& _memory) override {
         auto new_lambda_memory = make_shared<Memory>();
-        // Копируем глобальные переменные из родительской памяти
         _memory.link_objects(*new_lambda_memory);
-
 
         for (auto arg : args) {
             if (arg->type_expr) {
                 auto super_type_value = arg->type_expr->eval_from(_memory);
-                if (super_type_value.type != STANDART_TYPE::TYPE) 
+                if (super_type_value.type != STANDART_TYPE::TYPE)
                     throw ERROR_THROW::WaitedLambdaArgumentTypeSpecifier(start_args_token, end_args_token, arg->name);
-                
             }
         }
 
-        
-        auto super_type_value = return_type->eval_from(_memory); 
-        if (super_type_value.type != STANDART_TYPE::TYPE) 
-            throw ERROR_THROW::WaitedLambdaReturnTypeSpecifier(start_type_token, end_type_token, super_type_value.type); 
-    
+        auto super_type_value = return_type->eval_from(_memory);
+        if (super_type_value.type != STANDART_TYPE::TYPE)
+            throw ERROR_THROW::WaitedLambdaReturnTypeSpecifier(start_type_token, end_type_token, super_type_value.type);
 
-        auto lambda = NewLambda(new_lambda_memory, body.get(), vector(args), std::move(return_type), start_args_token, end_args_token, start_type_token, end_type_token);
+        auto lambda = NewLambda(new_lambda_memory, body.get(), args, std::move(return_type), name,
+                                start_args_token, end_args_token, start_type_token, end_type_token);
+
         if (name != "") {
-            (any_cast<Lambda*>(lambda.data))->memory->add_object(name, lambda, lambda.type, true, true, true, true, false);
+            // Добавляем лямбду в её собственную память под заданным именем
+            (any_cast<Lambda*>(lambda.data))->memory->add_object(name, lambda, lambda.type,
+                                                                true, true, true, true, false);
         }
         return lambda;
     }

@@ -22,70 +22,93 @@ const ArgsParser GenerateArgsParser(const int argc, char** const argv) noexcept 
     return args_parser;
 }
 
-void write_error_to_file(std::ostream& out, const Error& err) {
-    out << "pif: " << err.pif << ":" << err.pif.lenght
-        << " message: " << err.message << "\n";
-    if (err.sub_error)
-        write_error_to_file(out, *err.sub_error);
-
-}
-
 void run_with(vector<unique_ptr<Node>>* nodes, Memory& g_memory) {
     for (size_t i = 0; i < nodes->size(); i++) {
         (*nodes)[i]->exec_from(g_memory);
     }
 }
 
-void run_debug_mode(const std::string& file_path) {
+
+void write_error_to_file(std::ostream& out, const Error& err) {
+    out << "pif: " << err.pif << ":" << err.pif.lenght << ":" << err.assertion
+        << " message: " << err.message << "\n";
+    if (err.sub_error)
+        write_error_to_file(out, *err.sub_error);
+
+}
+
+vector<Error> run_with_collect(vector<unique_ptr<Node>>& nodes, Memory& mem) {
+    vector<Error> collected;
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        try {
+            nodes[i]->exec_from(mem);
+        } catch (const Error& err) {
+            if (err.assertion) {
+                // Assert – сохраняем и продолжаем
+                collected.push_back(err);
+            } else {
+                // Фатальная ошибка – пробрасываем дальше
+                throw;
+            }
+        }
+    }
+    return collected;
+}
+
+void language_server(const std::string& file_path) {
     using namespace std::chrono_literals;
-    Preprocessor preprocessor;  
+    Preprocessor preprocessor;
 
     while (true) {
         try {
-            // 1. Прочитать файл заново
+            // 1. Чтение и препроцессинг
             std::string source = OpenFile(file_path);
-
-            // Установить глобальные строки для вывода ошибок
             ERROR::PREPROCESSOR_OUTPUT = source;
             ERROR_THROW::PREPROCESSOR_OUTPUT = source;
 
-            // 2. Препроцессинг
             std::string preprocessed = preprocessor.process(source, file_path);
 
-            // 3. Лексический анализ
+            // 2. Лексический анализ
             Lexer lexer(file_path, preprocessed);
             lexer.run();
-            
 
-            // 4. Синтаксический анализ
+            // 3. Синтаксический анализ
             TokenWalker walker(&lexer.tokens);
             ASTGenerator parser(walker, file_path);
-            parser.parse();  // здесь могут возникнуть исключения
+            parser.parse();  // если здесь ошибка – будет исключение
 
+            // 4. Подготовка памяти и выполнение
             auto nodes = std::move(parser.nodes);
-            auto g_memory = Memory();
+            Memory g_memory;
             GenerateStandartTypes(&g_memory, file_path);
 
+            // Выполняем с накоплением assert'ов
+            auto assert_errors = run_with_collect(nodes, g_memory);
 
-            run_with(&nodes, g_memory);
-
-            // Если дошли сюда – ошибок нет. Можно ничего не делать или удалить файл err.dbg.
-            // По желанию можно очистить файл (например, создать пустой).
-            std::ofstream clear_log("err.dbg", std::ios::trunc);
-            clear_log.close();
+            // 5. Запись результатов
+            if (assert_errors.empty()) {
+                // Нет ошибок – очищаем файл
+                std::ofstream clear_log("err.dbg", std::ios::trunc);
+                clear_log.close();
+            } else {
+                // Есть assert'ы – перезаписываем файл всеми
+                std::ofstream log("err.dbg", std::ios::trunc);
+                for (const auto& err : assert_errors) {
+                    write_error_to_file(log, err);
+                    log << "\n";
+                }
+            }
 
         } catch (const Error& err) {
-            // Запись ошибки в файл (перезапись)
+            // Фатальная ошибка (не assertion) – записываем её одну
             std::ofstream log("err.dbg", std::ios::trunc);
-            if (log) {
-                write_error_to_file(log, err);
-                log << "\n";
-            }
+            write_error_to_file(log, err);
+            log << "\n";
         } catch (const std::exception& e) {
-            // pass
+            // Непредвиденная ошибка – можно проигнорировать или записать
+            // (по желанию)
         }
 
-        // Задержка перед следующей итерацией (1 секунда)
         std::this_thread::sleep_for(0.1s);
     }
 }
@@ -100,7 +123,7 @@ int main(int argc, char** argv) {
     static ArgsParser args_parser = GenerateArgsParser(argc, argv);
 
     if (args_parser.as_debuger) {
-        run_debug_mode(args_parser.file_path);
+        language_server(args_parser.file_path);
         return 0;
     } else {
         // Open main file and read it

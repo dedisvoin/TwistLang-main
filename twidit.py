@@ -61,6 +61,7 @@ class CustomScintilla(QsciScintilla):
     
     # Константа для индикатора ошибок
     INDICATOR_ERROR = 8  # Номер индикатора для ошибок
+    WARNING_ERROR = 9
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -92,19 +93,24 @@ class CustomScintilla(QsciScintilla):
         
         # Устанавливаем индикатор с явными параметрами
         self.indicatorDefine(
-            QsciScintilla.IndicatorStyle.DiagonalIndicator,
+            QsciScintilla.IndicatorStyle.ThickCompositionIndicator,
             self.INDICATOR_ERROR
         )
-
+        self.indicatorDefine(
+            QsciScintilla.IndicatorStyle.ThickCompositionIndicator,
+            self.WARNING_ERROR
+        )
         
         
         # Устанавливаем цвет с полной прозрачностью фона и ярким красным
         self.setIndicatorForegroundColor(QColor("#f35815"), self.INDICATOR_ERROR)  # Ярко-красный для теста
+        self.setIndicatorForegroundColor(QColor("#ffc413"), self.WARNING_ERROR)  # Ярко-красный для теста
         
        
         
         # Включаем индикаторы
         self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, self.INDICATOR_ERROR)
+        self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, self.WARNING_ERROR)
         
 
     def set_errors(self, errors):
@@ -124,16 +130,17 @@ class CustomScintilla(QsciScintilla):
         """Очистить все индикаторы ошибок"""
         # Очищаем индикаторы во всём документе
         self.clearIndicatorRange(0, 0, self.lines(), 0, self.INDICATOR_ERROR)
+        self.clearIndicatorRange(0, 0, self.lines(), 0, self.WARNING_ERROR)
         self.errors.clear()
 
-    def add_error(self, line, start_col, end_col, message):
+    def add_error(self, line, start_col, end_col, message, type_):
         # Смещение на один символ вправо (как требует пользователь)
         start_col += 1
         end_col += 1
 
         
         # Добавляем индикатор
-        self.fillIndicatorRange(line, start_col, line, end_col, self.INDICATOR_ERROR)
+        self.fillIndicatorRange(line, start_col, line, end_col, self.INDICATOR_ERROR if type_ == 0 else self.WARNING_ERROR)
         # Сохраняем информацию об ошибке (уже со скорректированными координатами)
         self.errors.append((line, start_col, end_col, message))
 
@@ -415,6 +422,7 @@ class TwistLangLexer(QsciLexerCustom):
         if not text:
             return
 
+        # Преобразуем в байты UTF-8
         text_bytes = text.encode('utf-8')
         total_bytes = len(text_bytes)
 
@@ -426,151 +434,121 @@ class TwistLangLexer(QsciLexerCustom):
 
         self.startStyling(start)
 
-        segment = text_bytes[start:end]
-        seg_len = len(segment)
-        pos = 0
-
+        pos = start
+        # Флаг, указывающий, что следующий идентификатор будет именем namespace (после keyword namespace или struct)
         expecting_namespace = False
 
-        while pos < seg_len:
-            b = segment[pos]
-
-            # Определяем длину символа UTF-8
+        def _get_char_at(byte_pos):
+            """Возвращает кортеж (символ, длина_в_байтах) для позиции byte_pos."""
+            if byte_pos >= total_bytes:
+                return (None, 0)
+            b = text_bytes[byte_pos]
+            # Определяем длину UTF-8 символа по первому байту
             if b & 0x80 == 0:
-                char_len = 1
+                length = 1
             elif b & 0xE0 == 0xC0:
-                char_len = 2
+                length = 2
             elif b & 0xF0 == 0xE0:
-                char_len = 3
+                length = 3
             elif b & 0xF8 == 0xF0:
-                char_len = 4
+                length = 4
             else:
-                char_len = 1
+                length = 1  # на всякий случай
+
+            if byte_pos + length > total_bytes:
+                length = 1
 
             try:
-                ch = segment[pos:pos+char_len].decode('utf-8')
-                next_ch = segment[pos+char_len:pos+char_len+1].decode('utf-8')
-            except:
-                ch = '\ufffd'
+                ch = text_bytes[byte_pos:byte_pos+length].decode('utf-8')
+            except UnicodeDecodeError:
+                ch = '\ufffd'  # символ замены
 
-            # --- Комментарий ---
-            if ch == '/' and next_ch == '/':
-                expecting_namespace = False
-                j = pos
-                while j < seg_len and segment[j:j+1] != b'\n':
-                    bj = segment[j]
-                    if bj & 0x80 == 0:
-                        j += 1
-                    elif bj & 0xE0 == 0xC0:
-                        j += 2
-                    elif bj & 0xF0 == 0xE0:
-                        j += 3
-                    elif bj & 0xF8 == 0xF0:
-                        j += 4
-                    else:
-                        j += 1
-                self.setStyling(j - pos, self.STYLE_COMMENT)
-                pos = j
-                continue
+            return (ch, length)
 
-            # --- Строковые литералы ---
+        while pos < end:
+            ch, ch_len = _get_char_at(pos)
+            if ch_len == 0:
+                break
+
+            # --- Комментарий //
+            if ch == '/' and pos + ch_len < end:
+                next_ch, next_len = _get_char_at(pos + ch_len)
+                if next_ch == '/':
+                    expecting_namespace = False
+                    j = pos
+                    while j < end:
+                        c, l = _get_char_at(j)
+                        if c == '\n':
+                            j += l
+                            break
+                        j += l
+                    self.setStyling(j - pos, self.STYLE_COMMENT)
+                    pos = j
+                    continue
+
+            # --- Строковые литералы
             if ch in ('"', "'"):
                 expecting_namespace = False
                 quote = ch
-                j = pos + char_len
+                j = pos + ch_len
                 escaped = False
-                while j < seg_len:
-                    bj = segment[j]
-                    if bj & 0x80 == 0:
-                        cur_len = 1
-                    elif bj & 0xE0 == 0xC0:
-                        cur_len = 2
-                    elif bj & 0xF0 == 0xE0:
-                        cur_len = 3
-                    elif bj & 0xF8 == 0xF0:
-                        cur_len = 4
-                    else:
-                        cur_len = 1
-                    try:
-                        cur_ch = segment[j:j+cur_len].decode('utf-8')
-                    except:
-                        cur_ch = '\ufffd'
-
-                    if cur_ch == '\\':
+                while j < end:
+                    c, l = _get_char_at(j)
+                    if c == '\\':
                         escaped = not escaped
-                    elif cur_ch == quote and not escaped:
-                        j += cur_len
+                    elif c == quote and not escaped:
+                        j += l
                         break
                     else:
                         escaped = False
-                    j += cur_len
-                else:
-                    j = seg_len
+                    j += l
                 self.setStyling(j - pos, self.STYLE_STRING)
                 pos = j
                 continue
 
-            # --- Числа ---
-            if ch.isdigit() or (ch == '.' and pos + char_len < seg_len and segment[pos+char_len:pos+char_len+1].isdigit()):
+            # --- Числа
+            if ch.isdigit() or (ch == '.' and pos + ch_len < end and _get_char_at(pos + ch_len)[0].isdigit()):
                 expecting_namespace = False
-                j = pos
                 if ch.isdigit():
-                    j += char_len
-                    while j < seg_len:
-                        bj = segment[j]
-                        if bj & 0x80 != 0:
+                    j = pos
+                    while j < end:
+                        c, l = _get_char_at(j)
+                        if not (c.isdigit() or c == '.'):
                             break
-                        next_ch = segment[j:j+1].decode('ascii')
-                        if not (next_ch.isdigit() or next_ch == '.'):
-                            break
-                        j += 1
+                        # Не допускаем две точки
+                        if c == '.':
+                            # проверим, не было ли уже точки
+                            if any(cc == '.' for cc in text_bytes[pos:j].decode('utf-8')):
+                                break
+                        j += l
+                    self.setStyling(j - pos, self.STYLE_NUMBER)
+                    pos = j
+                    continue
                 else:  # случай ".цифра"
-                    j = pos + char_len
-                    while j < seg_len:
-                        bj = segment[j]
-                        if bj & 0x80 != 0:
+                    j = pos + ch_len
+                    while j < end:
+                        c, l = _get_char_at(j)
+                        if not c.isdigit():
                             break
-                        next_ch = segment[j:j+1].decode('ascii')
-                        if not next_ch.isdigit():
-                            break
-                        j += 1
-                self.setStyling(j - pos, self.STYLE_NUMBER)
-                pos = j
-                continue
+                        j += l
+                    self.setStyling(j - pos, self.STYLE_NUMBER)
+                    pos = j
+                    continue
 
-            # --- Идентификаторы (буквы, _) ---
+            # --- Идентификаторы (буквы, _, #)
             if ch.isalpha() or ch == '_' or ch == '#':
-                j = pos + char_len
-                while j < seg_len:
-                    bj = segment[j]
-                    if bj & 0x80 == 0:
-                        cur_len = 1
-                        cur_ch = segment[j:j+1].decode('ascii')
-                    else:
-                        if bj & 0xE0 == 0xC0:
-                            cur_len = 2
-                        elif bj & 0xF0 == 0xE0:
-                            cur_len = 3
-                        elif bj & 0xF8 == 0xF0:
-                            cur_len = 4
-                        else:
-                            cur_len = 1
-                        try:
-                            cur_ch = segment[j:j+cur_len].decode('utf-8')
-                        except:
-                            cur_ch = '\ufffd'
-
-                    if not (cur_ch.isalnum() or cur_ch == '_' or cur_ch == '@'):
+                j = pos
+                while j < end:
+                    c, l = _get_char_at(j)
+                    if not (c.isalnum() or c == '_' or c == '@'):
                         break
-                    j += cur_len
+                    j += l
 
-                word = segment[pos:j].decode('utf-8', errors='replace')
+                word = text_bytes[pos:j].decode('utf-8')
                 style = self.STYLE_DEFAULT
 
-                if word == "namespace":
-                    expecting_namespace = True
-                    style = self.STYLE_KEYWORD
-                elif word == "struct":
+                # Определяем стиль по слову
+                if word == "namespace" or word == "struct":
                     expecting_namespace = True
                     style = self.STYLE_KEYWORD
                 elif expecting_namespace:
@@ -592,13 +570,13 @@ class TwistLangLexer(QsciLexerCustom):
                     elif word.startswith('#'):
                         style = self.STYLE_DIRECTIVE
                     # Если после слова идут два двоеточия, это имя пространства имён
-                    elif j + 2 <= seg_len and segment[j:j+2] == b'::':
+                    elif j + 2 <= end and text_bytes[j:j+2] == b'::':
                         style = self.STYLE_NAMESPACE_ID
                     # Если следующий символ — открывающая скобка, это функция
-                    elif j < seg_len and segment[j:j+1] == b'(':
+                    elif j < end and _get_char_at(j)[0] == '(':
                         style = self.STYLE_FUNCTION
                     # Если следующий символ — точка, это имя объекта
-                    elif j < seg_len and segment[j:j+1] == b'.':
+                    elif j < end and _get_char_at(j)[0] == '.':
                         style = self.STYLE_OBJECT
                     else:
                         style = self.STYLE_DEFAULT
@@ -607,26 +585,29 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
 
-            # --- Операторы ---
+            # --- Операторы и знаки пунктуации
             if ch in '+-*/%=&|^!<>~?.:;(){}[]':
-                expecting_namespace = False
-                j = pos + char_len
-                operators = '+-*/%=&|^!<>~?.:;(){}[]->::'
-                while j < seg_len:
-                    bj = segment[j]
-                    if bj & 0x80 != 0:
-                        break
-                    next_ch = segment[j:j+1].decode('ascii')
-                    if next_ch not in operators:
-                        break
-                    j += 1
+                # Многосимвольные операторы: ::, ->, <=, >=, ==, !=, <<, >>
+                j = pos + ch_len
+                if j < end:
+                    next_ch, next_len = _get_char_at(j)
+                    # Проверяем двухсимвольные операторы
+                    if (ch == ':' and next_ch == ':') or \
+                    (ch == '-' and next_ch == '>') or \
+                    (ch == '<' and next_ch == '=') or \
+                    (ch == '>' and next_ch == '=') or \
+                    (ch == '=' and next_ch == '=') or \
+                    (ch == '!' and next_ch == '=') or \
+                    (ch == '<' and next_ch == '<') or \
+                    (ch == '>' and next_ch == '>'):
+                        j += next_len
                 self.setStyling(j - pos, self.STYLE_OPERATOR)
                 pos = j
                 continue
 
-            # --- Всё остальное ---
-            self.setStyling(char_len, self.STYLE_DEFAULT)
-            pos += char_len
+            # --- Всё остальное
+            self.setStyling(ch_len, self.STYLE_DEFAULT)
+            pos += ch_len
 
 # ----------------------------------------------------------------------
 # Виджет вкладок с редакторами
@@ -1323,14 +1304,15 @@ class TwistLangEditor(QMainWindow):
                     if not line:
                         continue
                     # Формат: pif: {file_name}:{line}:{pos}:{lenght} message: {message}
-                    pattern = r'pif:\s*([^:]+):(\d+):(\d+):(\d+)\s+message:\s*(.+)'
+                    pattern = r'pif:\s*([^:]+):(\d+):(\d+):(\d+):(\d+)\s+message:\s*(.+)'
                     match = re.match(pattern, line)
                     if match:
                         file_name = match.group(1).strip()[1:-1]  # убираем кавычки вокруг имени
                         line_num = int(match.group(2))   # 1-based строка
                         pos = int(match.group(3))       # 1-based позиция
                         length = int(match.group(4))
-                        message = match.group(5).strip()
+                        t = int(match.group(5))
+                        message = match.group(6).strip()
                         
                         # Преобразуем в 0-based для редактора
                         line_0 = line_num - 1
@@ -1339,7 +1321,7 @@ class TwistLangEditor(QMainWindow):
                         
                         if file_name not in errors_by_file:
                             errors_by_file[file_name] = []
-                        errors_by_file[file_name].append((line_0, start_col_0, end_col_0, message))
+                        errors_by_file[file_name].append((line_0, start_col_0, end_col_0, message, t))
         except Exception as e:
             print(f"Error parsing err.dbg: {e}")
         return errors_by_file

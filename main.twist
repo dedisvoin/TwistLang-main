@@ -1,8 +1,7 @@
-let fib = lambda[fib](global n: Int) -> Int : 
-    if (n <= 2) {
-        0
-    } else {
-        fib(n - 1) + fib(n - 2)
-    };
+global let a = 100;
 
-outln fib(10);
+namespace std {
+    assert a == 10;
+}
+
+assert a == sizeof("test"), "Пэпэ шнеле ватафа";

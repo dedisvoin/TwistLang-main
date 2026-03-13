@@ -7,6 +7,8 @@
 #include "../twist-array.cpp"
 
 #include "NodeReturn.cpp"
+#include <any>
+#include <cstdint>
 
 
 struct NodeCall : public Node { NO_EXEC
@@ -37,38 +39,63 @@ struct NodeCall : public Node { NO_EXEC
 
     Value call_lambda(Value &value, Memory& _memory) {
         auto lambda = any_cast<Lambda*>(value.data);
-        Memory saved_mem = *lambda->memory;
+
+        // Создаём новую память для этого вызова
+        auto call_memory = make_shared<Memory>();
+
+        // Копируем глобальные объекты из памяти лямбды (разделяемое владение)
+        lambda->memory->link_objects(*call_memory);
+
+        // Добавляем саму лямбду в новую память, если у неё есть имя (для рекурсии)
+        if (!lambda->name.empty()) {
+            call_memory->add_object(lambda->name, value, value.type,
+                                    true, true, true, true, false);
+        }
+
+        // Проверка количества аргументов
         if (lambda->arguments.size() != args.size()) {
             ERROR::InvalidLambdaArgumentCount(start_callable, end_callable,
-                lambda->start_args_token, lambda->end_args_token, lambda->arguments.size(), args.size());
+                lambda->start_args_token, lambda->end_args_token,
+                lambda->arguments.size(), args.size());
         }
 
+        // Добавляем аргументы в новую память
         for (size_t i = 0; i < args.size(); i++) {
-            auto settable_value = args[i]->eval_from(_memory);
+            auto arg_value = args[i]->eval_from(_memory);
 
+            // Проверка типа аргумента (используем исходную память лямбды для вычисления ожидаемого типа)
             if (lambda->arguments[i]->type_expr) {
-
-                auto super_type_value = lambda->arguments[i]->type_expr->eval_from(*lambda->memory);
-                
-                if (!settable_value.type.is_sub_type(any_cast<Type>(super_type_value.data))) {
-                    ERROR::InvalidLambdaArgumentType(start_callable, end_callable, lambda->start_args_token, lambda->end_args_token,
-                        any_cast<Type>(super_type_value.data), settable_value.type, lambda->arguments[i]->name);
+                auto expected_type_val = lambda->arguments[i]->type_expr->eval_from(*lambda->memory);
+                Type expected = extract_type_from_value(expected_type_val,
+                                    lambda->start_args_token, lambda->end_args_token,
+                                    "parameter '" + lambda->arguments[i]->name + "'");
+                if (!arg_value.type.is_sub_type(expected)) {
+                    ERROR::InvalidLambdaArgumentType(start_callable, end_callable,
+                        lambda->start_args_token, lambda->end_args_token,
+                        expected, arg_value.type, lambda->arguments[i]->name);
                 }
             }
-            
-            lambda->memory->add_object_in_lambda(lambda->arguments[i]->name, settable_value, lambda->arguments[i]->is_global);
+
+            call_memory->add_object_in_lambda(lambda->arguments[i]->name, arg_value,
+                                            lambda->arguments[i]->is_global);
         }
 
-        auto result = ((Node*)(lambda->expr))->eval_from(*lambda->memory);
+        // Выполняем тело лямбды в новой памяти
+        Value result = ((Node*)(lambda->expr))->eval_from(*call_memory);
+        
 
+        // Проверка типа возвращаемого значения (если задан)
         if (lambda->return_type) {
-            auto super_type_value = lambda->return_type->eval_from(*lambda->memory);
-            if (!result.type.is_sub_type(any_cast<Type>(super_type_value.data))) {
-                ERROR::InvalidLambdaReturnType(start_callable, end_callable, lambda->start_type_token, lambda->end_type_token,
-                    any_cast<Type>(super_type_value.data), result.type);
+            auto expected_type_val = lambda->return_type->eval_from(*lambda->memory);
+            Type expected = extract_type_from_value(expected_type_val,
+                                lambda->start_type_token, lambda->end_type_token,
+                                "return type");
+            if (!result.type.is_sub_type(expected)) {
+                ERROR::InvalidLambdaReturnType(start_callable, end_callable,
+                    lambda->start_type_token, lambda->end_type_token,
+                    expected, result.type);
             }
         }
-        *lambda->memory = saved_mem;
 
         return result;
     }
