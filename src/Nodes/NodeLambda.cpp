@@ -1,7 +1,7 @@
 #include "../twist-nodetemp.cpp"
 #include "../twist-args.cpp"
-#include "../twist-errors.cpp"
 #include "../twist-lambda.cpp"
+#include "../twist-err.cpp"
 
 struct NodeLambda : public Node { NO_EXEC
     vector<Arg*> args;
@@ -31,19 +31,19 @@ struct NodeLambda : public Node { NO_EXEC
 
         for (auto arg : args) {
             if (arg->type_expr) {
-                auto super_type_value = arg->type_expr->eval_from(*new_lambda_memory);
-                if (super_type_value.type != STANDART_TYPE::TYPE && !IsStructure(super_type_value.type)) {
-                    ERROR::WaitedLambdaArgumentTypeSpecifier(start_args_token, end_args_token, arg->name);
-                }
+                auto super_type_value = arg->type_expr->eval_from(_memory);
+                if (super_type_value.type != STANDART_TYPE::TYPE) 
+                    throw ERROR_THROW::WaitedLambdaArgumentTypeSpecifier(start_args_token, end_args_token, arg->name);
+                
             }
         }
 
-        if (return_type) {
-            auto super_type_value = return_type->eval_from(*new_lambda_memory); 
-            if (super_type_value.type != STANDART_TYPE::TYPE && !IsStructure(super_type_value.type)) {
-                ERROR::WaitedLambdaReturnTypeSpecifier(start_type_token, end_type_token);
-            }
-        }
+        
+        auto super_type_value = return_type->eval_from(_memory); 
+        if (super_type_value.type != STANDART_TYPE::TYPE) 
+            throw ERROR_THROW::WaitedLambdaReturnTypeSpecifier(start_type_token, end_type_token, super_type_value.type); 
+    
+
         auto lambda = NewLambda(new_lambda_memory, body.get(), vector(args), std::move(return_type), start_args_token, end_args_token, start_type_token, end_type_token);
         if (name != "") {
             (any_cast<Lambda*>(lambda.data))->memory->add_object(name, lambda, lambda.type, true, true, true, true, false);

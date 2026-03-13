@@ -964,7 +964,9 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
     walker.next(); // pass 'lambda' token
     Token start_args_token = *walker.get();
 
-
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Блок передачи самой Lambda функции фнутрь себя для рекурсивных вызовов
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
     string name = "";
     if (walker.CheckValue("[")) {
         walker.next();
@@ -978,7 +980,12 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "']'");
         walker.next();
     }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Парсинг аргументов
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
     if (!walker.CheckValue("("))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "'('");
     walker.next();
@@ -991,46 +998,31 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
             break;
         }
 
-        
+        // Поддерживем лишь модификатор global
         bool arg_is_global = false;
-        
-
-        
         if (walker.CheckValue("global")) {
             arg_is_global = true;
             walker.next();
         }
         
         
-
         if (!walker.CheckType(TokenType::LITERAL))
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "variable name");
         string arg_name = walker.get()->value;
         walker.next();
 
         unique_ptr<Node> type_expr = nullptr;
-        unique_ptr<Node> default_expr = nullptr;
 
         if (!walker.CheckValue(":"))
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "':'");
         walker.next();
 
-
         type_expr = parse_expression();
         if (!type_expr)
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "type expression");
 
-
-        if (walker.CheckValue("=")) {
-            walker.next();
-            default_expr = parse_expression();
-            if (!default_expr)
-                throw ERROR_THROW::UnexpectedToken(*walker.get(), "default value expression");
-        }
-
         auto arg = new Arg(arg_name);
         arg->type_expr = std::move(type_expr);
-        arg->default_parameter = std::move(default_expr);
         arg->is_global = arg_is_global;
 
         arguments.push_back(arg);
@@ -1040,25 +1032,27 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
 
         if (walker.CheckValue(",")) walker.next();
     }
-
     Token end_args_token = *walker.get(-1);
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    Token return_type_start_token;
-    Token return_type_end_token;
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Парсинг возвращаемого типа
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    if (!(walker.CheckValue("->") && walker.CheckType(TokenType::OPERATOR)))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "return type (syntax: -> type expression)");
+    walker.next();
 
-    unique_ptr<Node> return_type = nullptr;
-    if (walker.CheckValue("->")) {
-        walker.next();
-        return_type_start_token = *walker.get();
-        return_type = parse_expression();
-        return_type_end_token = *walker.get(-1);
-        if (!return_type)
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "return type expression");
-    }
+    Token return_type_start_token = *walker.get();
+    auto return_type = parse_expression();
+    Token return_type_end_token = *walker.get(-1);
+    if (!return_type)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "return type expression");
+    
 
     if (!walker.CheckValue(":"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "':'");
     walker.next();
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -1066,7 +1060,7 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
         start_args_token, end_args_token, return_type_start_token, return_type_end_token);
     lambda_node->name = name;
 
-
+    // парсим тело
     lambda_node->body = parse_expression();
 
     return lambda_node;

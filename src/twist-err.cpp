@@ -185,4 +185,19 @@ namespace ERROR_THROW {
         Error err = Error("Unsupported binary operator '" + op_token.value + "' for `" + left_type.pool + "` and `" + right_type.pool + "` types", start_token.pif, end_token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
+
+    Error WaitedLambdaArgumentTypeSpecifier(const Token& start_token, const Token& end_token, string name) {
+        Error err = Error("Invalid type specifier for argument '" + name + "'", start_token.pif, end_token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error WaitedLambdaReturnTypeSpecifier(const Token& start_token, const Token& end_token, Type type) {
+        Error err = Error("Invalid type specifier for return type `" + type.pool + "`, but waited valid type", start_token.pif, end_token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error WaitedLambdaReturnType(const Token& start_token, const Token& end_token) {
+        Error err = Error("Waited return type", start_token.pif, end_token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
 }

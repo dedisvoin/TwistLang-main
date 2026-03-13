@@ -1476,18 +1476,9 @@ class TwistLangEditor(QMainWindow):
         # Сохраняем перед запуском
         self.save_editor_to_file(editor, filename)
 
-        if not shutil.which("twistc"):
-            QMessageBox.critical(
-                self,
-                "Compiler not found",
-                "The 'twistc' compiler is not in PATH. Please install it or add to PATH.",
-                QMessageBox.StandardButton.Ok
-            )
-            return
-
         try:
             if platform.system() == "Windows":
-                cmd = f'start cmd /k twistc --file "{filename}"'
+                cmd = f'start cmd /k bin\\twistc --file "{filename}"'
                 subprocess.Popen(cmd, shell=True)
                 self.status_bar.showMessage(f"Running {os.path.basename(filename)} in new cmd window...", 3000)
             elif platform.system() == "Linux":
@@ -1610,4 +1601,5 @@ def main():
 
 
 if __name__ == "__main__":
+    os.system('start bin\\twist-ls --file main.twist -d')
     main()

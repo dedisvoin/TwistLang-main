@@ -1,2 +1,2 @@
-pif: 'main.twist':5:47:1 message: Expected return type expression, but found ':'
+pif: 'main.twist':5:28:1 message: Expected expression after addition/subtraction operator, but found ')'
 

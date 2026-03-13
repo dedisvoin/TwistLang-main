@@ -1,10 +1,8 @@
-struct Person {
-    let name = "Ivan";
-}
+let fib = lambda[fib](global n: Int) -> Int : 
+    if (n <= 2) {
+        0
+    } else {
+        fib(n - 1) + fib(n - 2)
+    };
 
-let sum = lambda(global a: typeof(Person)) -> Namespace : namespace {};
-
-
-let test = sum(Person());
-
-outln test::a.name;
+outln fib(10);
