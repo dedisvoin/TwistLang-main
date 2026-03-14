@@ -5,17 +5,17 @@
 #pragma once
 
 struct Namespace {
-    shared_ptr<Memory> memory;
+    Memory* memory;
     string name;
 
-    Namespace(shared_ptr<Memory> memory, string name) : memory(memory), name(name) {};
+    Namespace(Memory* memory, string name) : memory(memory), name(name) {};
     Namespace(string name) : name(name) {};
 };
 
-Value NewNamespace(shared_ptr<Memory> memory, const string& name) {
-    return Value(STANDART_TYPE::NAMESPACE, Namespace(memory, name));
+Value NewNamespace(Memory* memory, const string& name) {
+    return Value(STANDART_TYPE::NAMESPACE, new Namespace(memory, name));
 }
 
 Value NewNamespace(const string& name) {
-    return Value(STANDART_TYPE::NAMESPACE, Namespace(name));
+    return Value(STANDART_TYPE::NAMESPACE, new Namespace(name));
 }

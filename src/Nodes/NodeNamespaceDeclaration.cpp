@@ -24,7 +24,7 @@ struct NodeNamespaceDeclaration : public Node { NO_EVAL
         }
 
     void exec_from(Memory& _memory) override {
-    auto new_namespace_memory = make_shared<Memory>();
+    auto new_namespace_memory = new Memory();
     // Создаём Namespace с этой памятью
     auto new_namespace = NewNamespace(new_namespace_memory, name);
     

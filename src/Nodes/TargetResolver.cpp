@@ -29,8 +29,8 @@ pair<Memory*, string> resolveTargetMemory(Node* node, Memory& current_memory) {
         if (ns_value.type != STANDART_TYPE::NAMESPACE) {
             ERROR::InvalidAccessorType(resolution->start, resolution->end, ns_value.type.pool);
         }
-        auto& ns = any_cast<Namespace&>(ns_value.data);
-        return {ns.memory.get(), resolution->name};
+        auto ns = any_cast<Namespace*>(ns_value.data);
+        return {ns->memory, resolution->name};
     }
     else {
         // Неподдерживаемый тип узла

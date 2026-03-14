@@ -35,8 +35,8 @@ struct NodeNamespaceResolution : public Node { NO_EXEC
         if (ns_value.type != STANDART_TYPE::NAMESPACE)
             throw ERROR_THROW::NamespaceInvalidAccessorType(start, end, ns_value.type);
 
-        auto& ns = any_cast<Namespace&>(ns_value.data);
-        Memory* ns_memory = ns.memory.get();
+        auto ns = any_cast<Namespace*>(ns_value.data);
+        Memory* ns_memory = ns->memory;
 
         // Проверяем существование имени
         if (!ns_memory->check_literal(name))

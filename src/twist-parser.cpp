@@ -1056,7 +1056,7 @@ unique_ptr<Node> ASTGenerator::ParseLambda() {
 
 
 
-    auto lambda_node = make_unique<NodeLambda>(nullptr, arguments, std::move(return_type),
+    auto lambda_node = make_unique<NodeLambda>(nullptr, arguments, return_type.get(),
         start_args_token, end_args_token, return_type_start_token, return_type_end_token);
     lambda_node->name = name;
 

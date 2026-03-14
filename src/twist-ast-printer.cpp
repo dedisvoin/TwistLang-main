@@ -565,7 +565,7 @@ public:
                            << (return_is_last ? colorize("└── ", Colors::STRUCTURE_COLOR) : colorize("├── ", Colors::STRUCTURE_COLOR))
                            << colorize("ReturnType:", Colors::STRUCTURE_COLOR) << std::endl;
                     std::string return_prefix = new_prefix + (return_is_last ? "    " : "│   ");
-                    print_node(n->return_type.get(), return_prefix, true);
+                    print_node(n->return_type, return_prefix, true);
                 }
 
                 // Тело

@@ -200,4 +200,22 @@ namespace ERROR_THROW {
         Error err = Error("Waited return type", start_token.pif, end_token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
+
+    Error InvalidLambdaArgumentCount(const Token& start_callable, const Token& end_callable, const Token& start_args, const Token& end_args, size_t expected, size_t found) {
+        Error err = Error("Invalid argument count for lambda, expected " + to_string(expected) + " but found " + to_string(found), start_callable.pif, end_callable.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        err.sub_error = new Error("Expected " + to_string(expected) + " arguments but found " + to_string(found), start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidLambdaArgumentType(const Token& start_callable, const Token& end_callable, const Token& start_args, const Token& end_args, Type expected, Type found, string arg_name) {
+        Error err = Error("Invalid type for argument '" + arg_name + "' in lambda, expected `" + expected.pool + "` but found `" + found.pool + "`", start_callable.pif, end_callable.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        err.sub_error = new Error("Expected type `" + expected.pool + "` but found `" + found.pool + "` for argument '" + arg_name + "'", start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidLambdaReturnType(const Token& start_callable, const Token& end_callable, const Token& start_return_type, const Token& end_return_type, Type expected, Type found) {
+        Error err = Error("Invalid return type for lambda, expected `" + expected.pool + "` but found `" + found.pool + "`", start_callable.pif, end_callable.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        err.sub_error = new Error("Expected return type `" + expected.pool + "`", start_return_type.pif, end_return_type.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
 }

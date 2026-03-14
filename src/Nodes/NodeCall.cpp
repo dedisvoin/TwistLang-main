@@ -54,7 +54,7 @@ struct NodeCall : public Node { NO_EXEC
 
         // Проверка количества аргументов
         if (lambda->arguments.size() != args.size()) {
-            ERROR::InvalidLambdaArgumentCount(start_callable, end_callable,
+            throw ERROR_THROW::InvalidLambdaArgumentCount(start_callable, end_callable,
                 lambda->start_args_token, lambda->end_args_token,
                 lambda->arguments.size(), args.size());
         }
@@ -70,7 +70,7 @@ struct NodeCall : public Node { NO_EXEC
                                     lambda->start_args_token, lambda->end_args_token,
                                     "parameter '" + lambda->arguments[i]->name + "'");
                 if (!arg_value.type.is_sub_type(expected)) {
-                    ERROR::InvalidLambdaArgumentType(start_callable, end_callable,
+                    throw ERROR_THROW::InvalidLambdaArgumentType(start_callable, end_callable,
                         lambda->start_args_token, lambda->end_args_token,
                         expected, arg_value.type, lambda->arguments[i]->name);
                 }
@@ -80,9 +80,13 @@ struct NodeCall : public Node { NO_EXEC
                                             lambda->arguments[i]->is_global);
         }
 
-        // Выполняем тело лямбды в новой памяти
-        Value result = ((Node*)(lambda->expr))->eval_from(*call_memory);
-        
+        Value result = NewNull();
+        try {
+            result = ((Node*)(lambda->expr))->eval_from(*call_memory);
+        }
+        catch (Error err) {
+            throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err));
+        }
 
         // Проверка типа возвращаемого значения (если задан)
         if (lambda->return_type) {
@@ -91,7 +95,7 @@ struct NodeCall : public Node { NO_EXEC
                                 lambda->start_type_token, lambda->end_type_token,
                                 "return type");
             if (!result.type.is_sub_type(expected)) {
-                ERROR::InvalidLambdaReturnType(start_callable, end_callable,
+                throw ERROR_THROW::InvalidLambdaReturnType(start_callable, end_callable,
                     lambda->start_type_token, lambda->end_type_token,
                     expected, result.type);
             }

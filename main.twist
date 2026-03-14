@@ -1,7 +1,14 @@
-global let a = 100;
-
-namespace std {
-    assert a == 10;
+func create(global name: String, global age: Int) -> Namespace {
+    ret namespace {
+        let print = lambda() -> Namespace : namespace {
+            outln name, " ", age;
+        };
+    };
 }
 
-assert a == sizeof("test"), "Пэпэ шнеле ватафа";
+
+let a1 = create("ivan", 19);
+a1::print();
+
+let a2 = create("Jon", 190);
+a1::print();
