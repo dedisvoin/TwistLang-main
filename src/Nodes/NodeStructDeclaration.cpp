@@ -5,7 +5,7 @@
 #pragma once
 
 struct NodeStructDeclaration : public Node { NO_EVAL
-    unique_ptr<Node> statement;
+    Node* statement;
     string name;
 
     Token decl_token;
@@ -16,8 +16,8 @@ struct NodeStructDeclaration : public Node { NO_EVAL
     bool is_global = true;
     bool is_private = false;
 
-    NodeStructDeclaration(unique_ptr<Node> statement, string name, Token decl_token) :
-         statement(std::move(statement)), name(name), decl_token(decl_token) {
+    NodeStructDeclaration(Node* statement, string name, Token decl_token) :
+         statement(statement), name(name), decl_token(decl_token) {
             this->NODE_TYPE = NodeTypes::NODE_STRUCT_DECLARATION;
         }
 

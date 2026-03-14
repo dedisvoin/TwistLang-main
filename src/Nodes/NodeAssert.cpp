@@ -1,11 +1,11 @@
 #include "../twist-nodetemp.cpp"
 #include "../twist-err.cpp"
 #include <any>
-#include <memory>
+
 
 struct NodeAssert : public Node { NO_EVAL
-    unique_ptr<Node> expr;
-    unique_ptr<Node> message_expr;
+    Node* expr;
+    Node* message_expr;
 
     Token start_token;
     Token end_token;
@@ -13,9 +13,9 @@ struct NodeAssert : public Node { NO_EVAL
     Token message_start;
     Token message_end;
 
-    NodeAssert(unique_ptr<Node> expr, unique_ptr<Node> message_expr, 
+    NodeAssert(Node* expr, Node* message_expr, 
         Token start_token, Token end_token, Token message_start, Token message_end)
-        : expr(std::move(expr)), message_expr(std::move(message_expr)), 
+        : expr(expr), message_expr(message_expr), 
         start_token(start_token), end_token(end_token), message_start(message_start), message_end(message_end) {
             this->NODE_TYPE = NodeTypes::NODE_ASSERT;
     }

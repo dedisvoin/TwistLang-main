@@ -5,8 +5,8 @@
 
 
 struct NodeVariableEqual : public Node { NO_EVAL
-    unique_ptr<Node> expression;
-    unique_ptr<Node> variable;
+    Node* expression;
+    Node* variable;
 
     Token start_left_value_token;
     Token end_left_value_token;
@@ -14,10 +14,10 @@ struct NodeVariableEqual : public Node { NO_EVAL
     Token start_value_token;
     Token end_value_token;
 
-    NodeVariableEqual(unique_ptr<Node> variable, unique_ptr<Node> expression,
+    NodeVariableEqual(Node* variable, Node* expression,
                       Token start_left_value_token, Token end_left_value_token,
                       Token start_value_token, Token end_value_token)
-        : expression(std::move(expression)), variable(std::move(variable)),
+        : expression(expression), variable(variable),
           start_left_value_token(start_left_value_token), end_left_value_token(end_left_value_token),
           start_value_token(start_value_token), end_value_token(end_value_token) {
         this->NODE_TYPE = NodeTypes::NODE_VARIABLE_EQUAL;
@@ -26,8 +26,7 @@ struct NodeVariableEqual : public Node { NO_EVAL
     void exec_from(Memory& _memory) override {
         auto right_value = expression->eval_from(_memory);
 
-        Node* variable_ptr = variable.get();
-        pair<Memory*, string> target = resolveTargetMemory(variable_ptr, _memory);
+        pair<Memory*, string> target = resolveTargetMemory(variable, _memory);
 
         Memory* target_memory = target.first;
         string target_var_name = target.second;

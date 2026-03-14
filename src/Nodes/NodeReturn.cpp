@@ -1,5 +1,6 @@
 #include "../twist-nodetemp.cpp"
 
+
 #pragma once
 
 struct Return {
@@ -8,12 +9,12 @@ struct Return {
 };
 
 struct NodeReturn : public Node { NO_EVAL
-    unique_ptr<Node> expr;
+    Node* expr;
     Token start_token;
     Token end_token;
 
-    NodeReturn(unique_ptr<Node> expr, Token start_token, Token end_token) : 
-        expr(std::move(expr)), start_token(start_token), end_token(end_token) {
+    NodeReturn(Node* expr, Token start_token, Token end_token) : 
+        expr(expr), start_token(start_token), end_token(end_token) {
         this->NODE_TYPE = NodeTypes::NODE_RETURN;
     }
 

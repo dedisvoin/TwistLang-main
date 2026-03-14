@@ -14,9 +14,9 @@
  */
 
 struct NodeScopes : public Node { NO_EXEC
-    unique_ptr<Node> expression;
+    Node* expression;
 
-    NodeScopes(unique_ptr<Node> expr) : expression(std::move(expr)) {
+    NodeScopes(Node* expr) : expression(expr) {
         this->NODE_TYPE = NodeTypes::NODE_SCOPES;
     }
 

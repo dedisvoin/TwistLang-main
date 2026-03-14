@@ -12,8 +12,8 @@
 
 
 struct NodeCall : public Node { NO_EXEC
-    unique_ptr<Node> callable;
-    vector<unique_ptr<Node>> args;
+    Node* callable;
+    vector<Node*> args;
     Token start_callable;
     Token end_callable;
 
@@ -32,8 +32,8 @@ struct NodeCall : public Node { NO_EXEC
         // unreachable
     }
 
-    NodeCall(unique_ptr<Node> callable, vector<unique_ptr<Node>> args, Token start_callable, Token end_callable) :
-        callable(std::move(callable)), args(std::move(args)), start_callable(start_callable), end_callable(end_callable) {
+    NodeCall(Node* callable, vector<Node*> args, Token start_callable, Token end_callable) :
+        callable(callable), args(args), start_callable(start_callable), end_callable(end_callable) {
         this->NODE_TYPE = NodeTypes::NODE_CALL;
     }
 

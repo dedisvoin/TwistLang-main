@@ -4,12 +4,12 @@
 #include "TargetResolver.cpp"
 
 struct NodeDelete : public Node { NO_EVAL
-    unique_ptr<Node> target;
+    Node* target;
     Token start_token;
     Token end_token;
 
-    NodeDelete(unique_ptr<Node> target, Token start_token, Token end_token)
-        : target(std::move(target)), start_token(start_token), end_token(end_token) {
+    NodeDelete(Node* target, Token start_token, Token end_token)
+        : target(target), start_token(start_token), end_token(end_token) {
         this->NODE_TYPE = NodeTypes::NODE_DELETE;
     }
 
@@ -21,7 +21,7 @@ struct NodeDelete : public Node { NO_EVAL
         }
 
         if (target->NODE_TYPE == NodeTypes::NODE_DEREFERENCE) {
-            auto deref_node = static_cast<NodeDereference*>(target.get());
+            auto deref_node = static_cast<NodeDereference*>(target);
             auto value = deref_node->expr->eval_from(_memory);
             
             if (!value.type.is_pointer()) {
@@ -45,7 +45,7 @@ struct NodeDelete : public Node { NO_EVAL
             return;
         } else {
             // Удаление по имени (переменная или пространство имён) – остаётся без изменений
-            pair<Memory*, string> target_info = resolveTargetMemory(target.get(), _memory);
+            pair<Memory*, string> target_info = resolveTargetMemory(target, _memory);
             Memory* target_memory = target_info.first;
             string target_name = target_info.second;
 

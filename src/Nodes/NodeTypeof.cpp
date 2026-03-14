@@ -2,11 +2,11 @@
 #include "../twist-err.cpp"
 
 struct NodeTypeof : public Node { NO_EXEC
-    unique_ptr<Node> expr;
+    Node* expr;
 
     Token expr_token;
 
-    NodeTypeof(unique_ptr<Node> expr, Token expr_token) : expr(std::move(expr)), expr_token(expr_token) {
+    NodeTypeof(Node* expr, Token expr_token) : expr(std::move(expr)), expr_token(expr_token) {
         this->NODE_TYPE = NodeTypes::NODE_TYPEOF;
     }
 

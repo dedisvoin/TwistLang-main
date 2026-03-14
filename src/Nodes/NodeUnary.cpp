@@ -23,15 +23,15 @@
  */
 
 struct NodeUnary : public Node { NO_EXEC
-    unique_ptr<Node> operand;
+    Node* operand;
     string op;
 
     Token start;
     Token end;
     Token operator_token;
 
-    NodeUnary(unique_ptr<Node> operand, Token start, Token end, Token operator_token)
-        : operand(std::move(operand)), start(start), end(end), operator_token(operator_token) {
+    NodeUnary(Node* operand, Token start, Token end, Token operator_token)
+        : operand(operand), start(start), end(end), operator_token(operator_token) {
             this->NODE_TYPE = NodeTypes::NODE_UNARY;
             op = operator_token.value;
         }

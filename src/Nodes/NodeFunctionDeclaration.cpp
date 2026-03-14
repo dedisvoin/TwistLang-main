@@ -9,8 +9,8 @@
 struct NodeFunctionDeclaration : public Node { NO_EVAL
     string name;
     vector<Arg*> args;
-    unique_ptr<Node> return_type;
-    unique_ptr<Node> body;
+    Node* return_type;
+    Node* body;
 
     bool is_static = false;
     bool is_final = false;
@@ -24,9 +24,9 @@ struct NodeFunctionDeclaration : public Node { NO_EVAL
     Token end_return_token;
 
 
-    NodeFunctionDeclaration(string name, vector<Arg*> args, unique_ptr<Node> return_type, unique_ptr<Node> body,
+    NodeFunctionDeclaration(string name, vector<Arg*> args, Node* return_type, Node* body,
                 Token start_args_token, Token end_args_token, Token start_return_token, Token end_return_token) :
-        name(name), args(std::move(args)), return_type(std::move(return_type)), body(std::move(body)),
+        name(name), args(std::move(args)), return_type(return_type), body(body),
         start_args_token(start_args_token), end_args_token(end_args_token), start_return_token(start_return_token), end_return_token(end_return_token) {
         this->NODE_TYPE = NodeTypes::NODE_FUNCTION_DECLARATION;
     }
@@ -80,7 +80,7 @@ struct NodeFunctionDeclaration : public Node { NO_EVAL
         auto new_function_memory = make_shared<Memory>();
         //_memory.link_objects(*new_function_memory);
         
-        auto func = NewFunction(name, new_function_memory, body.get(), args, std::move(return_type), function_type, start_args_token, end_args_token, start_return_token, end_return_token);
+        auto func = NewFunction(name, new_function_memory, body, args, return_type, function_type, start_args_token, end_args_token, start_return_token, end_return_token);
         
         auto object = CreateMemoryObject(func, function_type,&new_function_memory, is_const, is_static, is_final, is_global, is_private);
         if (_memory.check_literal(name))

@@ -6,7 +6,7 @@
 
 struct NodeNamespaceDeclaration : public Node { NO_EVAL
     shared_ptr<Memory> namespace_memory;
-    unique_ptr<Node> statement;
+    Node* statement = nullptr;
 
     string name;
 
@@ -18,8 +18,8 @@ struct NodeNamespaceDeclaration : public Node { NO_EVAL
     bool is_global = false;
     bool is_private = false;
 
-    NodeNamespaceDeclaration(unique_ptr<Node> statement, string name, Token decl_token) :
-         statement(std::move(statement)), name(name), decl_token(decl_token) {
+    NodeNamespaceDeclaration(Node* statement, string name, Token decl_token) :
+         statement(statement), name(name), decl_token(decl_token) {
             this->NODE_TYPE = NodeTypes::NODE_NAMESPACE_DECLARATION;
         }
 

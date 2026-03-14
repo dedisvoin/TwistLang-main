@@ -23,13 +23,13 @@
  */
 
 struct NodeIf : public Node { NO_EVAL
-    unique_ptr<Node> condition;
-    unique_ptr<Node> true_statement;
-    unique_ptr<Node> else_statement = nullptr;
+    Node* condition;
+    Node* true_statement;
+    Node* else_statement = nullptr;
 
-    NodeIf(unique_ptr<Node> condition, unique_ptr<Node> true_statement, unique_ptr<Node> else_statement = nullptr) :
-        condition(std::move(condition)), true_statement(std::move(true_statement)),
-        else_statement(std::move(else_statement)) {
+    NodeIf(Node* condition, Node* true_statement, Node* else_statement = nullptr) :
+        condition(condition), true_statement(true_statement),
+        else_statement(else_statement) {
         this->NODE_TYPE = NodeTypes::NODE_IF;
     }
 
@@ -77,12 +77,12 @@ struct NodeIf : public Node { NO_EVAL
 
 
 struct NodeIfExpr : public Node { NO_EXEC
-    unique_ptr<Node> condition;
-    unique_ptr<Node> true_expr;
-    unique_ptr<Node> else_expr;
+    Node* condition;
+    Node* true_expr;
+    Node* else_expr;
 
-    NodeIfExpr(unique_ptr<Node> condition, unique_ptr<Node> true_expr, unique_ptr<Node> else_expr)
-        : condition(std::move(condition)), true_expr(std::move(true_expr)), else_expr(std::move(else_expr)) {
+    NodeIfExpr(Node* condition, Node* true_expr, Node* else_expr)
+        : condition(condition), true_expr(true_expr), else_expr(else_expr) {
             this->NODE_TYPE = NodeTypes::NODE_IF_EXPRESSION;
     }
 

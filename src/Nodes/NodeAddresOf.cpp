@@ -5,9 +5,9 @@
 #include "TargetResolver.cpp"
 
 struct NodeAddressOf : public Node { NO_EXEC
-    unique_ptr<Node> expr;
+    Node* expr;
 
-    NodeAddressOf(unique_ptr<Node> expr) : expr(std::move(expr)) {
+    NodeAddressOf(Node* expr) : expr(expr) {
         this->NODE_TYPE = NodeTypes::NODE_ADDRESS_OF;
     }
 
@@ -17,9 +17,9 @@ struct NodeAddressOf : public Node { NO_EXEC
         Value val = expr->eval_from(_memory);
 
         // Раскрываем скобки, если они есть
-        Node* effective = expr.get();
+        Node* effective = expr;
         while (effective->NODE_TYPE == NodeTypes::NODE_SCOPES) {
-            effective = static_cast<NodeScopes*>(effective)->expression.get();
+            effective = static_cast<NodeScopes*>(effective)->expression;
         }
 
         // Обрабатываем литерал (простая переменная)

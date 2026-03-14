@@ -1,4 +1,4 @@
-#include "src/twist-ast-printer.cpp"
+
 #include "src/twist-preproc.cpp"
 #include "src/twist-lexer.cpp"
 #include "src/twist-utils.cpp"
@@ -8,7 +8,6 @@
 #include "fstream"
 #include <filesystem>
 #include <fstream>
-#include <memory>
 #include <chrono>
 #include <thread>
 
@@ -22,7 +21,7 @@ const ArgsParser GenerateArgsParser(const int argc, char** const argv) noexcept 
     return args_parser;
 }
 
-void run_with(vector<unique_ptr<Node>>* nodes, Memory& g_memory) {
+void run_with(vector<Node*>* nodes, Memory& g_memory) {
     for (size_t i = 0; i < nodes->size(); i++) {
         (*nodes)[i]->exec_from(g_memory);
     }
@@ -37,7 +36,7 @@ void write_error_to_file(std::ostream& out, const Error& err) {
 
 }
 
-vector<Error> run_with_collect(vector<unique_ptr<Node>>& nodes, Memory& mem) {
+vector<Error> run_with_collect(vector<Node*>& nodes, Memory& mem) {
     vector<Error> collected;
     for (size_t i = 0; i < nodes.size(); ++i) {
         try {
@@ -160,17 +159,17 @@ int main(int argc, char** argv) {
 
             try {
                 generator.parse();
-            } catch (Error err) {
+            } catch (Error& err) {
                 err.print();
             }
 
-            if (args_parser.save_ast) {
-                save_ast_to_file(generator.nodes, "ast.txt");
-            }
-            if (args_parser.print_ast) {
-                debug_print_ast(generator.nodes);
-                return 0;
-            }
+            // if (args_parser.save_ast) {
+            //     save_ast_to_file(generator.nodes, "ast.txt");
+            // }
+            // if (args_parser.print_ast) {
+            //     debug_print_ast(generator.nodes);
+            //     return 0;
+            // }
 
             auto nodes = std::move(generator.nodes);
             auto g_memory = Memory();
@@ -187,12 +186,16 @@ int main(int argc, char** argv) {
             } else {
                 if (args_parser.run_time)
                     TimeIt("Parse finished in ", [&](){
-                        run_with(&nodes, g_memory);
+                        try {
+                            run_with(&nodes, g_memory);
+                        } catch (Error& err) {
+                            err.print();
+                        }
                     });
                 else
                     try {
                         run_with(&nodes, g_memory);
-                    } catch (Error err) {
+                    } catch (Error& err) {
                         err.print();
                     }
             }

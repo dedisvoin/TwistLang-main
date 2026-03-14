@@ -1,6 +1,7 @@
 #pragma once
 #include "twist-values.cpp"
 #include "twist-memory.cpp"
+#include "twist-tokens.cpp" // pass
 
 // В одном макросе генерируем все
 #define GENERATE_NODE_TYPES \

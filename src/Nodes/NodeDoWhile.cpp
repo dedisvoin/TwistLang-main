@@ -25,12 +25,12 @@
  */
 
 struct NodeDoWhile : public Node { NO_EVAL
-    unique_ptr<Node> eq_expression;
-    unique_ptr<Node> body;
+    Node* eq_expression;
+    Node* body;
     
 
-    NodeDoWhile(unique_ptr<Node> condition, unique_ptr<Node> body) :
-        eq_expression(std::move(condition)), body(std::move(body)) {
+    NodeDoWhile(Node* condition, Node* body) :
+        eq_expression(condition), body(body) {
         this->NODE_TYPE = NodeTypes::NODE_DO_WHILE;
     }
 

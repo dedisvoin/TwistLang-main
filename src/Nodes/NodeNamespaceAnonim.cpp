@@ -2,10 +2,10 @@
 #include "../twist-namespace.cpp"
 
 struct NodeNamespace : public Node { NO_EXEC
-    unique_ptr<Node> statement;
+    Node* statement = nullptr;
 
 
-    NodeNamespace(unique_ptr<Node> statement) : statement(std::move(statement)) {
+    NodeNamespace(Node* statement) : statement(statement) {
             this->NODE_TYPE = NodeTypes::NODE_NAMESPACE_EXPRESSION;
         }
 

@@ -2,13 +2,13 @@
 #include "../twist-errors.cpp"
 
 struct NodeNewArrayType : public Node { NO_EXEC
-    unique_ptr<Node> type_expr;
-    unique_ptr<Node> size_expr;
+    Node* type_expr;
+    Node* size_expr;
     Token start_token;
     Token end_token;
 
-    NodeNewArrayType(unique_ptr<Node> type_expr, unique_ptr<Node> size_expr, Token start_token, Token end_token)
-        : type_expr(std::move(type_expr)), size_expr(std::move(size_expr)), start_token(start_token), end_token(end_token) {
+    NodeNewArrayType(Node* type_expr, Node* size_expr, Token start_token, Token end_token)
+        : type_expr(type_expr), size_expr(size_expr), start_token(start_token), end_token(end_token) {
         this->NODE_TYPE = NodeTypes::NODE_ARRAY_TYPE;
     }
 

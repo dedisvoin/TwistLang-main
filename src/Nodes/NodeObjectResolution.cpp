@@ -26,14 +26,14 @@
  */
 
 struct NodeObjectResolution : public Node { NO_EXEC
-    unique_ptr<Node>    obj_expr;
+    Node*    obj_expr;
     string              current_name;
 
     Token               start;  // токен имени (для ошибок)
     Token               end;    // он же
 
-    NodeObjectResolution(unique_ptr<Node> obj_expr, const string& current_name, Token start, Token end)
-        : obj_expr(std::move(obj_expr)), current_name(current_name), start(start), end(end) {
+    NodeObjectResolution(Node* obj_expr, const string& current_name, Token start, Token end)
+        : obj_expr(obj_expr), current_name(current_name), start(start), end(end) {
         this->NODE_TYPE = NodeTypes::NODE_OBJECT_RESOLUTION;
     }
 

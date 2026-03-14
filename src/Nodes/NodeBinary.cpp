@@ -34,16 +34,16 @@
  */
 
 struct NodeBinary : public Node { NO_EXEC
-    unique_ptr<Node> left;
-    unique_ptr<Node> right;
+    Node* left;
+    Node* right;
     string op;
 
     Token& start_token;
     Token& end_token;
     Token& op_token;
 
-    NodeBinary(unique_ptr<Node> left, const string& operation, unique_ptr<Node> right, Token& start_token, Token& end_token, Token& op_token)
-        : left(std::move(left)), right(std::move(right)), op(operation), start_token(start_token), end_token(end_token), op_token(op_token) {
+    NodeBinary(Node* left, const string& operation, Node* right, Token& start_token, Token& end_token, Token& op_token)
+        : left(left), right(right), op(operation), start_token(start_token), end_token(end_token), op_token(op_token) {
             this->NODE_TYPE = NodeTypes::NODE_BINARY;
         }
 
@@ -260,7 +260,7 @@ struct NodeBinary : public Node { NO_EXEC
                 // ОПТИМИЗАЦИЯ: Для push операции, если левая часть - это переменная,
                 // модифицируем её ПРЯМО в памяти БЕЗ промежуточного копирования
                 if (left->NODE_TYPE == NodeTypes::NODE_LITERAL) {
-                    string var_name = ((NodeLiteral*)left.get())->name;
+                    string var_name = ((NodeLiteral*)left)->name;
                     MemoryObject* var_obj = _memory.get_variable(var_name);
 
                     if (var_obj && var_obj->value.type.is_array_type()) {

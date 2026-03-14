@@ -17,13 +17,13 @@
  */
 
 struct NodeNamespaceResolution : public Node { NO_EXEC
-    unique_ptr<Node> namespace_expr;
+    Node*            namespace_expr;
     string           name;
     Token            start;
     Token            end;
 
-    NodeNamespaceResolution(unique_ptr<Node> namespace_expr, const string& name, Token start, Token end)
-        : namespace_expr(std::move(namespace_expr)), name(name), start(start), end(end) {
+    NodeNamespaceResolution(Node* namespace_expr, const string& name, Token start, Token end)
+        : namespace_expr(namespace_expr), name(name), start(start), end(end) {
         NODE_TYPE = NodeTypes::NODE_NAME_RESOLUTION;
     }
 

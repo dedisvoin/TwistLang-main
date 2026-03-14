@@ -4,17 +4,17 @@
 #define sum2(a, b) (a + b)
 
 struct NodeNew : public Node { NO_EXEC
-    unique_ptr<Node> expr;
-    unique_ptr<Node> type_expr;
+    Node* expr;
+    Node* type_expr;
     bool is_const = false;
     bool is_static = false;
 
     Token start_type;
     Token end_type;
 
-    NodeNew(unique_ptr<Node> expr, unique_ptr<Node> type_expr, bool is_static, bool is_const,
+    NodeNew(Node* expr, Node* type_expr, bool is_static, bool is_const,
             Token start_type, Token end_type) :
-    expr(std::move(expr)), type_expr(std::move(type_expr)), is_const(is_const), is_static(is_static),
+    expr(expr), type_expr(type_expr), is_const(is_const), is_static(is_static),
     start_type(start_type), end_type(end_type) {
         this->NODE_TYPE = NodeTypes::NODE_NEW;
     }

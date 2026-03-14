@@ -9,24 +9,24 @@
 
 
 struct NodeArrayPush : public Node { NO_EXEC
-    unique_ptr<Node> left_expr;
-    unique_ptr<Node> right_expr;
+    Node* left_expr;
+    Node* right_expr;
     Token start_token;
     Token end_token;
 
-    NodeArrayPush(unique_ptr<Node> left_expr, unique_ptr<Node> right_expr, Token start_token, Token end_token)
-        : left_expr(std::move(left_expr)), right_expr(std::move(right_expr)), start_token(start_token), end_token(end_token) {
+    NodeArrayPush(Node* left_expr, Node* right_expr, Token start_token, Token end_token)
+        : left_expr(left_expr), right_expr(right_expr), start_token(start_token), end_token(end_token) {
         this->NODE_TYPE = NodeTypes::NODE_ARRAY_PUSH;
     }
 
     Value eval_from(Memory& _memory) override {
         if (left_expr->NODE_TYPE == NodeTypes::NODE_SCOPES) {
-            left_expr = std::move(((NodeScopes*)(left_expr.get()))->expression);
+            left_expr = ((NodeScopes*)(left_expr))->expression;
         }
         // ОПТИМИЗАЦИЯ: Проверяем тип левого выражения
         // Если это простая переменная (NODE_LITERAL), модифицируем её в памяти напрямую
         if (left_expr->NODE_TYPE == NodeTypes::NODE_LITERAL) {
-            string var_name = ((NodeLiteral*)left_expr.get())->name;
+            string var_name = ((NodeLiteral*)(left_expr))->name;
             MemoryObject* var_obj = _memory.get_variable(var_name);
 
             if (var_obj && var_obj->value.type.is_array_type()) {
@@ -47,7 +47,7 @@ struct NodeArrayPush : public Node { NO_EXEC
             }
         }
         else if (left_expr->NODE_TYPE == NodeTypes::NODE_OBJECT_RESOLUTION) {
-            NodeObjectResolution* resolution = (NodeObjectResolution*)left_expr.get();
+            NodeObjectResolution* resolution = (NodeObjectResolution*)left_expr;
             Value ns_value = resolution->obj_expr->eval_from(_memory);
 
             if (!STANDART_TYPE::TYPES.is_sub_type(ns_value.type)) {
@@ -75,7 +75,7 @@ struct NodeArrayPush : public Node { NO_EXEC
         }
         // ОБРАБОТКА РАЗЫМЕНОВАНИЯ УКАЗАТЕЛЯ
         else if (left_expr->NODE_TYPE == NodeTypes::NODE_DEREFERENCE) {
-            NodeDereference* deref = (NodeDereference*)left_expr.get();
+            NodeDereference* deref = (NodeDereference*)left_expr;
 
             // Вычисляем выражение, которое должно быть указателем
             Value ptr_value = deref->expr->eval_from(_memory);

@@ -33,9 +33,12 @@
 
 struct NodeVariableDeclaration : public Node { NO_EVAL
     string var_name;
-    unique_ptr<Node> value_expr;
+
+    Node* value_expr;
+    Node* type_expr = nullptr;
+
     Token decl_token;
-    unique_ptr<Node> type_expr;
+
     Token type_start_token;
     Token type_end_token;
 
@@ -50,13 +53,13 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
     bool is_global = false;
     bool is_private = false;
 
-    NodeVariableDeclaration(const string& name, unique_ptr<Node> expr, Token decl_token, unique_ptr<Node> type_expr,
+    NodeVariableDeclaration(const string& name, Node* expr, Token decl_token, Node* type_expr,
                             Token type_start_token, Token type_end_token, bool nullable, Token start_expr_token, Token end_expr_token)
         : var_name(name), decl_token(decl_token), type_start_token(type_start_token), type_end_token(type_end_token),
         nullable(nullable), start_expr_token(start_expr_token), end_expr_token(end_expr_token) {
             this->NODE_TYPE = NodeTypes::NODE_VARIABLE_DECLARATION;
-            this->value_expr = std::move(expr);
-            this->type_expr = std::move(type_expr);
+            this->value_expr = expr;
+            this->type_expr = type_expr;
         }
 
     void exec_from(Memory& _memory) override {
@@ -73,10 +76,13 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
         }
 
         Type static_type = value.type;
+        
         if (is_static) {
-            if (!type_expr) throw ERROR_THROW::UnexpectedToken(type_end_token, "type expression with syntax `:type-expr<?>`");
-
-            if (type_expr->NODE_TYPE == NodeTypes::NODE_LITERAL && ((NodeLiteral*)type_expr.get())->name == "auto") {
+            
+            if (type_expr == nullptr) {
+                throw ERROR_THROW::UnexpectedToken(type_end_token, "type expression with syntax `:type-expr<?>`");
+            }
+            if (type_expr->NODE_TYPE == NodeTypes::NODE_LITERAL && ((NodeLiteral*)type_expr)->name == "auto") {
                 static_type = value.type;
             } else {
                 auto type_value = type_expr->eval_from(_memory);
@@ -100,6 +106,7 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
                 throw ERROR_THROW::VariableStaticIncompatibleType(start_expr_token, end_expr_token, static_type, value.type);
             }
         }
+        
 
         MemoryObject* object = CreateMemoryObject(value, static_type, &_memory, is_const, is_static, is_final, is_global, is_private, var_name,& _memory);
         STATIC_MEMORY.register_object(object);

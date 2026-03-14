@@ -6,7 +6,7 @@
 struct NodeLambda : public Node { NO_EXEC
     vector<Arg*> args;
     Node* return_type;
-    unique_ptr<Node> body;
+    Node* body;
 
     Token start_args_token;
     Token end_args_token;
@@ -15,9 +15,9 @@ struct NodeLambda : public Node { NO_EXEC
 
     string name = "";
 
-    NodeLambda(unique_ptr<Node> body, vector<Arg*> args, Node* return_type,
+    NodeLambda(Node* body, vector<Arg*> args, Node* return_type,
                Token start_args_token, Token end_args_token, Token start_type_token, Token end_type_token) :
-        body(std::move(body)), args(std::move(args)), return_type(return_type),
+        body(body), args(args), return_type(return_type),
         start_args_token(start_args_token), end_args_token(end_args_token), start_type_token(start_type_token), end_type_token(end_type_token) {
             this->NODE_TYPE = NodeTypes::NODE_LAMBDA;
         }
@@ -45,7 +45,7 @@ struct NodeLambda : public Node { NO_EXEC
             throw ERROR_THROW::WaitedLambdaReturnTypeSpecifier(start_type_token, end_type_token, super_type_value.type);
         
         
-        auto lambda = NewLambda(new_lambda_memory, body.get(), args, return_type, name,
+        auto lambda = NewLambda(new_lambda_memory, body, args, return_type, name,
                                 start_args_token, end_args_token, start_type_token, end_type_token);
 
         if (name != "") {

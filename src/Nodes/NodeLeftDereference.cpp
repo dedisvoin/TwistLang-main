@@ -2,8 +2,8 @@
 #include "../twist-errors.cpp"
 
 struct NodeLeftDereference : public Node { NO_EVAL
-    unique_ptr<Node> left_expr;
-    unique_ptr<Node> right_expr;
+    Node* left_expr;
+    Node* right_expr;
 
     Token start_left_value_token;
     Token end_left_value_token;
@@ -12,7 +12,7 @@ struct NodeLeftDereference : public Node { NO_EVAL
     Token end_value_token;
 
 
-    NodeLeftDereference(unique_ptr<Node> variable, unique_ptr<Node> expression, Token start_left_value_token, Token end_left_value_token,
+    NodeLeftDereference(Node* variable, Node* expression, Token start_left_value_token, Token end_left_value_token,
                         Token start_value_token, Token end_value_token)  :
         left_expr(std::move(variable)), right_expr(std::move(expression)),
         start_left_value_token(start_left_value_token), end_left_value_token(end_left_value_token),
@@ -25,7 +25,7 @@ struct NodeLeftDereference : public Node { NO_EVAL
 
 
         // НЕ перемещаем variable, используем сырой указатель
-        Node* variable_ptr = left_expr.get();
+        Node* variable_ptr = left_expr;
 
         auto value = left_expr->eval_from(_memory);
 

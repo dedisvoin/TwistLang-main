@@ -4,13 +4,13 @@
 
 
 struct NodeGetIndex : public Node { NO_EXEC
-    unique_ptr<Node> expr;
-    unique_ptr<Node> index_expr;
+    Node* expr;
+    Node* index_expr;
     Token start_token;
     Token end_token;
 
-    NodeGetIndex(unique_ptr<Node> expr, unique_ptr<Node> index_expr, Token start_token, Token end_token)
-        : expr(std::move(expr)), index_expr(std::move(index_expr)), start_token(start_token), end_token(end_token) {
+    NodeGetIndex(Node* expr, Node* index_expr, Token start_token, Token end_token)
+        : expr(expr), index_expr(index_expr), start_token(start_token), end_token(end_token) {
         this->NODE_TYPE = NodeTypes::NODE_GET_BY_INDEX;
     }
 

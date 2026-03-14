@@ -28,16 +28,16 @@
  */
 
 struct NodeFor : public Node { NO_EVAL
-    unique_ptr<Node> start_state;
-    unique_ptr<Node> condition;
-    unique_ptr<Node> update_state;
-    unique_ptr<Node> body;
+    Node* start_state;
+    Node* condition;
+    Node* update_state;
+    Node* body;
 
     Token body_token;
 
-    NodeFor(unique_ptr<Node> start_state, unique_ptr<Node> condition, unique_ptr<Node> update_state, unique_ptr<Node> body, Token body_token) :
-        start_state(std::move(start_state)), condition(std::move(condition)),
-        update_state(std::move(update_state)), body(std::move(body)), body_token(body_token) {
+    NodeFor(Node* start_state, Node* condition, Node* update_state, Node* body, Token body_token) :
+        start_state(start_state), condition(condition),
+        update_state(update_state), body(body), body_token(body_token) {
         this->NODE_TYPE = NodeTypes::NODE_FOR;
     }
 

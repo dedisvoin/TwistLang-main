@@ -2,8 +2,8 @@
 #include "../twist-errors.cpp"
 
 struct NodeNewFuncType : public Node { NO_EXEC
-    vector<unique_ptr<Node>> args_types_expr;
-    unique_ptr<Node> return_type_expr;
+    vector<Node*> args_types_expr;
+    Node* return_type_expr;
 
     Token start_token_args;
     Token end_token_args;
@@ -11,9 +11,9 @@ struct NodeNewFuncType : public Node { NO_EXEC
     Token start_token_return;
     Token end_token_return;
 
-    NodeNewFuncType(vector<unique_ptr<Node>> args_types, unique_ptr<Node> return_type_expr,
+    NodeNewFuncType(vector<Node*> args_types, Node* return_type_expr,
                     Token start_token_args, Token end_token_args, Token start_token_return, Token end_token_return) :
-                    args_types_expr(std::move(args_types)), return_type_expr(std::move(return_type_expr)),
+                    args_types_expr(args_types), return_type_expr(return_type_expr),
                     start_token_args(start_token_args), end_token_args(end_token_args),
                     start_token_return(start_token_return), end_token_return(end_token_return) {
         this->NODE_TYPE = NodeTypes::NODE_FUNCTION_TYPE;

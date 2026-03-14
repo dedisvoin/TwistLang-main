@@ -6,11 +6,11 @@
 #pragma once
 
 struct NodeDereference : public Node { NO_EXEC
-    unique_ptr<Node> expr;
+    Node* expr;
     Token start;
     Token end;
 
-    NodeDereference(unique_ptr<Node> expr, Token start, Token end) : expr(std::move(expr)), start(start), end(end) {
+    NodeDereference(Node* expr, Token start, Token end) : expr(expr), start(start), end(end) {
         this->NODE_TYPE = NodeTypes::NODE_DEREFERENCE;
     }
 

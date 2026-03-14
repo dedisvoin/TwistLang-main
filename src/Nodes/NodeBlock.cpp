@@ -14,9 +14,9 @@
  */
 
 struct NodeBlock : public Node { NO_EVAL
-    vector<unique_ptr<Node>> nodes_array;
+    vector<Node*> nodes_array;
 
-    NodeBlock(vector<unique_ptr<Node>> &nodes_array) : nodes_array(std::move(nodes_array)) {
+    NodeBlock(vector<Node*> &nodes_array) : nodes_array(nodes_array) {
         this->NODE_TYPE = NodeTypes::NODE_BLOCK_OF_NODES;
     }
 

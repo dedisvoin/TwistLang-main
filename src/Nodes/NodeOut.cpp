@@ -27,8 +27,8 @@
  */
 
 struct NodeBaseOut : public Node { NO_EVAL
-    vector<unique_ptr<Node>> expression;
-    NodeBaseOut(vector<unique_ptr<Node>> expr) : expression(std::move(expr)) {
+    vector<Node*> expression;
+    NodeBaseOut(vector<Node*> expr) : expression(expr) {
         this->NODE_TYPE = NodeTypes::NODE_OUT;
     }
 
@@ -89,8 +89,8 @@ struct NodeBaseOut : public Node { NO_EVAL
 };
 
 struct NodeBaseOutLn : public Node { NO_EVAL
-    vector<unique_ptr<Node>> expression;
-    NodeBaseOutLn(vector<unique_ptr<Node>> expr) : expression(std::move(expr)) {
+    vector<Node*> expression;
+    NodeBaseOutLn(vector<Node*> expr) : expression(expr) {
         this->NODE_TYPE = NodeTypes::NODE_OUTLN;
     }
 

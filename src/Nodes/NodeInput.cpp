@@ -2,12 +2,12 @@
 #include "../twist-err.cpp"
 
 struct NodeInput : public Node { NO_EXEC
-    unique_ptr<Node> expr;
+    Node* expr;
     Token start_token;
     Token end_token;
 
-    NodeInput(unique_ptr<Node> expr, Token start_token, Token end_token)
-        : expr(std::move(expr)), start_token(start_token), end_token(end_token) {
+    NodeInput(Node* expr, Token start_token, Token end_token)
+        : expr(expr), start_token(start_token), end_token(end_token) {
             this->NODE_TYPE = NodeTypes::NODE_INPUT;
     }
 

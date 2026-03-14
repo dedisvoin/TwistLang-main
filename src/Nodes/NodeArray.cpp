@@ -4,12 +4,12 @@
 
 struct NodeArray : public Node { NO_EXEC
 
-    vector<tuple<unique_ptr<Node>, Token, Token>> elements;
-    unique_ptr<Node> static_type;
+    vector<tuple<Node*, Token, Token>> elements;
+    Node* static_type;
     bool is_static = false;
 
-    NodeArray(vector<tuple<unique_ptr<Node>, Token, Token>> elements, unique_ptr<Node> static_type = nullptr) : 
-        elements(std::move(elements)), static_type(std::move(static_type)) {
+    NodeArray(vector<tuple<Node*, Token, Token>> elements, Node* static_type = nullptr) : 
+        elements(elements), static_type(static_type) {
         this->NODE_TYPE = NodeTypes::NODE_ARRAY;
     }
 

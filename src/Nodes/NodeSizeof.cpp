@@ -4,11 +4,11 @@
 #include "../twist-err.cpp"
 
 struct NodeSizeof : public Node { NO_EXEC
-    unique_ptr<Node> expr;
+    Node* expr;
 
     Token expr_token;
 
-    NodeSizeof(unique_ptr<Node> expr, Token expr_token) : expr(std::move(expr)), expr_token(expr_token){
+    NodeSizeof(Node* expr, Token expr_token) : expr(std::move(expr)), expr_token(expr_token){
         this->NODE_TYPE = NodeTypes::NODE_SIZEOF;
     }
 
