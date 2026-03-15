@@ -1,4 +1,1 @@
 let a = 10;
-static let name: String?;
-let a = 10;
-

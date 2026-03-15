@@ -4,3 +4,4 @@ static let b: auto = 10;
 
 
 assert a + b == 110, "err";
+assert false;
