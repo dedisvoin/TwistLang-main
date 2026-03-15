@@ -151,6 +151,22 @@ namespace ERROR_THROW {
         return err;
     }
 
+    Error VariableUndefined(const Token& start, const Token& end, string name) {
+        Error err = Error("Undefined variable '" + name + "'", start.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    
+    Error VariableConstRedefinition(const Token& start, const Token& end, string name) {
+        Error err = Error("Cannot assign to const variable '" + name + "'", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error VariableStaticTypesMisMatch(const Token& start, const Token& end, Type wait_type, Type found_type) {
+        Error err = Error("Incompatible type `" + found_type.pool + "` (expected `" + wait_type.pool + "`)", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
     Error NamespaceInvalidAccessorType(const Token& start, const Token& end, Type type) {
         Error err = Error("Cannot use '::' accessor on type `" + type.pool + "`", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
@@ -171,7 +187,7 @@ namespace ERROR_THROW {
         return err;
     }
 
-    Error NamespacePrivateVariable(const Token& start, const Token& end, string name) {
+    Error PrivateVariableAccess(const Token& start, const Token& end, string name) {
         Error err = Error("Variable '" + name + "' is private", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
@@ -216,6 +232,11 @@ namespace ERROR_THROW {
     Error InvalidLambdaReturnType(const Token& start_callable, const Token& end_callable, const Token& start_return_type, const Token& end_return_type, Type expected, Type found) {
         Error err = Error("Invalid return type for lambda, expected `" + expected.pool + "` but found `" + found.pool + "`", start_callable.pif, end_callable.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         err.sub_error = new Error("Expected return type `" + expected.pool + "`", start_return_type.pif, end_return_type.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidObjectAccessorType(const Token& start, const Token& end, Type type) {
+        Error err = Error("Cannot access members of type `" + type.pool + "`", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
 }

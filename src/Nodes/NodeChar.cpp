@@ -33,7 +33,7 @@ struct NodeChar : public Node { NO_EXEC
         }
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         if (!is_cached) {
             // Создаем Value на месте (placement new)
             new (&cached_value) Value(NewChar(char_value));

@@ -11,7 +11,7 @@ struct NodeExit : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_EXIT;
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         if (expr) {
             auto value = expr->eval_from(_memory);
             if (value.type != STANDART_TYPE::INT) 

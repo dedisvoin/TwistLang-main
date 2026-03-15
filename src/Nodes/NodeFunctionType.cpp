@@ -20,7 +20,7 @@ struct NodeNewFuncType : public Node { NO_EXEC
     }
 
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         vector<Type> args_types;
 
         for (int i = 0; i < args_types_expr.size(); i++) {

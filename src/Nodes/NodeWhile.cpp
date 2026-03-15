@@ -31,7 +31,7 @@ struct NodeWhile : public Node { NO_EVAL
     }
 
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         while (true) {
             if (condition) {
                 auto value = condition->eval_from(_memory);
@@ -48,7 +48,6 @@ struct NodeWhile : public Node { NO_EVAL
                     break;
                 }
             }
-
             try {
                 body->exec_from(_memory);
             }

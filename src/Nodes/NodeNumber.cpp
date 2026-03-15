@@ -47,7 +47,7 @@ struct NodeNumber : public Node { NO_EXEC
         }
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         return value;
     }
 };

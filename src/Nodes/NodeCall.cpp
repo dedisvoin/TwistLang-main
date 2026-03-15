@@ -37,14 +37,14 @@ struct NodeCall : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_CALL;
     }
 
-    Value call_lambda(Value &value, Memory& _memory) {
+    Value call_lambda(Value &value, Memory* _memory) {
         auto lambda = any_cast<Lambda*>(value.data);
 
         // Создаём новую память для этого вызова
-        auto call_memory = make_shared<Memory>();
+        auto call_memory = new Memory();
 
         // Копируем глобальные объекты из памяти лямбды (разделяемое владение)
-        lambda->memory->link_objects(*call_memory);
+        lambda->memory->link_objects(call_memory);
 
         // Добавляем саму лямбду в новую память, если у неё есть имя (для рекурсии)
         if (!lambda->name.empty()) {
@@ -65,7 +65,7 @@ struct NodeCall : public Node { NO_EXEC
 
             // Проверка типа аргумента (используем исходную память лямбды для вычисления ожидаемого типа)
             if (lambda->arguments[i]->type_expr) {
-                auto expected_type_val = lambda->arguments[i]->type_expr->eval_from(*lambda->memory);
+                auto expected_type_val = lambda->arguments[i]->type_expr->eval_from(lambda->memory);
                 Type expected = extract_type_from_value(expected_type_val,
                                     lambda->start_args_token, lambda->end_args_token,
                                     "parameter '" + lambda->arguments[i]->name + "'");
@@ -82,7 +82,7 @@ struct NodeCall : public Node { NO_EXEC
 
         Value result = NewNull();
         try {
-            result = ((Node*)(lambda->expr))->eval_from(*call_memory);
+            result = ((Node*)(lambda->expr))->eval_from(call_memory);
         }
         catch (Error err) {
             throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err));
@@ -90,7 +90,7 @@ struct NodeCall : public Node { NO_EXEC
 
         // Проверка типа возвращаемого значения (если задан)
         if (lambda->return_type) {
-            auto expected_type_val = lambda->return_type->eval_from(*lambda->memory);
+            auto expected_type_val = lambda->return_type->eval_from(lambda->memory);
             Type expected = extract_type_from_value(expected_type_val,
                                 lambda->start_type_token, lambda->end_type_token,
                                 "return type");
@@ -104,9 +104,9 @@ struct NodeCall : public Node { NO_EXEC
         return result;
     }
 
-    Value call_function(Value &value, Memory& _memory) {
+    Value call_function(Value &value, Memory* _memory) {
         auto func = any_cast<Function*>(value.data);
-        _memory.link_objects(*func->memory);
+        _memory->link_objects(func->memory);
         Memory saved_mem = *func->memory;
         func->memory->add_object_in_func(func->name, value, value.type, false, false, false, true);
 
@@ -136,7 +136,7 @@ struct NodeCall : public Node { NO_EXEC
                 // Проверка типа
                 if (param->type_expr) {
 
-                    auto expected_type_val = param->type_expr->eval_from(*func->memory);
+                    auto expected_type_val = param->type_expr->eval_from(func->memory);
 
                     expected = extract_type_from_value(expected_type_val,
                                          func->start_args_token, func->end_args_token,
@@ -191,7 +191,7 @@ struct NodeCall : public Node { NO_EXEC
                 bool has_explicit_type = (param->type_expr != nullptr);
 
                 if (has_explicit_type) {
-                    auto expected_type_val = param->type_expr->eval_from(*func->memory);
+                    auto expected_type_val = param->type_expr->eval_from(func->memory);
                     element_type = any_cast<Type>(expected_type_val.data);
                 }
 
@@ -245,7 +245,7 @@ struct NodeCall : public Node { NO_EXEC
 
         // Выполняем тело функции
         try {
-            ((Node*)(func->body))->exec_from(*func->memory);
+            ((Node*)(func->body))->exec_from(func->memory);
             return NewNull();
         }
         catch (Error err) {
@@ -253,7 +253,7 @@ struct NodeCall : public Node { NO_EXEC
         }
         catch (Return _value) {
             if (func->return_type) {
-                auto expected_ret = func->return_type->eval_from(*func->memory);
+                auto expected_ret = func->return_type->eval_from(func->memory);
                 Type expected = extract_type_from_value(expected_ret,
                                          func->start_return_type_token, func->end_return_type_token,
                                          "return type");
@@ -269,49 +269,30 @@ struct NodeCall : public Node { NO_EXEC
         }
     }
 
-    Value call_struct(Value &value, Memory& _memory) {
+    Value call_struct(Value &value, Memory* _memory) {
         // Убедимся, что вызываемый объект действительно является структурой
 
 
-        Struct& src_struct = any_cast<Struct&>(value.data);
-
-
-        // Создаём новую память для копии структуры
-        auto new_memory = make_shared<Memory>();
-
-
-        // Копируем все объекты из исходной памяти структуры
-        for (const auto& [name, obj] : src_struct.memory->string_pool) {
-            // Создаём копию значения (используем конструктор копирования Value)
-            Value copied_value = Value(obj->value);  // Value копируется автоматически
-
-
-
-
-            MemoryObject* new_obj = CreateMemoryObject(
-                copied_value,
-                obj->wait_type,
-                new_memory.get(),
-                obj->modifiers.is_const,
-                obj->modifiers.is_static,
-                obj->modifiers.is_final,
-                obj->modifiers.is_global,
-                obj->modifiers.is_private
-            );
-
-            STATIC_MEMORY.register_object(new_obj);
-
-            // Добавляем объект в новую память структуры
-            new_memory->add_object(name, new_obj);
-        }
-
+        Struct* struct_builder = any_cast<Struct*>(value.data);
+        
+        auto new_memory = new Memory();
+        _memory->link_objects(new_memory);
+        struct_builder->memory->copy_objects(*new_memory);
+        
+        
+        if (struct_builder->body)
+            struct_builder->body->exec_from(new_memory);
+        
+        
+        
+        
         // Создаём новую структуру с той же памятью и именем
-        Struct new_struct(std::move(new_memory), src_struct.name);
-
-        return Value(value.type, std::move(new_struct));
+        auto new_struct = NewStruct(new_memory, struct_builder->name);
+        
+        return new_struct;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
 
         auto value = callable->eval_from(_memory);
 
@@ -335,7 +316,6 @@ struct NodeCall : public Node { NO_EXEC
             return call_function(value, _memory);
         }
         else if (!value.type.is_sub_type(STANDART_TYPE::TYPES)) {
-            
             return call_struct(value, _memory);
         }
 

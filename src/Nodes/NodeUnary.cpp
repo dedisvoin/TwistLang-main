@@ -36,7 +36,7 @@ struct NodeUnary : public Node { NO_EXEC
             op = operator_token.value;
         }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         Value value = operand->eval_from(_memory);
 
         if (value.type == STANDART_TYPE::INT) {

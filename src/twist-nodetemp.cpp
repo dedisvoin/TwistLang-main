@@ -1,7 +1,11 @@
 #pragma once
+
 #include "twist-values.cpp"
 #include "twist-memory.cpp"
-#include "twist-tokens.cpp" // pass
+
+
+#include "twist-tokens.cpp"
+
 
 // В одном макросе генерируем все
 #define GENERATE_NODE_TYPES \
@@ -79,15 +83,15 @@ inline const char* get_node_type_name(NodeTypes type) {
 
 
 #define NO_EXEC \
-    void exec_from(Memory& _memory) override {} \
+    void exec_from(Memory* _memory) override {} \
 
 #define NO_EVAL \
-    Value eval_from(Memory& _memory) override {} \
+    Value eval_from(Memory* _memory) override {} \
 
 
 struct Node {
     NodeTypes NODE_TYPE;            // Node name
     virtual ~Node() = default;      // Destructor
-    virtual Value eval_from(Memory& memory) = 0;
-    virtual void exec_from(Memory& memory) = 0;
+    virtual Value eval_from(Memory* memory) = 0;
+    virtual void exec_from(Memory* memory) = 0;
 };

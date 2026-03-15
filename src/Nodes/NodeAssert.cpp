@@ -20,7 +20,7 @@ struct NodeAssert : public Node { NO_EVAL
             this->NODE_TYPE = NodeTypes::NODE_ASSERT;
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         auto value = expr->eval_from(_memory);
         if (value.type != STANDART_TYPE::BOOL) 
             throw ERROR_THROW::AssertionInvalidArgument(start_token, end_token);

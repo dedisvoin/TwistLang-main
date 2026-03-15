@@ -44,7 +44,7 @@ struct NodeFunctionDeclaration : public Node { NO_EVAL
         // return Type(); // unreachable
     }
 
-    Type construct_type(Memory& _memory) {
+    Type construct_type(Memory* _memory) {
         // Обработка возвращаемого типа (если есть)
         Type ret_type;
         if (return_type) {
@@ -73,19 +73,19 @@ struct NodeFunctionDeclaration : public Node { NO_EVAL
         }
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         Type function_type = construct_type(_memory);
         
 
-        auto new_function_memory = make_shared<Memory>();
+        auto new_function_memory = new Memory();
         //_memory.link_objects(*new_function_memory);
         
         auto func = NewFunction(name, new_function_memory, body, args, return_type, function_type, start_args_token, end_args_token, start_return_token, end_return_token);
         
         auto object = CreateMemoryObject(func, function_type,&new_function_memory, is_const, is_static, is_final, is_global, is_private);
-        if (_memory.check_literal(name))
-            _memory.delete_variable(name);
-        _memory.add_object(name, object);
+        if (_memory->check_literal(name))
+            _memory->delete_variable(name);
+        _memory->add_object(name, object);
         STATIC_MEMORY.register_object(object);
     }
 };

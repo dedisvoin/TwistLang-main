@@ -47,9 +47,8 @@ struct NodeBinary : public Node { NO_EXEC
             this->NODE_TYPE = NodeTypes::NODE_BINARY;
         }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         auto left_val = left->eval_from(_memory);
-
         if (left_val.type == STANDART_TYPE::BOOL) {
             bool l = any_cast<bool>(left_val.data);
             if ((op == "||" || op == "or") && l)
@@ -57,13 +56,10 @@ struct NodeBinary : public Node { NO_EXEC
             else if ((op == "&&" || op == "and") && !l)
                 return NewBool(false);
         }
-
         auto right_val = right->eval_from(_memory);
-
         if (left_val.type == STANDART_TYPE::INT && right_val.type == STANDART_TYPE::INT) {
             int64_t l = any_cast<int64_t>(left_val.data);
             int64_t r = any_cast<int64_t>(right_val.data);
-
             if (op == "+")
                 return NewInt(l + r);
             else if (op == "-")
@@ -261,7 +257,7 @@ struct NodeBinary : public Node { NO_EXEC
                 // модифицируем её ПРЯМО в памяти БЕЗ промежуточного копирования
                 if (left->NODE_TYPE == NodeTypes::NODE_LITERAL) {
                     string var_name = ((NodeLiteral*)left)->name;
-                    MemoryObject* var_obj = _memory.get_variable(var_name);
+                    MemoryObject* var_obj = _memory->get_variable(var_name);
 
                     if (var_obj && var_obj->value.type.is_array_type()) {
                         // Модифицируем массив напрямую в памяти

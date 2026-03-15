@@ -14,7 +14,7 @@ struct NodeGetIndex : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_GET_BY_INDEX;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         auto value = expr->eval_from(_memory);
 
         auto index_value = index_expr->eval_from(_memory);

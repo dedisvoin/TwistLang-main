@@ -5,7 +5,7 @@
 #pragma once
 
 struct NodeStructDeclaration : public Node { NO_EVAL
-    Node* statement;
+    Node* body;
     string name;
 
     Token decl_token;
@@ -17,37 +17,38 @@ struct NodeStructDeclaration : public Node { NO_EVAL
     bool is_private = false;
 
     NodeStructDeclaration(Node* statement, string name, Token decl_token) :
-         statement(statement), name(name), decl_token(decl_token) {
+         body(statement), name(name), decl_token(decl_token) {
             this->NODE_TYPE = NodeTypes::NODE_STRUCT_DECLARATION;
         }
 
-    void exec_from(Memory& _memory) override {
-        auto new_struct_memory = make_shared<Memory>();
+    void exec_from(Memory* _memory) override {
+        auto new_struct_memory = new Memory();
         auto new_struct = NewStruct(name);
         
         // 1. Сначала устанавливаем память у самой структуры
-        any_cast<Struct&>(new_struct.data).memory = new_struct_memory;
+        any_cast<Struct*>(new_struct.data)->memory = new_struct_memory;
+        any_cast<Struct*>(new_struct.data)->body = body;
         
         // 2. Теперь добавляем объект в память структуры (копия будет иметь тот же shared_ptr)
-        new_struct_memory->add_object_in_struct(name, new_struct, false, false, false, true);
+        new_struct_memory->add_object_in_struct("Person", new_struct, false, false, false, true);
 
         // 3. Линкуем глобальные объекты
-        _memory.link_objects(*new_struct_memory);
+        _memory->link_objects(new_struct_memory);
         
         // 4. Выполняем тело структуры (поля добавляются в new_struct_memory)
-        if (statement) {
-            statement->exec_from(*new_struct_memory);
-        }
+        if (body) 
+            body->exec_from(new_struct_memory);
+        
 
         // 5. Проверяем, не было ли уже объявлено имя структуры
-        if (_memory.check_literal(name)) {
-            if (_memory.is_final(name)) {
+        if (_memory->check_literal(name)) {
+            if (_memory->is_final(name)) {
                 ERROR::VariableAlreadyDefined(decl_token, name);
             }
-            _memory.delete_variable(name);
+            _memory->delete_variable(name);
         }
         
         // 6. Регистрируем структуру в родительской памяти
-        _memory.add_object(name, new_struct, new_struct.type, is_const, is_static, is_final, is_global, is_private);
+        _memory->add_object(name, new_struct, new_struct.type, is_const, is_static, is_final, is_global, is_private);
     }
 };

@@ -13,12 +13,12 @@ struct NodeArray : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_ARRAY;
     }
 
-    Array construct_array(Memory& _memory) {
+    Array construct_array(Memory* _memory) {
         vector<Value> evaled_elements;
         Type T = Type();
         if (!is_static) {
             if (elements.empty()) {
-                T = Type("[, ~]"); // пустой массив
+                T = Type("[, ~]");
             } else {
                 auto first = get<0>(elements[0])->eval_from(_memory);
                 T = first.type;
@@ -30,7 +30,6 @@ struct NodeArray : public Node { NO_EXEC
                 }
                 T = Type("[" + T.pool + ", ~]");
             }
-          
         } else {
             T = any_cast<Type>(static_type->eval_from(_memory).data);
             for (int i = 0; i < elements.size(); i++) {
@@ -44,9 +43,8 @@ struct NodeArray : public Node { NO_EXEC
         return Array(T, std::move(evaled_elements));
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         auto arr = construct_array(_memory);
-
         return Value(arr.type, arr);
     }
 };

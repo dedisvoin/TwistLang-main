@@ -62,23 +62,21 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
             this->type_expr = type_expr;
         }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         Value value = value_expr->eval_from(_memory);
 
-        if (_memory.check_literal(var_name)) {
-            if (_memory.is_final(var_name)) {
+        if (_memory->check_literal(var_name)) {
+            if (_memory->is_final(var_name)) {
                 throw ERROR_THROW::VariableAlreadyDefined(decl_token);
             }
-            auto addr = _memory.get_variable(var_name)->address;
+            auto addr = _memory->get_variable(var_name)->address;
             STATIC_MEMORY.unregister_object(addr);
-            _memory.delete_variable(var_name);
-
+            _memory->delete_variable(var_name);
         }
 
         Type static_type = value.type;
-        
+
         if (is_static) {
-            
             if (type_expr == nullptr) {
                 throw ERROR_THROW::UnexpectedToken(type_end_token, "type expression with syntax `:type-expr<?>`");
             }
@@ -86,7 +84,6 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
                 static_type = value.type;
             } else {
                 auto type_value = type_expr->eval_from(_memory);
-
                 if (!type_value.type.is_sub_type(STANDART_TYPE::TYPES))
                     static_type = type_value.type;
                 else if (type_value.type == STANDART_TYPE::TYPE) {
@@ -94,22 +91,17 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
                 } else {
                     throw ERROR_THROW::VariableDeclarationInvalidType(type_start_token, type_end_token, type_value.type);
                 }
-
-
                 if (nullable)
                     static_type = static_type | STANDART_TYPE::NULL_T;
-
             }
-
             // Используем IsTypeCompatible вместо прямого сравнения
             if (!IsTypeCompatible(static_type, value.type)) {
                 throw ERROR_THROW::VariableStaticIncompatibleType(start_expr_token, end_expr_token, static_type, value.type);
             }
         }
-        
 
-        MemoryObject* object = CreateMemoryObject(value, static_type, &_memory, is_const, is_static, is_final, is_global, is_private, var_name,& _memory);
+        MemoryObject* object = CreateMemoryObject(value, static_type, _memory, is_const, is_static, is_final, is_global, is_private, var_name, _memory);
         STATIC_MEMORY.register_object(object);
-        _memory.add_object(var_name, object);
+        _memory->add_object(var_name, object);
     }
 };

@@ -19,7 +19,7 @@ struct NodeBlockDecl : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_BLOCK_OF_DECLARATIONS;
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         for (int i = 0; i < decls.size(); i++) {
             if (decls[i]->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
                 ((NodeVariableDeclaration*)decls[i])->is_const = is_const;

@@ -23,11 +23,11 @@ struct NodeLambda : public Node { NO_EXEC
         }
 
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         
         auto new_lambda_memory = new Memory();
         
-        _memory.link_objects(*new_lambda_memory);
+        _memory->link_objects(new_lambda_memory);
         
         
         for (auto arg : args) {
@@ -53,6 +53,7 @@ struct NodeLambda : public Node { NO_EXEC
             (any_cast<Lambda*>(lambda.data))->memory->add_object(name, lambda, lambda.type,
                                                                 true, true, true, true, false);
         }
+        
         return lambda;
     }
 };

@@ -17,7 +17,7 @@ struct NodeNull : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_NULL;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         return ValueNull;
     }
 };

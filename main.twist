@@ -1,14 +1,19 @@
-func create(global name: String, global age: Int) -> Namespace {
-    ret namespace {
-        let print = lambda() -> Namespace : namespace {
-            outln name, " ", age;
-        };
+struct Person {
+    global let name = "name";
+    global let age = "age";
+    
+    let print = lambda() -> auto : namespace {
+        outln name, " ", age;
     };
+
+    let create = lambda(global name_: String, global age_: Int) -> typeof(Person) : namespace {
+        let p = Person();
+        p.name = name_;
+        p.age = age_;
+    } :: p;
 }
 
 
-let a1 = create("ivan", 19);
-a1::print();
+let p1 = Person.create("Ivan", 19);
 
-let a2 = create("Jon", 190);
-a2::print();
+p1.print();

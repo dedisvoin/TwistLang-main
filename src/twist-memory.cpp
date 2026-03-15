@@ -104,11 +104,11 @@ struct Memory {
         get_variable(literal)->value = new_value;
     }
 
-    inline void link_objects(Memory& target_memory) {
+    inline void link_objects(Memory* target_memory) {
         for (auto& pair : string_pool) {
             if (!pair.second->modifiers.is_global)
                 continue;
-            target_memory.string_pool[pair.first] = pair.second;
+            target_memory->string_pool[pair.first] = pair.second;
         }
     }
 

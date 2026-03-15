@@ -20,7 +20,7 @@ struct NodeScopes : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_SCOPES;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         return expression->eval_from(_memory);
     }
 };

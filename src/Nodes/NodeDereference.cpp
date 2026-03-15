@@ -14,7 +14,7 @@ struct NodeDereference : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_DEREFERENCE;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         auto value = expr->eval_from(_memory);
         if (value.type.is_pointer()) {
             auto object = STATIC_MEMORY.get_by_address(any_cast<int>(value.data));

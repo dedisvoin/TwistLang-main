@@ -19,7 +19,7 @@ struct NodeArrayPush : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_ARRAY_PUSH;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         if (left_expr->NODE_TYPE == NodeTypes::NODE_SCOPES) {
             left_expr = ((NodeScopes*)(left_expr))->expression;
         }
@@ -27,7 +27,7 @@ struct NodeArrayPush : public Node { NO_EXEC
         // Если это простая переменная (NODE_LITERAL), модифицируем её в памяти напрямую
         if (left_expr->NODE_TYPE == NodeTypes::NODE_LITERAL) {
             string var_name = ((NodeLiteral*)(left_expr))->name;
-            MemoryObject* var_obj = _memory.get_variable(var_name);
+            MemoryObject* var_obj = _memory->get_variable(var_name);
 
             if (var_obj && var_obj->value.type.is_array_type()) {
                 auto right_value = right_expr->eval_from(_memory);

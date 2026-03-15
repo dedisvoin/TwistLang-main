@@ -22,10 +22,10 @@ struct NodeLiteral : public Node { NO_EXEC
         this->NODE_TYPE = NODE_LITERAL;
     }
 
-    Value eval_from(Memory& _memory) override {
-        if (!_memory.check_literal(name))
+    Value eval_from(Memory* _memory) override {
+        if (!_memory->check_literal(name))
             throw ERROR_THROW::VariableUndefined(token);
 
-        return _memory.get_variable(name)->value;
+        return _memory->get_variable(name)->value;
     }
 };

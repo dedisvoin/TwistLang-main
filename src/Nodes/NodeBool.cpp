@@ -27,7 +27,7 @@ struct NodeBool : public Node { NO_EXEC
         if (token.value == "false") this->value = ValueFalse;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         if (token.value == "true") return this->value;
         if (token.value == "false") return this->value;
         return ValueFalse;

@@ -18,10 +18,9 @@ struct NodeReturn : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_RETURN;
     }
 
-    void exec_from(Memory& _memory) override {
-        if (!expr) 
-            throw Return(NewNull()); 
-
+    void exec_from(Memory* _memory) override {
+        if (!expr)
+            throw Return(NewNull());
         auto value = expr->eval_from(_memory);
         throw Return(value);
     }

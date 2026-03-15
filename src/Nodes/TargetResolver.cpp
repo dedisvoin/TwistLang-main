@@ -8,11 +8,11 @@
 #ifndef TARGET_RESOLVER_CPP
 #define TARGET_RESOLVER_CPP
 
-pair<Memory*, string> resolveTargetMemory(Node* node, Memory& current_memory) {
+pair<Memory*, string> resolveTargetMemory(Node* node, Memory* current_memory) {
     if (node->NODE_TYPE == NodeTypes::NODE_LITERAL) {
         NodeLiteral* lit = static_cast<NodeLiteral*>(node);
         
-        return {&current_memory, lit->name};
+        return {current_memory, lit->name};
     }
     else if (node->NODE_TYPE == NodeTypes::NODE_OBJECT_RESOLUTION) {
         NodeObjectResolution* resolution = static_cast<NodeObjectResolution*>(node);
@@ -20,8 +20,8 @@ pair<Memory*, string> resolveTargetMemory(Node* node, Memory& current_memory) {
         if (STANDART_TYPE::TYPES.is_sub_type(obj_value.type)) {
             ERROR::InvalidAccessorType(resolution->start, resolution->end, obj_value.type.pool);
         }
-        auto& obj = any_cast<Struct&>(obj_value.data);
-        return {obj.memory.get(), resolution->current_name};
+        auto obj = any_cast<Struct*>(obj_value.data);
+        return {obj->memory, resolution->current_name};
     }
     else if (node->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
         NodeNamespaceResolution* resolution = static_cast<NodeNamespaceResolution*>(node);

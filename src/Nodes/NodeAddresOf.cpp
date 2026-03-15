@@ -12,7 +12,7 @@ struct NodeAddressOf : public Node { NO_EXEC
     }
 
     
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         // Сначала вычислим выражение, чтобы получить его тип (нужен для указателя)
         Value val = expr->eval_from(_memory);
 
@@ -25,7 +25,7 @@ struct NodeAddressOf : public Node { NO_EXEC
         // Обрабатываем литерал (простая переменная)
         if (effective->NODE_TYPE == NodeTypes::NODE_LITERAL) {
             NodeLiteral* lit = static_cast<NodeLiteral*>(effective);
-            int addr = _memory.get_variable(lit->name)->address;
+            int addr = _memory->get_variable(lit->name)->address;
             return NewPointer(addr, val.type);
         }
         // Обрабатываем разрешение имени (namespace::var)

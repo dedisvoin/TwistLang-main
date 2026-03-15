@@ -19,7 +19,7 @@ struct NodeNew : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_NEW;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
 
         if (type_expr && expr) {
             auto result = expr->eval_from(_memory);

@@ -41,7 +41,7 @@ struct NodeFor : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_FOR;
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         if (!body) 
             throw ERROR_THROW::UnexpectedToken(body_token, "statement");
 

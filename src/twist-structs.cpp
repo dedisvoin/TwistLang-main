@@ -1,28 +1,29 @@
 #include "twist-values.cpp"
 #include "twist-memory.cpp"
-#include <memory>
+#include "twist-nodetemp.cpp"
 
 #pragma once
 
 struct Struct {
-    shared_ptr<Memory> memory = nullptr;
+    Memory* memory = nullptr;
     string name;
     Type type;
+    Node* body = nullptr;
 
-    Struct(shared_ptr<Memory> memory, string name) : memory(memory), name(name) {};
+    Struct(Memory* memory, string name) : memory(memory), name(name) {};
     Struct(string name) : name(name) {};
 };
 
-Value NewStruct(shared_ptr<Memory> memory, const string& name) {
+Value NewStruct(Memory* memory, const string& name) {
     auto T = Type(name);
-    auto S = Struct(memory, name);
-    S.type = T;
+    auto S = new Struct(memory, name);
+    S->type = T;
     return Value(T, S);
 }
 
 Value NewStruct(const string& name) {
     auto T = Type(name);
-    auto S = Struct(name);
-    S.type = T;
+    auto S = new Struct(name);
+    S->type = T;
     return Value(T, S);
 }

@@ -17,7 +17,7 @@ struct NodeBreak : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_BREAK;
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         throw Break();
     }
 };

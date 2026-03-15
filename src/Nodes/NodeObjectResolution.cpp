@@ -1,7 +1,8 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
 #include "../twist-structs.cpp"
 #include "../twist-functions.cpp"
+
+#include "../twist-err.cpp"
 
 #pragma once
 
@@ -37,23 +38,23 @@ struct NodeObjectResolution : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_OBJECT_RESOLUTION;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         Value obj_value = obj_expr->eval_from(_memory);
 
         // Проверяем, что это структура (не стандартный тип)
-        if (STANDART_TYPE::TYPES.is_sub_type(obj_value.type))
-            ERROR::InvalidAccessorType(start, end, obj_value.type.pool);
+        if (obj_value.type.is_sub_type(STANDART_TYPE::TYPES))
+            throw ERROR_THROW::InvalidObjectAccessorType(start, end, obj_value.type.pool);
 
-        auto& obj = any_cast<Struct&>(obj_value.data);
-        Memory* obj_memory = obj.memory.get();
+        auto obj = any_cast<Struct*>(obj_value.data);
+        
 
-        if (!obj_memory->check_literal(current_name))
-            ERROR::UndefinedStructProperty(start, end, current_name, obj_value.type.pool);
+        if (!obj->memory->check_literal(current_name))
+            throw ERROR_THROW::VariableUndefined(start, end, current_name);
 
-        auto result = obj_memory->get_variable(current_name);
+        auto result = obj->memory->get_variable(current_name);
 
         if (result->modifiers.is_private)
-            ERROR::PrivatePropertyAccess(start, end, current_name);
+            throw ERROR_THROW::PrivateVariableAccess(start, end, current_name);
 
         // Если поле — функция, возвращаем метод
         // if (result->value.type.is_func()) {

@@ -20,7 +20,7 @@ struct NodeLeftDereference : public Node { NO_EVAL
             this->NODE_TYPE = NodeTypes::NODE_LEFT_DEREFERENCE;
         };
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         auto right_value = right_expr->eval_from(_memory);
 
 

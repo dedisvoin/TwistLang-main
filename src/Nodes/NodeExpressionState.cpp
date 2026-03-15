@@ -5,7 +5,7 @@ struct NodeExpressionStatement : public Node { NO_EVAL
     NodeExpressionStatement(Node* expr) : expr(expr) {
         this->NODE_TYPE = NodeTypes::NODE_EXPRESSION_STATEMENT;
     }
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         expr->eval_from(_memory);
     }
 };

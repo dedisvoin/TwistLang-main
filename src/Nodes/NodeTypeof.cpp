@@ -10,7 +10,7 @@ struct NodeTypeof : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_TYPEOF;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         if (!expr)
             throw ERROR_THROW::UnexpectedToken(expr_token, "expression");
 

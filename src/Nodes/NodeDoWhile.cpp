@@ -34,7 +34,7 @@ struct NodeDoWhile : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_DO_WHILE;
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         while (true) {
             try { body->exec_from(_memory); }
             catch (Break) { break; }

@@ -12,7 +12,7 @@ struct NodeNewArrayType : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_ARRAY_TYPE;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         if (type_expr) {
             auto type_value = type_expr->eval_from(_memory);
 

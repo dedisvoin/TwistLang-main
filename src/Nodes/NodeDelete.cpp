@@ -13,7 +13,7 @@ struct NodeDelete : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_DELETE;
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         if (target->NODE_TYPE != NodeTypes::NODE_LITERAL && 
             target->NODE_TYPE != NodeTypes::NODE_NAME_RESOLUTION && 
             target->NODE_TYPE != NodeTypes::NODE_DEREFERENCE) {

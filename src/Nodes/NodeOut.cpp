@@ -32,7 +32,7 @@ struct NodeBaseOut : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_OUT;
     }
 
-    void print(std::ostream& buf, Value value, Memory& _memory) {
+    void print(std::ostream& buf, Value value, Memory* _memory) {
         if (value.type == STANDART_TYPE::INT) {
             buf << any_cast<int64_t&>(value.data);
         } else if (value.type == STANDART_TYPE::DOUBLE) {
@@ -76,7 +76,7 @@ struct NodeBaseOut : public Node { NO_EVAL
         }
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         
             for (auto& expr : expression) {
                 auto value = expr->eval_from(_memory);
@@ -94,7 +94,7 @@ struct NodeBaseOutLn : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_OUTLN;
     }
 
-    void print(std::ostream& buf, Value value, Memory& _memory) {
+    void print(std::ostream& buf, Value value, Memory* _memory) {
         if (value.type == STANDART_TYPE::INT) {
             buf << any_cast<int64_t>(value.data);
         } else if (value.type == STANDART_TYPE::DOUBLE) {
@@ -138,7 +138,7 @@ struct NodeBaseOutLn : public Node { NO_EVAL
         }
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         
             for (auto& expr : expression) {
                 auto value = expr->eval_from(_memory);

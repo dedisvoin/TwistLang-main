@@ -21,7 +21,7 @@ const ArgsParser GenerateArgsParser(const int argc, char** const argv) noexcept 
     return args_parser;
 }
 
-void run_with(vector<Node*>* nodes, Memory& g_memory) {
+void run_with(vector<Node*>* nodes, Memory* g_memory) {
     for (size_t i = 0; i < nodes->size(); i++) {
         (*nodes)[i]->exec_from(g_memory);
     }
@@ -36,7 +36,7 @@ void write_error_to_file(std::ostream& out, const Error& err) {
 
 }
 
-vector<Error> run_with_collect(vector<Node*>& nodes, Memory& mem) {
+vector<Error> run_with_collect(vector<Node*>& nodes, Memory* mem) {
     vector<Error> collected;
     for (size_t i = 0; i < nodes.size(); ++i) {
         try {
@@ -78,8 +78,8 @@ void language_server(const std::string& file_path) {
 
             // 4. Подготовка памяти и выполнение
             auto nodes = std::move(parser.nodes);
-            Memory g_memory;
-            GenerateStandartTypes(&g_memory, file_path);
+            Memory* g_memory = new Memory();
+            GenerateStandartTypes(g_memory, file_path);
 
             // Выполняем с накоплением assert'ов
             auto assert_errors = run_with_collect(nodes, g_memory);
@@ -172,15 +172,15 @@ int main(int argc, char** argv) {
             // }
 
             auto nodes = std::move(generator.nodes);
-            auto g_memory = Memory();
-            GenerateStandartTypes(&g_memory, args_parser.file_path);
+            auto g_memory = new Memory();
+            GenerateStandartTypes(g_memory, args_parser.file_path);
 
 
             if (args_parser.middle_run_time) {
                 middleTimeIt("Middle interpretation time compute", [&](){
-                    GenerateStandartTypes(&g_memory, args_parser.file_path);
+                    GenerateStandartTypes(g_memory, args_parser.file_path);
                     run_with(&nodes, g_memory);
-                    g_memory.clear();
+                    g_memory->clear();
                 }, 100);
                 exit(0);
             } else {

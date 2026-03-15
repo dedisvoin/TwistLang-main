@@ -27,7 +27,7 @@ struct NodeNamespaceResolution : public Node { NO_EXEC
         NODE_TYPE = NodeTypes::NODE_NAME_RESOLUTION;
     }
 
-    Value eval_from(Memory& _memory) override { 
+    Value eval_from(Memory* _memory) override { 
         // Получаем значение левой части
         Value ns_value = namespace_expr->eval_from(_memory);
 
@@ -44,7 +44,7 @@ struct NodeNamespaceResolution : public Node { NO_EXEC
 
         auto result = ns_memory->get_variable(name);
         if (result->modifiers.is_private)
-            throw ERROR_THROW::NamespacePrivateVariable(start, end, name);
+            throw ERROR_THROW::PrivateVariableAccess(start, end, name);
 
        
         return result->value;

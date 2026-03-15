@@ -1,5 +1,5 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 
 #include "TargetResolver.cpp"
 
@@ -23,7 +23,7 @@ struct NodeVariableEqual : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_VARIABLE_EQUAL;
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         auto right_value = expression->eval_from(_memory);
 
         pair<Memory*, string> target = resolveTargetMemory(variable, _memory);
@@ -31,23 +31,23 @@ struct NodeVariableEqual : public Node { NO_EVAL
         Memory* target_memory = target.first;
         string target_var_name = target.second;
 
-        if (target_memory->is_private(target_var_name)) {
-            ERROR::PrivateVariableAccess(start_left_value_token, end_value_token, target_var_name);
-        }
+        if (target_memory->is_private(target_var_name)) 
+            throw ERROR_THROW::PrivateVariableAccess(start_left_value_token, end_value_token, target_var_name);
+        
 
         if (!target_memory->check_literal(target_var_name))
-            ERROR::UndefinedLeftVariable(start_left_value_token, end_left_value_token, target_var_name);
+            throw ERROR_THROW::VariableUndefined(start_left_value_token, end_left_value_token, target_var_name);
 
-        if (target_memory->is_const(target_var_name)) {
-            ERROR::ConstRedefinition(start_left_value_token, end_value_token, target_var_name);
-        }
+        if (target_memory->is_const(target_var_name)) 
+            throw ERROR_THROW::VariableConstRedefinition(start_left_value_token, end_value_token, target_var_name);
+        
 
         if (target_memory->is_static(target_var_name)) {
             auto wait_type = target_memory->get_wait_type(target_var_name);
             auto value_type = right_value.type;
-            if (!IsTypeCompatible(wait_type, value_type)) {
-                ERROR::StaticTypesMisMatch(start_left_value_token, end_value_token, wait_type, value_type);
-            }
+            if (!IsTypeCompatible(wait_type, value_type)) 
+                throw ERROR_THROW::VariableStaticTypesMisMatch(start_left_value_token, end_value_token, wait_type, value_type);
+            
         }
 
         target_memory->set_object_value(target_var_name, right_value);

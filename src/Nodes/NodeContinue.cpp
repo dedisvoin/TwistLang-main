@@ -15,7 +15,7 @@ struct NodeContinue : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_CONTINUE;
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         throw Continue();
     }
 };

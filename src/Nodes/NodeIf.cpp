@@ -33,7 +33,7 @@ struct NodeIf : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_IF;
     }
 
-    void exec_from(Memory& _memory) override {
+    void exec_from(Memory* _memory) override {
         auto value = condition->eval_from(_memory);
 
         bool condition = false;
@@ -86,7 +86,7 @@ struct NodeIfExpr : public Node { NO_EXEC
             this->NODE_TYPE = NodeTypes::NODE_IF_EXPRESSION;
     }
 
-    Value eval_from(Memory& _memory) override {
+    Value eval_from(Memory* _memory) override {
         auto value = condition->eval_from(_memory);
 
         bool condition = false;
