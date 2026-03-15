@@ -25,7 +25,6 @@ public:
         next_address = 0;
     }
 };
-
 int AddressManager::next_address = 0;
 
 struct Modifiers {

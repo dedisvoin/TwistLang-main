@@ -1,6 +1,5 @@
 #include "../twist-nodetemp.cpp"
 #include "../twist-structs.cpp"
-#include "../twist-functions.cpp"
 
 #include "../twist-err.cpp"
 

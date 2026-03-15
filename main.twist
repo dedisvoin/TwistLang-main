@@ -1,19 +1,4 @@
-struct Person {
-    global let name = "name";
-    global let age = "age";
-    
-    let print = lambda() -> auto : namespace {
-        outln name, " ", age;
-    };
+let a = 10;
+static let name: String?;
+let a = 10;
 
-    let create = lambda(global name_: String, global age_: Int) -> typeof(Person) : namespace {
-        let p = Person();
-        p.name = name_;
-        p.age = age_;
-    } :: p;
-}
-
-
-let p1 = Person.create("Ivan", 19);
-
-p1.print();

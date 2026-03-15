@@ -54,14 +54,14 @@ vector<Error> run_with_collect(vector<Node*>& nodes, Memory* mem) {
     return collected;
 }
 
-void language_server(const std::string& file_path) {
+void language_server(const std::string& file_path, std::string file_name) {
     using namespace std::chrono_literals;
     Preprocessor preprocessor;
 
     while (true) {
         try {
-            // 1. Чтение и препроцессинг
             std::string source = OpenFile(file_path);
+            
             ERROR::PREPROCESSOR_OUTPUT = source;
             ERROR_THROW::PREPROCESSOR_OUTPUT = source;
 
@@ -84,14 +84,14 @@ void language_server(const std::string& file_path) {
             // Выполняем с накоплением assert'ов
             auto assert_errors = run_with_collect(nodes, g_memory);
 
-            // 5. Запись результатов
+            
             if (assert_errors.empty()) {
                 // Нет ошибок – очищаем файл
-                std::ofstream clear_log("err.dbg", std::ios::trunc);
+                std::ofstream clear_log(file_name  + "_ls.dbg", std::ios::trunc);
                 clear_log.close();
             } else {
                 // Есть assert'ы – перезаписываем файл всеми
-                std::ofstream log("err.dbg", std::ios::trunc);
+                std::ofstream log(file_name + "_ls.dbg", std::ios::trunc);
                 for (const auto& err : assert_errors) {
                     write_error_to_file(log, err);
                     log << "\n";
@@ -100,7 +100,7 @@ void language_server(const std::string& file_path) {
 
         } catch (const Error& err) {
             // Фатальная ошибка (не assertion) – записываем её одну
-            std::ofstream log("err.dbg", std::ios::trunc);
+            std::ofstream log(file_name + "_ls.dbg", std::ios::trunc);
             write_error_to_file(log, err);
             log << "\n";
         } catch (const std::exception& e) {
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
     static ArgsParser args_parser = GenerateArgsParser(argc, argv);
 
     if (args_parser.as_debuger) {
-        language_server(args_parser.file_path);
+        language_server(args_parser.file_path, args_parser.file_name);
         return 0;
     } else {
         // Open main file and read it

@@ -84,7 +84,7 @@ std::a = 10; // ошибка доступа
 
 let math = namespace {
     let PI = 3.141592;
-}
+};
 outln math::PI; // все работает
 
 

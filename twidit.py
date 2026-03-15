@@ -7,6 +7,7 @@ import shutil
 import re
 from pathlib import Path
 from datetime import datetime
+import signal
 
 from PyQt6.Qsci import QsciScintilla, QsciLexerCustom, QsciAPIs
 from PyQt6.QtWidgets import (
@@ -21,7 +22,7 @@ from PyQt6.QtGui import (
     QColor, QFont, QAction, QKeySequence, QShortcut,
     QTextCursor, QKeyEvent, QPainter, QTextCharFormat,
     QBrush, QPen, QPalette, QIcon, QPixmap, QMouseEvent,
-    QDragEnterEvent, QDropEvent, 
+    QDragEnterEvent, QDropEvent,
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread, QPoint, QSize, QUrl, QRect
 
@@ -58,40 +59,29 @@ class RunButton(QPushButton):
 class CustomScintilla(QsciScintilla):
     gotoDefinitionRequested = pyqtSignal(str, int)  # путь, строка
     contentChanged = pyqtSignal()  # сигнал об изменении содержимого
-    
+
     # Константа для индикатора ошибок
-    INDICATOR_ERROR = 8  # Номер индикатора для ошибок
+    INDICATOR_ERROR = 8
     WARNING_ERROR = 9
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMouseTracking(True)
         self.ctrlPressed = False
-        self.main_window = None  # будет установлено при создании
+        self.main_window = None
         self.last_save_time = datetime.now()
         self.filename = None
-        
-        # Список ошибок для текущего файла
-        self.errors = []  # Каждая ошибка: (line, start_col, end_col, message)
-        
-        # Настройка индикатора для ошибок
-        self.setup_error_indicator()
-        
-        # Подключаем сигнал для очистки ошибок при изменении текста
-        self.textChanged.connect(self.on_text_changed)
 
+        self.errors = []  # (line, start_col, end_col, message)
+
+        self.setup_error_indicator()
+        self.textChanged.connect(self.on_text_changed)
         self.current_tooltip_msg = None
 
     def set_main_window(self, window):
         self.main_window = window
 
     def setup_error_indicator(self):
-        """Настройка индикатора для отображения ошибок"""
-        # Сначала проверяем, какие индикаторы доступны
-        # Используем другой номер индикатора (21 - обычно свободен)
-        
-        
-        # Устанавливаем индикатор с явными параметрами
         self.indicatorDefine(
             QsciScintilla.IndicatorStyle.ThickCompositionIndicator,
             self.INDICATOR_ERROR
@@ -100,86 +90,55 @@ class CustomScintilla(QsciScintilla):
             QsciScintilla.IndicatorStyle.ThickCompositionIndicator,
             self.WARNING_ERROR
         )
-        
-        
-        # Устанавливаем цвет с полной прозрачностью фона и ярким красным
-        self.setIndicatorForegroundColor(QColor("#f35815"), self.INDICATOR_ERROR)  # Ярко-красный для теста
-        self.setIndicatorForegroundColor(QColor("#ffc413"), self.WARNING_ERROR)  # Ярко-красный для теста
-        
-       
-        
-        # Включаем индикаторы
+        self.setIndicatorForegroundColor(QColor("#f35815"), self.INDICATOR_ERROR)
+        self.setIndicatorForegroundColor(QColor("#ffc413"), self.WARNING_ERROR)
         self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, self.INDICATOR_ERROR)
         self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, self.WARNING_ERROR)
-        
 
     def set_errors(self, errors):
-        """Установить список ошибок"""
-        print(f"Setting {len(errors)} errors")  # Отладка
         self.clear_errors()
-        for i, error in enumerate(errors):
-            print(f"  Error {i}: {error}")  # Отладка
+        for error in errors:
             self.add_error(*error)
 
     def on_text_changed(self):
-        """Вызывается при изменении текста - очищаем старые ошибки"""
         self.clear_errors()
         self.contentChanged.emit()
 
     def clear_errors(self):
-        """Очистить все индикаторы ошибок"""
-        # Очищаем индикаторы во всём документе
         self.clearIndicatorRange(0, 0, self.lines(), 0, self.INDICATOR_ERROR)
         self.clearIndicatorRange(0, 0, self.lines(), 0, self.WARNING_ERROR)
         self.errors.clear()
 
     def add_error(self, line, start_col, end_col, message, type_):
-        # Смещение на один символ вправо (как требует пользователь)
         start_col += 1
         end_col += 1
-
-        
-        # Добавляем индикатор
         self.fillIndicatorRange(line, start_col, line, end_col, self.INDICATOR_ERROR if type_ == 0 else self.WARNING_ERROR)
-        # Сохраняем информацию об ошибке (уже со скорректированными координатами)
         self.errors.append((line, start_col, end_col, message))
 
-    def set_errors(self, errors):
-        """Установить список ошибок
-        
-        Args:
-            errors: список кортежей (line, start_col, end_col, message)
-        """
-        self.clear_errors()
-        for error in errors:
-            self.add_error(*error)
-
     def get_error_at_position(self, line, col):
-        """Получить ошибку в указанной позиции"""
         for err_line, start_col, end_col, message in self.errors:
             if err_line == line and start_col <= col < end_col:
                 return message
         return None
 
     def keyPressEvent(self, event):
-        # Автозакрытие парных символов
-        if event.key() == Qt.Key.Key_ParenLeft:          # (
+        if event.key() == Qt.Key.Key_ParenLeft:
             self.insert_pair('(', ')')
             event.accept()
             return
-        elif event.key() == Qt.Key.Key_BracketLeft:      # [
+        elif event.key() == Qt.Key.Key_BracketLeft:
             self.insert_pair('[', ']')
             event.accept()
             return
-        elif event.key() == Qt.Key.Key_BraceLeft:        # {
+        elif event.key() == Qt.Key.Key_BraceLeft:
             self.insert_pair('{', '}')
             event.accept()
             return
-        elif event.key() == Qt.Key.Key_QuoteDbl:         # "
+        elif event.key() == Qt.Key.Key_QuoteDbl:
             self.insert_pair('"', '"')
             event.accept()
             return
-        elif event.key() == Qt.Key.Key_Apostrophe:       # '
+        elif event.key() == Qt.Key.Key_Apostrophe:
             self.insert_pair("'", "'")
             event.accept()
             return
@@ -188,8 +147,7 @@ class CustomScintilla(QsciScintilla):
             super().keyPressEvent(event)
         else:
             super().keyPressEvent(event)
-        
-        # Отправляем сигнал об изменении содержимого
+
         self.contentChanged.emit()
 
     def keyReleaseEvent(self, event):
@@ -206,7 +164,6 @@ class CustomScintilla(QsciScintilla):
         if line >= 0 and col >= 0:
             error_msg = self.get_error_at_position(line, col)
 
-        # Если сообщение изменилось – обновляем подсказку
         if error_msg != self.current_tooltip_msg:
             if error_msg:
                 QToolTip.showText(event.globalPosition().toPoint(), error_msg, self)
@@ -219,7 +176,6 @@ class CustomScintilla(QsciScintilla):
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton and self.ctrlPressed:
             pos = event.pos()
-            # Получаем позицию в тексте по координатам мыши
             position = self.SendScintilla(self.SCI_POSITIONFROMPOINT, pos.x(), pos.y())
             line, col = self.lineIndexFromPosition(position)
             if line >= 0 and col >= 0:
@@ -257,7 +213,6 @@ class CustomScintilla(QsciScintilla):
         text = self.text(line).strip()
         if not text.startswith('#include'):
             return None
-        # Поиск пути в кавычках или угловых скобках
         start_quote = text.find('"')
         if start_quote != -1:
             end_quote = text.find('"', start_quote + 1)
@@ -272,13 +227,13 @@ class CustomScintilla(QsciScintilla):
 
 
 # ----------------------------------------------------------------------
-# Лексер TwistLang (Catppuccin Mocha)
+# Лексер TwistLang (Catppuccin Mocha / Latte)
 # ----------------------------------------------------------------------
 class TwistLangLexer(QsciLexerCustom):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, dark_theme=True):
         super().__init__(parent)
+        self.dark_theme = dark_theme
 
-        # Стили
         self.STYLE_DEFAULT = 0
         self.STYLE_KEYWORD = 1
         self.STYLE_TYPE = 2
@@ -290,51 +245,70 @@ class TwistLangLexer(QsciLexerCustom):
         self.STYLE_MODIFIER = 8
         self.STYLE_DIRECTIVE = 9
         self.STYLE_LITERAL = 10
-        self.STYLE_NAMESPACE_ID = 11   # для имён пространств имён (в объявлениях и при использовании)
+        self.STYLE_NAMESPACE_ID = 11
         self.STYLE_SPECIAL = 12
-        self.STYLE_OBJECT = 13          # для object.attr
+        self.STYLE_OBJECT = 13
 
         self.font_size = 12
         self.setup_styles()
 
-        # Ключевые слова
         self.keywords = {
             'if', 'else', 'for', 'while', 'let', 'in', 'and', 'or',
             'ret', 'assert', 'lambda', 'do',
             'struct', 'namespace', 'func', 'continue;', 'break;'
         }
-
-        # Модификаторы переменных
-        self.modifiers = {
-            'const', 'static', 'global', 'final', 'private'
-        }
-
-        # Типы
-        self.types = {
-            'Int', 'Bool', 'String', 'Char', 'Null', 'Double',
-            'Namespace', 'Func', 'Lambda', 'auto', "Type"
-        }
-
-        # Литералы
-        self.literals = {
-            'true', 'false', 'null', 'self'
-        }
-
-        # Директивы
-        self.directives = {
-            '#define', '#macro', '#include'
-        }
-
-        # Специальные ключевые слова
+        self.modifiers = {'const', 'static', 'global', 'final', 'private'}
+        self.types = {'Int', 'Bool', 'String', 'Char', 'Null', 'Double',
+                      'Namespace', 'Func', 'Lambda', 'auto', "Type"}
+        self.literals = {'true', 'false', 'null', 'self'}
+        self.directives = {'#define', '#macro', '#include'}
         self.special_keywords = {'new', 'del', 'typeof', 'sizeof', 'out', 'outln', 'input'}
 
+    def set_theme(self, dark):
+        self.dark_theme = dark
+        self.setup_styles()
+
     def wordCharacters(self):
-        # Возвращаем символы, которые считаются частью слова (включая '#')
         return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#"
 
     def setup_styles(self):
-        bg_color = QColor("#1e1e2e")
-        fg_color = QColor("#cdd6f4")
+        if self.dark_theme:
+            bg_color = QColor("#1e1e2e")
+            fg_color = QColor("#cdd6f4")
+            colors = {
+                self.STYLE_KEYWORD: QColor("#f5c2e7"),
+                self.STYLE_TYPE: QColor("#cba6f7"),
+                self.STYLE_COMMENT: QColor("#6c7086"),
+                self.STYLE_STRING: QColor("#a6e3a1"),
+                self.STYLE_NUMBER: QColor("#fab387"),
+                self.STYLE_OPERATOR: QColor("#6c7086"),
+                self.STYLE_FUNCTION: QColor("#89b4fa"),
+                self.STYLE_MODIFIER: QColor("#b4befe"),
+                self.STYLE_DIRECTIVE: QColor("#f5e0dc"),
+                self.STYLE_LITERAL: QColor("#f9e2af"),
+                self.STYLE_NAMESPACE_ID: QColor("#94e2d5"),
+                self.STYLE_SPECIAL: QColor("#f2b5b5"),
+                self.STYLE_OBJECT: QColor("#f2cdcd"),
+            }
+        else:
+            # Светлая тема (Catppuccin Latte)
+            bg_color = QColor("#eff1f5")
+            fg_color = QColor("#4c4f69")
+            colors = {
+                self.STYLE_KEYWORD: QColor("#8839ef"),
+                self.STYLE_TYPE: QColor("#1e66f5"),
+                self.STYLE_COMMENT: QColor("#6c6f85"),
+                self.STYLE_STRING: QColor("#40a02b"),
+                self.STYLE_NUMBER: QColor("#fe640b"),
+                self.STYLE_OPERATOR: QColor("#6c6f85"),
+                self.STYLE_FUNCTION: QColor("#04a5e5"),
+                self.STYLE_MODIFIER: QColor("#7287fd"),
+                self.STYLE_DIRECTIVE: QColor("#dc8a78"),
+                self.STYLE_LITERAL: QColor("#df8e1d"),
+                self.STYLE_NAMESPACE_ID: QColor("#179299"),
+                self.STYLE_SPECIAL: QColor("#e64553"),
+                self.STYLE_OBJECT: QColor("#fe640b"),
+            }
 
         self.setDefaultPaper(bg_color)
         self.setDefaultColor(fg_color)
@@ -342,42 +316,22 @@ class TwistLangLexer(QsciLexerCustom):
         safe_font = self.get_safe_font("Consolas", self.font_size)
         self.setFont(safe_font)
 
-        colors = {
-            self.STYLE_KEYWORD: QColor("#f5c2e7"),
-            self.STYLE_TYPE: QColor("#cba6f7"),
-            self.STYLE_COMMENT: QColor("#6c7086"),
-            self.STYLE_STRING: QColor("#a6e3a1"),
-            self.STYLE_NUMBER: QColor("#fab387"),
-            self.STYLE_OPERATOR: QColor("#6c7086"),
-            self.STYLE_FUNCTION: QColor("#89b4fa"),
-            self.STYLE_MODIFIER: QColor("#b4befe"),
-            self.STYLE_DIRECTIVE: QColor("#f5e0dc"),
-            self.STYLE_LITERAL: QColor("#f9e2af"),
-            self.STYLE_NAMESPACE_ID: QColor("#94e2d5"),
-            self.STYLE_SPECIAL: QColor("#f2b5b5"),
-            self.STYLE_OBJECT: QColor("#f2cdcd")      # светло‑розовый для object.attr
-        }
-
         for style, color in colors.items():
             self.setColor(color, style)
 
-        # Шрифт для комментариев (курсив)
         italic_font = self.get_safe_font("Consolas", self.font_size)
         italic_font.setItalic(True)
         self.setFont(italic_font, self.STYLE_COMMENT)
 
-        # Жирный шрифт для ключевых слов
         bold_font = self.get_safe_font("Consolas", self.font_size)
         bold_font.setBold(True)
         bold_font.setItalic(True)
         self.setFont(bold_font, self.STYLE_KEYWORD)
 
-        # Подчёркнутый для модификаторов
         underline_font = self.get_safe_font("Consolas", self.font_size)
         underline_font.setUnderline(True)
         self.setFont(underline_font, self.STYLE_MODIFIER)
 
-        # Курсив для специальных
         specials_font = self.get_safe_font("Consolas", self.font_size)
         specials_font.setItalic(True)
         self.setFont(specials_font, self.STYLE_SPECIAL)
@@ -422,7 +376,6 @@ class TwistLangLexer(QsciLexerCustom):
         if not text:
             return
 
-        # Преобразуем в байты UTF-8
         text_bytes = text.encode('utf-8')
         total_bytes = len(text_bytes)
 
@@ -435,15 +388,12 @@ class TwistLangLexer(QsciLexerCustom):
         self.startStyling(start)
 
         pos = start
-        # Флаг, указывающий, что следующий идентификатор будет именем namespace (после keyword namespace или struct)
         expecting_namespace = False
 
         def _get_char_at(byte_pos):
-            """Возвращает кортеж (символ, длина_в_байтах) для позиции byte_pos."""
             if byte_pos >= total_bytes:
                 return (None, 0)
             b = text_bytes[byte_pos]
-            # Определяем длину UTF-8 символа по первому байту
             if b & 0x80 == 0:
                 length = 1
             elif b & 0xE0 == 0xC0:
@@ -453,7 +403,7 @@ class TwistLangLexer(QsciLexerCustom):
             elif b & 0xF8 == 0xF0:
                 length = 4
             else:
-                length = 1  # на всякий случай
+                length = 1
 
             if byte_pos + length > total_bytes:
                 length = 1
@@ -461,7 +411,7 @@ class TwistLangLexer(QsciLexerCustom):
             try:
                 ch = text_bytes[byte_pos:byte_pos+length].decode('utf-8')
             except UnicodeDecodeError:
-                ch = '\ufffd'  # символ замены
+                ch = '\ufffd'
 
             return (ch, length)
 
@@ -470,7 +420,6 @@ class TwistLangLexer(QsciLexerCustom):
             if ch_len == 0:
                 break
 
-            # --- Комментарий //
             if ch == '/' and pos + ch_len < end:
                 next_ch, next_len = _get_char_at(pos + ch_len)
                 if next_ch == '/':
@@ -486,7 +435,6 @@ class TwistLangLexer(QsciLexerCustom):
                     pos = j
                     continue
 
-            # --- Строковые литералы
             if ch in ('"', "'"):
                 expecting_namespace = False
                 quote = ch
@@ -506,7 +454,6 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
 
-            # --- Числа
             if ch.isdigit() or (ch == '.' and pos + ch_len < end and _get_char_at(pos + ch_len)[0].isdigit()):
                 expecting_namespace = False
                 if ch.isdigit():
@@ -515,16 +462,14 @@ class TwistLangLexer(QsciLexerCustom):
                         c, l = _get_char_at(j)
                         if not (c.isdigit() or c == '.'):
                             break
-                        # Не допускаем две точки
                         if c == '.':
-                            # проверим, не было ли уже точки
                             if any(cc == '.' for cc in text_bytes[pos:j].decode('utf-8')):
                                 break
                         j += l
                     self.setStyling(j - pos, self.STYLE_NUMBER)
                     pos = j
                     continue
-                else:  # случай ".цифра"
+                else:
                     j = pos + ch_len
                     while j < end:
                         c, l = _get_char_at(j)
@@ -535,19 +480,17 @@ class TwistLangLexer(QsciLexerCustom):
                     pos = j
                     continue
 
-            # --- Идентификаторы (буквы, _, #)
             if ch.isalpha() or ch == '_' or ch == '#':
                 j = pos
                 while j < end:
                     c, l = _get_char_at(j)
-                    if not (c.isalnum() or c == '_' or c == '@'):
+                    if not (c.isalnum() or c == '_' or c == '#'):
                         break
                     j += l
 
                 word = text_bytes[pos:j].decode('utf-8')
                 style = self.STYLE_DEFAULT
 
-                # Определяем стиль по слову
                 if word == "namespace" or word == "struct":
                     expecting_namespace = True
                     style = self.STYLE_KEYWORD
@@ -569,13 +512,10 @@ class TwistLangLexer(QsciLexerCustom):
                         style = self.STYLE_LITERAL
                     elif word.startswith('#'):
                         style = self.STYLE_DIRECTIVE
-                    # Если после слова идут два двоеточия, это имя пространства имён
                     elif j + 2 <= end and text_bytes[j:j+2] == b'::':
                         style = self.STYLE_NAMESPACE_ID
-                    # Если следующий символ — открывающая скобка, это функция
                     elif j < end and _get_char_at(j)[0] == '(':
                         style = self.STYLE_FUNCTION
-                    # Если следующий символ — точка, это имя объекта
                     elif j < end and _get_char_at(j)[0] == '.':
                         style = self.STYLE_OBJECT
                     else:
@@ -585,29 +525,26 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
 
-            # --- Операторы и знаки пунктуации
             if ch in '+-*/%=&|^!<>~?.:;(){}[]':
-                # Многосимвольные операторы: ::, ->, <=, >=, ==, !=, <<, >>
                 j = pos + ch_len
                 if j < end:
                     next_ch, next_len = _get_char_at(j)
-                    # Проверяем двухсимвольные операторы
                     if (ch == ':' and next_ch == ':') or \
-                    (ch == '-' and next_ch == '>') or \
-                    (ch == '<' and next_ch == '=') or \
-                    (ch == '>' and next_ch == '=') or \
-                    (ch == '=' and next_ch == '=') or \
-                    (ch == '!' and next_ch == '=') or \
-                    (ch == '<' and next_ch == '<') or \
-                    (ch == '>' and next_ch == '>'):
+                       (ch == '-' and next_ch == '>') or \
+                       (ch == '<' and next_ch == '=') or \
+                       (ch == '>' and next_ch == '=') or \
+                       (ch == '=' and next_ch == '=') or \
+                       (ch == '!' and next_ch == '=') or \
+                       (ch == '<' and next_ch == '<') or \
+                       (ch == '>' and next_ch == '>'):
                         j += next_len
                 self.setStyling(j - pos, self.STYLE_OPERATOR)
                 pos = j
                 continue
 
-            # --- Всё остальное
             self.setStyling(ch_len, self.STYLE_DEFAULT)
             pos += ch_len
+
 
 # ----------------------------------------------------------------------
 # Виджет вкладок с редакторами
@@ -615,7 +552,7 @@ class TwistLangLexer(QsciLexerCustom):
 class EditorTabWidget(QTabWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTabsClosable(False)  # отключаем стандартные кнопки
+        self.setTabsClosable(False)
         self.setMovable(True)
 
     def addTab(self, widget, title):
@@ -653,7 +590,7 @@ class EditorTabWidget(QTabWidget):
         pixmap = QPixmap(16, 16)
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
-        painter.setPen(QPen(QColor("#cdd6f4"), 2))  # цвет крестика
+        painter.setPen(QPen(QColor("#cdd6f4"), 2))
         painter.drawLine(4, 4, 12, 12)
         painter.drawLine(12, 4, 4, 12)
         painter.end()
@@ -666,8 +603,14 @@ class EditorTabWidget(QTabWidget):
         widget = self.widget(index)
         if isinstance(widget, CustomScintilla):
             editor = widget
+            filename = getattr(editor, 'filename', None)
+
+            if filename:
+                main_window = self.window()
+                if hasattr(main_window, 'stop_language_server'):
+                    main_window.stop_language_server(filename)
+
             if editor.isModified():
-                filename = getattr(editor, 'filename', None)
                 name = os.path.basename(filename) if filename else "Untitled"
                 reply = QMessageBox.question(
                     self,
@@ -684,6 +627,7 @@ class EditorTabWidget(QTabWidget):
                             main_window.save_editor_to_file(editor, filename)
                         else:
                             main_window.save_editor_as(editor)
+
         self.removeTab(index)
         widget.deleteLater()
 
@@ -706,102 +650,126 @@ class TwistLangEditor(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
-        # === Таймер для автосохранения ===
+        # Словарь для хранения процессов языковых серверов
+        self.ls_processes = {}  # ключ: путь к файлу, значение: процесс
+
+        # Текущий активный файл
+        self.current_file = None
+
+        # Таймер для автосохранения
         self.autosave_timer = QTimer(self)
         self.autosave_timer.timeout.connect(self.autosave_all_files)
-        self.autosave_interval = 500 
+        self.autosave_interval = 100
         self.autosave_timer.start(self.autosave_interval)
 
-        # === Таймер для проверки ошибок ===
+        # Таймер для проверки ошибок
         self.error_check_timer = QTimer(self)
         self.error_check_timer.timeout.connect(self.check_for_errors)
-        self.error_check_timer.start(500)  # Проверка каждые 2 секунды
+        self.error_check_timer.start(300)
+
+        self.dark_theme = True
 
         self.create_menu()
         self.setup_shortcuts()
-        self.apply_stylesheet()
 
-        # Включаем приём файлов через Drag & Drop
         self.setAcceptDrops(True)
+
+        self.tab_widget.currentChanged.connect(self.on_tab_changed)
+
+        self.autosave_label = QLabel("⚡ Auto-save: ON")
+        self.autosave_label.setStyleSheet("color: #a6e3a1; padding: 2px 5px;")
+        self.status_bar.addPermanentWidget(self.autosave_label)
+
+        self.error_label = QLabel("✓ No errors")
+        self.error_label.setStyleSheet("color: #a6e3a1; padding: 2px 5px;")
+        self.status_bar.addPermanentWidget(self.error_label)
+
+        self.ls_status_label = QLabel("⚙ LS: idle")
+        self.ls_status_label.setStyleSheet("color: #89b4fa; padding: 2px 5px;")
+        self.status_bar.addPermanentWidget(self.ls_status_label)
+
+        self.autosave_count = 0
 
         # Создаём пустую вкладку при старте
         self.new_file()
 
-        # Добавляем индикатор автосохранения в статус-бар
-        self.autosave_label = QLabel("⚡ Auto-save: ON")
-        self.autosave_label.setStyleSheet("color: #a6e3a1; padding: 2px 5px;")
-        self.status_bar.addPermanentWidget(self.autosave_label)
-        
-        # Добавляем индикатор ошибок в статус-бар
-        self.error_label = QLabel("✓ No errors")
-        self.error_label.setStyleSheet("color: #a6e3a1; padding: 2px 5px;")
-        self.status_bar.addPermanentWidget(self.error_label)
-        
-        # Счётчик автосохранений
-        self.autosave_count = 0
+    def toggle_theme(self):
+        self.dark_theme = not self.dark_theme
+        self.update_all_editor_themes()
+        self.update_application_palette()
+        self.status_bar.showMessage(f"Theme switched to {'dark' if self.dark_theme else 'light'}", 2000)
 
-    def apply_stylesheet(self):
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #1e1e2e;
-            }
-            QTabWidget::pane {
-                border: 1px solid #313244;
-                background-color: #1e1e2e;
-            }
-            QTabBar::tab {
-                background-color: #181825;
-                color: #cdd6f4;
-                padding: 6px 10px;
-                margin-right: 2px;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-            }
-            QTabBar::tab:selected {
-                background-color: #313244;
-            }
-            QTabBar::tab:hover {
-                background-color: #45475a;
-            }
-            QTabBar::close-button {
-                width: 20px;
-                height: 20px;
-                subcontrol-position: right;
-            }
-            QTabBar::close-button:hover {
-                background-color: rgba(255, 255, 255, 30);
-            }
-            QTabBar::close-button:pressed {
-                background-color: rgba(255, 255, 255, 60);
-            }
-            QMenuBar {
-                background-color: #181825;
-                color: #cdd6f4;
-                border-bottom: 1px solid #313244;
-            }
-            QMenuBar::item {
-                padding: 5px 10px;
-            }
-            QMenuBar::item:selected {
-                background-color: #585b70;
-            }
-            QMenu {
-                background-color: #181825;
-                color: #cdd6f4;
-                border: 1px solid #313244;
-            }
-            QMenu::item {
-                padding: 5px 25px;
-            }
-            QMenu::item:selected {
-                background-color: #585b70;
-            }
-            QStatusBar {
-                background-color: #11111b;
-                color: #cdd6f4;
-                border-top: 1px solid #313244;
-            }
-        """)
+    def update_all_editor_themes(self):
+        for i in range(self.tab_widget.count()):
+            editor = self.tab_widget.widget(i)
+            if isinstance(editor, CustomScintilla):
+                lexer = editor.lexer()
+                if isinstance(lexer, TwistLangLexer):
+                    lexer.set_theme(self.dark_theme)
+                    # Переустанавливаем лексер
+                    editor.setLexer(lexer)
+                    # FIX: принудительно перекрашиваем весь документ
+                    editor.recolor()
+                    editor.update()
+                    # Обновляем цвета, не зависящие от лексера
+                    self.apply_editor_theme(editor)
+                    # Обновляем ширину поля с номерами строк
+                    self.update_margin_width(editor)
+
+    def apply_editor_theme(self, editor):
+        """Настройка цветов редактора, не управляемых лексером."""
+        if self.dark_theme:
+            editor.setCaretForegroundColor(QColor("#ffffff"))
+            editor.setCaretLineBackgroundColor(QColor("#313244"))
+            editor.setMarginsBackgroundColor(QColor("#181825"))
+            editor.setMarginsForegroundColor(QColor("#6c7086"))
+            editor.setSelectionBackgroundColor(QColor("#585b70"))
+            editor.setSelectionForegroundColor(QColor("#ffffff"))
+            editor.setMatchedBraceBackgroundColor(QColor("#f5c2e755"))
+            editor.setMatchedBraceForegroundColor(QColor("#f5c2e7"))
+        else:
+            editor.setCaretForegroundColor(QColor("#1e1e2e"))
+            editor.setCaretLineBackgroundColor(QColor("#e6e9ef"))
+            editor.setMarginsBackgroundColor(QColor("#dce0e8"))
+            editor.setMarginsForegroundColor(QColor("#6c6f85"))
+            editor.setSelectionBackgroundColor(QColor("#acb0be"))
+            editor.setSelectionForegroundColor(QColor("#1e1e2e"))
+            editor.setMatchedBraceBackgroundColor(QColor("#8839ef55"))
+            editor.setMatchedBraceForegroundColor(QColor("#8839ef"))
+        editor.update()
+
+    def update_application_palette(self):
+        app = QApplication.instance()
+        palette = app.palette()
+        if self.dark_theme:
+            palette.setColor(palette.ColorRole.Window, QColor("#1e1e2e"))
+            palette.setColor(palette.ColorRole.WindowText, QColor("#cdd6f4"))
+            palette.setColor(palette.ColorRole.Base, QColor("#181825"))
+            palette.setColor(palette.ColorRole.AlternateBase, QColor("#11111b"))
+            palette.setColor(palette.ColorRole.ToolTipBase, QColor("#313244"))
+            palette.setColor(palette.ColorRole.ToolTipText, QColor("#cdd6f4"))
+            palette.setColor(palette.ColorRole.Text, QColor("#cdd6f4"))
+            palette.setColor(palette.ColorRole.Button, QColor("#313244"))
+            palette.setColor(palette.ColorRole.ButtonText, QColor("#cdd6f4"))
+            palette.setColor(palette.ColorRole.BrightText, QColor("#f5e0dc"))
+            palette.setColor(palette.ColorRole.Link, QColor("#89b4fa"))
+            palette.setColor(palette.ColorRole.Highlight, QColor("#585b70"))
+            palette.setColor(palette.ColorRole.HighlightedText, QColor("#ffffff"))
+        else:
+            palette.setColor(palette.ColorRole.Window, QColor("#eff1f5"))
+            palette.setColor(palette.ColorRole.WindowText, QColor("#4c4f69"))
+            palette.setColor(palette.ColorRole.Base, QColor("#e6e9ef"))
+            palette.setColor(palette.ColorRole.AlternateBase, QColor("#dce0e8"))
+            palette.setColor(palette.ColorRole.ToolTipBase, QColor("#ccd0da"))
+            palette.setColor(palette.ColorRole.ToolTipText, QColor("#4c4f69"))
+            palette.setColor(palette.ColorRole.Text, QColor("#4c4f69"))
+            palette.setColor(palette.ColorRole.Button, QColor("#ccd0da"))
+            palette.setColor(palette.ColorRole.ButtonText, QColor("#4c4f69"))
+            palette.setColor(palette.ColorRole.BrightText, QColor("#dc8a78"))
+            palette.setColor(palette.ColorRole.Link, QColor("#1e66f5"))
+            palette.setColor(palette.ColorRole.Highlight, QColor("#acb0be"))
+            palette.setColor(palette.ColorRole.HighlightedText, QColor("#1e1e2e"))
+        app.setPalette(palette)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -850,18 +818,16 @@ class TwistLangEditor(QMainWindow):
 
         # Меню автосохранения
         autosave_menu = file_menu.addMenu("Auto-save")
-        
+
         self.autosave_action = QAction("Enable Auto-save", self)
         self.autosave_action.setCheckable(True)
         self.autosave_action.setChecked(True)
         self.autosave_action.triggered.connect(self.toggle_autosave)
         autosave_menu.addAction(self.autosave_action)
-        
+
         autosave_menu.addSeparator()
-        
-        # Подменю для выбора интервала
+
         interval_menu = autosave_menu.addMenu("Interval")
-        
         intervals = [
             ("0.5 seconds", 500),
             ("1 seconds", 1000),
@@ -869,7 +835,7 @@ class TwistLangEditor(QMainWindow):
             ("2 minutes", 120000),
             ("5 minutes", 300000)
         ]
-        
+
         for name, ms in intervals:
             action = QAction(name, self)
             action.setCheckable(True)
@@ -878,9 +844,8 @@ class TwistLangEditor(QMainWindow):
                 action.setChecked(True)
             action.triggered.connect(lambda checked, ms=ms: self.set_autosave_interval(ms))
             interval_menu.addAction(action)
-        
+
         autosave_menu.addSeparator()
-        
         save_now_action = QAction("Save Now", self)
         save_now_action.setShortcut(QKeySequence("Ctrl+Shift+S"))
         save_now_action.triggered.connect(lambda: self.autosave_all_files(manual=True))
@@ -941,6 +906,12 @@ class TwistLangEditor(QMainWindow):
         zoom_out_action.triggered.connect(self.zoom_out)
         view_menu.addAction(zoom_out_action)
 
+        view_menu.addSeparator()
+        theme_action = QAction("Toggle Dark/Light Theme", self)
+        theme_action.setShortcut(QKeySequence("Ctrl+T"))
+        theme_action.triggered.connect(self.toggle_theme)
+        view_menu.addAction(theme_action)
+
         # Run
         run_menu = menubar.addMenu("Run")
         run_action = QAction("Run Code", self)
@@ -952,19 +923,17 @@ class TwistLangEditor(QMainWindow):
         go_to_action.setShortcut(QKeySequence("F12"))
         go_to_action.triggered.connect(self.goto_include_under_cursor)
         run_menu.addAction(go_to_action)
-        
+
         run_menu.addSeparator()
-        
         clear_errors_action = QAction("Clear Errors", self)
         clear_errors_action.setShortcut(QKeySequence("Ctrl+E"))
         clear_errors_action.triggered.connect(self.clear_all_errors)
         run_menu.addAction(clear_errors_action)
 
     def setup_shortcuts(self):
-        # Добавляем горячие клавиши для навигации по ошибкам
         next_error_shortcut = QShortcut(QKeySequence("F8"), self)
         next_error_shortcut.activated.connect(self.goto_next_error)
-        
+
         prev_error_shortcut = QShortcut(QKeySequence("Shift+F8"), self)
         prev_error_shortcut.activated.connect(self.goto_prev_error)
 
@@ -979,61 +948,38 @@ class TwistLangEditor(QMainWindow):
         editor.filename = filename
         editor.modificationChanged.connect(lambda modified: self.update_tab_title(editor, modified))
         editor.gotoDefinitionRequested.connect(self.open_include_file)
-        # Подключаем сигнал изменения содержимого
-        editor.contentChanged.connect(lambda: self.on_editor_content_changed(editor))
         self.setup_editor_widget(editor)
-
-    def on_editor_content_changed(self, editor):
-        """Обработчик изменения содержимого редактора"""
-        # При изменении содержимого сразу проверяем ошибки для этого файла
-        if editor.filename:
-            self.check_file_errors(editor)
+        self.apply_editor_theme(editor)
 
     def setup_editor_widget(self, editor):
         editor.setUtf8(True)
-        editor.setPaper(QColor("#1e1e2e"))
-        editor.setColor(QColor("#cdd6f4"))
 
         safe_font = self.get_safe_font("Consolas", 12)
         editor.setFont(safe_font)
 
-        editor.setCaretForegroundColor(QColor("#ffffff"))
         editor.setCaretLineVisible(True)
-        editor.setCaretLineBackgroundColor(QColor("#313244"))
 
-        editor.setMarginsBackgroundColor(QColor("#181825"))
-        editor.setMarginsForegroundColor(QColor("#6c7086"))
         editor.setMarginType(0, QsciScintilla.MarginType.NumberMargin)
-
         self.update_margin_width(editor)
 
         editor.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)
-        editor.setMatchedBraceBackgroundColor(QColor("#f5c2e755"))
-        editor.setMatchedBraceForegroundColor(QColor("#f5c2e7"))
 
         editor.setIndentationsUseTabs(False)
         editor.setTabWidth(4)
         editor.setIndentationGuides(True)
 
-        editor.setSelectionBackgroundColor(QColor("#585b70"))
-        editor.setSelectionForegroundColor(QColor("#ffffff"))
-
         editor.textChanged.connect(lambda: self.update_margin_width(editor))
 
-        # Лексер
-        lexer = TwistLangLexer(editor)
+        lexer = TwistLangLexer(editor, self.dark_theme)
         editor.setLexer(lexer)
 
-        # Включение автодополнения
         editor.setAutoCompletionSource(QsciScintilla.AutoCompletionSource.AcsAPIs)
         editor.setAutoCompletionThreshold(1)
         editor.setAutoCompletionCaseSensitivity(False)
         editor.setAutoCompletionReplaceWord(False)
 
-        # Автодополнение с иконками
         self.setup_autocompletion_icons(editor, lexer)
 
-    
     def create_type_pixmap(self, text, color, size):
         pixmap = QPixmap(size, size)
         pixmap.fill(Qt.GlobalColor.transparent)
@@ -1063,7 +1009,7 @@ class TwistLangEditor(QMainWindow):
         editor.registerImage(7, img_function)
 
         api = QsciAPIs(lexer)
-        
+
         for word in lexer.keywords:
             api.add(word + "?1")
         for word in lexer.modifiers:
@@ -1074,9 +1020,7 @@ class TwistLangEditor(QMainWindow):
             api.add(word + "?4")
         for word in lexer.special_keywords:
             api.add(word + "?6")
-        
 
-        # Добавляем описания (calltips) для директив
         for word in lexer.directives:
             if word == '#macro':
                 api.add(word + " : Define a macro: #macro function name and arguments = body ?5 ")
@@ -1085,12 +1029,10 @@ class TwistLangEditor(QMainWindow):
             elif word == '#include':
                 api.add(word + " : Include another file: #include \"filename\" ?5 ")
 
-        # Подготавливаем API и устанавливаем его в лексер (ОДИН раз!)
         api.prepare()
         lexer.setAPIs(api)
 
     def update_autocompletion_icons(self, editor):
-        """Обновить иконки автодополнения для указанного редактора (после изменения масштаба)."""
         lexer = editor.lexer()
         if not isinstance(lexer, TwistLangLexer):
             return
@@ -1141,6 +1083,191 @@ class TwistLangEditor(QMainWindow):
         else:
             self.tab_widget.setTabText(index, base)
 
+    # --- Методы для работы с ошибками ---
+    def get_error_filename(self, file_path):
+        if not file_path:
+            return None
+        base_name = os.path.splitext(os.path.basename(file_path))[0]
+        return f"{base_name}_ls.dbg"
+
+    def parse_error_file(self, error_file_path):
+        errors = []
+        if not os.path.exists(error_file_path):
+            return errors
+        try:
+            with open(error_file_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    pattern = r"pif:\s*'((?:[a-zA-Z]:)?[^:]+?)':(\d+):(\d+):(\d+):(\d+)\s+message:\s*(.+)"
+                    match = re.match(pattern, line)
+                    if match:
+                        file_name = match.group(1).strip()
+                        line_num = int(match.group(2))
+                        pos = int(match.group(3))
+                        length = int(match.group(4))
+                        t = int(match.group(5))
+                        message = match.group(6).strip()
+
+                        line_0 = line_num - 1
+                        start_col_0 = pos - 1
+                        end_col_0 = start_col_0 + length
+
+                        errors.append((line_0, start_col_0, end_col_0, message, t))
+        except Exception as e:
+            print(f"Error parsing {error_file_path}: {e}")
+        return errors
+
+    def check_for_errors(self):
+        """Периодическая проверка ошибок для всех файлов, но в статус-баре отображаем только для текущего."""
+        for i in range(self.tab_widget.count()):
+            editor = self.tab_widget.widget(i)
+            if isinstance(editor, CustomScintilla) and editor.filename:
+                error_filename = self.get_error_filename(editor.filename)
+                if error_filename and os.path.exists(error_filename):
+                    errors = self.parse_error_file(error_filename)
+                    editor.set_errors(errors)
+                else:
+                    editor.clear_errors()
+
+        # Обновляем метку только для текущего редактора
+        current = self.current_editor()
+        if current and current.filename:
+            err_count = len(current.errors)
+            if err_count > 0:
+                self.error_label.setText(f"✗ {err_count} error(s)")
+                self.error_label.setStyleSheet("color: #f38ba8; padding: 2px 5px;")
+            else:
+                self.error_label.setText("✓ No errors")
+                self.error_label.setStyleSheet("color: #a6e3a1; padding: 2px 5px;")
+        else:
+            self.error_label.setText("✓ No errors")
+            self.error_label.setStyleSheet("color: #a6e3a1; padding: 2px 5px;")
+
+    def check_file_errors(self, editor):
+        """Проверка ошибок для конкретного файла и обновление метки, если это текущий файл."""
+        if not editor or not editor.filename:
+            return
+
+        error_filename = self.get_error_filename(editor.filename)
+        if error_filename and os.path.exists(error_filename):
+            errors = self.parse_error_file(error_filename)
+            editor.set_errors(errors)
+        else:
+            editor.clear_errors()
+
+        # Если это текущий редактор, обновляем метку
+        if editor == self.current_editor():
+            err_count = len(editor.errors)
+            if err_count > 0:
+                self.error_label.setText(f"✗ {err_count} error(s)")
+                self.error_label.setStyleSheet("color: #f38ba8; padding: 2px 5px;")
+            else:
+                self.error_label.setText("✓ No errors")
+                self.error_label.setStyleSheet("color: #a6e3a1; padding: 2px 5px;")
+
+    # --- Методы для управления языковыми серверами ---
+    def start_language_server(self, file_path):
+        """Запустить языковой сервер для файла"""
+        if not file_path:
+            return
+
+        # Проверяем, жив ли процесс, если он уже есть в словаре
+        if file_path in self.ls_processes:
+            proc = self.ls_processes[file_path]
+            if proc.poll() is None:  # процесс ещё работает
+                return
+            else:
+                # процесс завершился, удаляем запись
+                del self.ls_processes[file_path]
+
+        try:
+            creationflags = 0
+            if platform.system() == "Windows":
+                creationflags = subprocess.CREATE_NO_WINDOW
+
+            ls_path = os.path.join('bin', 'twist-ls')
+            if platform.system() == "Windows" and not os.path.exists(ls_path):
+                ls_path += '.exe'
+
+            process = subprocess.Popen(
+                [ls_path, '--file', file_path, '-d'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=creationflags
+            )
+
+            self.ls_processes[file_path] = process
+            print(f"Started LS for {os.path.basename(file_path)}")
+            self.update_ls_status()
+
+            editor = self.current_editor()
+            if editor and editor.filename == file_path:
+                QTimer.singleShot(500, lambda: self.check_file_errors(editor))
+
+        except Exception as e:
+            print(f"Failed to start LS for {file_path}: {e}")
+
+    def stop_language_server(self, file_path):
+        """Остановить языковой сервер для файла"""
+        if file_path not in self.ls_processes:
+            return
+
+        try:
+            process = self.ls_processes[file_path]
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+
+            print(f"Stopped LS for {os.path.basename(file_path)}")
+            del self.ls_processes[file_path]
+            self.update_ls_status()
+        except Exception as e:
+            print(f"Failed to stop LS for {file_path}: {e}")
+
+    def stop_all_language_servers(self):
+        for file_path in list(self.ls_processes.keys()):
+            self.stop_language_server(file_path)
+
+    def update_ls_status(self):
+        if self.current_file and self.current_file in self.ls_processes:
+            proc = self.ls_processes[self.current_file]
+            if proc.poll() is None:
+                self.ls_status_label.setText(f"⚙ LS: active for {os.path.basename(self.current_file)}")
+                self.ls_status_label.setStyleSheet("color: #a6e3a1; padding: 2px 5px;")
+            else:
+                del self.ls_processes[self.current_file]
+                self.ls_status_label.setText("⚙ LS: idle")
+                self.ls_status_label.setStyleSheet("color: #89b4fa; padding: 2px 5px;")
+        else:
+            self.ls_status_label.setText("⚙ LS: idle")
+            self.ls_status_label.setStyleSheet("color: #89b4fa; padding: 2px 5px;")
+
+    def on_tab_changed(self, index):
+        editor = self.tab_widget.widget(index)
+        if not isinstance(editor, CustomScintilla):
+            return
+
+        new_file = editor.filename
+        if new_file == self.current_file:
+            return
+
+        if self.current_file:
+            self.stop_language_server(self.current_file)
+
+        if new_file:
+            self.start_language_server(new_file)
+
+        self.current_file = new_file
+        self.update_ls_status()
+
+        if new_file:
+            self.check_file_errors(editor)
+
     # --- Действия с файлами ---
     def new_file(self):
         editor = CustomScintilla()
@@ -1154,22 +1281,27 @@ class TwistLangEditor(QMainWindow):
             self.open_file(filename)
 
     def open_file(self, filename):
-        # Проверяем, не открыт ли уже
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla) and getattr(editor, 'filename', None) == filename:
                 self.tab_widget.setCurrentIndex(i)
                 return
+
         try:
             with open(filename, 'r', encoding='utf-8') as f:
                 content = f.read()
+
             editor = CustomScintilla()
             editor.setText(content)
             editor.setModified(False)
             self.add_editor_tab(editor, filename=filename, title=os.path.basename(filename))
             self.status_bar.showMessage(f"Opened: {filename}", 2000)
-            # Проверяем ошибки для открытого файла
-            self.check_file_errors(editor)
+
+            if self.tab_widget.currentWidget() == editor:
+                self.start_language_server(filename)
+                self.current_file = filename
+                self.update_ls_status()
+
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not open file: {e}")
 
@@ -1207,19 +1339,23 @@ class TwistLangEditor(QMainWindow):
             text = editor.text()
             cleaned_text = text.replace('\x00', '')
             normalized = cleaned_text.replace('\r\n', '\n').replace('\r', '\n')
-            
+
             with open(filename, 'w', encoding='utf-8', newline='') as f:
                 f.write(normalized)
-            
+
             editor.setModified(False)
             editor.last_save_time = datetime.now()
             self.status_bar.showMessage(f"Saved: {filename}", 2000)
+
+            if filename == self.current_file and filename in self.ls_processes:
+                self.stop_language_server(filename)
+                QTimer.singleShot(100, lambda: self.start_language_server(filename))
+
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not save file: {e}")
 
     # --- Методы для автосохранения ---
     def toggle_autosave(self, checked):
-        """Включение/выключение автосохранения"""
         if checked:
             self.autosave_timer.start(self.autosave_interval)
             self.autosave_label.setText(f"⚡ Auto-save: ON ({self.autosave_interval//1000}s)")
@@ -1232,33 +1368,28 @@ class TwistLangEditor(QMainWindow):
             self.status_bar.showMessage("Auto-save disabled", 2000)
 
     def set_autosave_interval(self, ms):
-        """Установка интервала автосохранения"""
         self.autosave_interval = ms
         if self.autosave_action.isChecked():
             self.autosave_timer.start(ms)
-        
-        # Обновляем текст в статус-баре
+
         status = "ON" if self.autosave_action.isChecked() else "OFF"
         self.autosave_label.setText(f"⚡ Auto-save: {status} ({ms//1000}s)")
-        
-        # Обновляем меню (снимаем галочки с других пунктов)
+
         interval_menu = self.sender().parent()
         for action in interval_menu.actions():
             if action.data() == ms:
                 action.setChecked(True)
             elif action.data() is not None:
                 action.setChecked(False)
-        
+
         self.status_bar.showMessage(f"Auto-save interval set to {ms//1000} seconds", 2000)
 
     def autosave_all_files(self, manual=False):
-        """Автосохранение всех открытых и изменённых файлов"""
         if not self.autosave_action.isChecked() and not manual:
             return
-            
+
         saved_count = 0
-        skipped_count = 0
-        
+
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla):
@@ -1269,108 +1400,23 @@ class TwistLangEditor(QMainWindow):
                         saved_count += 1
                     except Exception as e:
                         print(f"Auto-save error for {filename}: {e}")
-                elif filename and not editor.isModified():
-                    skipped_count += 1
-                elif not filename:
-                    # Для безымянных файлов не делаем автосохранение
-                    skipped_count += 1
-        
+
         if saved_count > 0:
             self.autosave_count += 1
             if manual:
                 self.status_bar.showMessage(f"Manual save: {saved_count} file(s) saved", 2000)
             else:
-                # Кратковременное сообщение в статус-баре
                 self.status_bar.showMessage(f"Auto-saved {saved_count} file(s) [{self.autosave_count}]", 1500)
-                
-                # Меняем цвет индикатора на секунду
+
                 self.autosave_label.setStyleSheet("color: #f9e2af; padding: 2px 5px;")
                 QTimer.singleShot(1000, lambda: self.autosave_label.setStyleSheet(
-                    "color: #a6e3a1; padding: 2px 5px;" if self.autosave_action.isChecked() 
+                    "color: #a6e3a1; padding: 2px 5px;" if self.autosave_action.isChecked()
                     else "color: #f38ba8; padding: 2px 5px;"
                 ))
         elif manual:
             self.status_bar.showMessage("No files to save", 2000)
 
-    # --- Методы для работы с ошибками ---
-    def parse_error_file(self, filename):
-        errors_by_file = {}
-        if not os.path.exists("err.dbg"):
-            return errors_by_file
-        try:
-            with open("err.dbg", 'r', encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    # Формат: pif: {file_name}:{line}:{pos}:{lenght} message: {message}
-                    pattern = r'pif:\s*([^:]+):(\d+):(\d+):(\d+):(\d+)\s+message:\s*(.+)'
-                    match = re.match(pattern, line)
-                    if match:
-                        file_name = match.group(1).strip()[1:-1]  # убираем кавычки вокруг имени
-                        line_num = int(match.group(2))   # 1-based строка
-                        pos = int(match.group(3))       # 1-based позиция
-                        length = int(match.group(4))
-                        t = int(match.group(5))
-                        message = match.group(6).strip()
-                        
-                        # Преобразуем в 0-based для редактора
-                        line_0 = line_num - 1
-                        start_col_0 = pos - 1
-                        end_col_0 = start_col_0 + length
-                        
-                        if file_name not in errors_by_file:
-                            errors_by_file[file_name] = []
-                        errors_by_file[file_name].append((line_0, start_col_0, end_col_0, message, t))
-        except Exception as e:
-            print(f"Error parsing err.dbg: {e}")
-        return errors_by_file
-
-    def check_for_errors(self):
-        """Периодическая проверка файла err.dbg для всех открытых редакторов"""
-        errors_by_file = self.parse_error_file("err.dbg")
-        
-        
-        total_errors = 0
-        for i in range(self.tab_widget.count()):
-            editor = self.tab_widget.widget(i)
-            if isinstance(editor, CustomScintilla) and editor.filename:
-                base_name = os.path.basename(editor.filename)
-                if base_name in errors_by_file:
-                    editor.set_errors(errors_by_file[base_name])
-                    total_errors += len(errors_by_file[base_name])
-                else:
-                    # Если для файла нет ошибок, очищаем
-                    editor.clear_errors()
-        
-        # Обновляем индикатор в статус-баре
-        if total_errors > 0:
-            self.error_label.setText(f"✗ {total_errors} error(s)")
-            self.error_label.setStyleSheet("color: #f38ba8; padding: 2px 5px;")
-        else:
-            self.error_label.setText("✓ No errors")
-            self.error_label.setStyleSheet("color: #a6e3a1; padding: 2px 5px;")
-
-    def check_file_errors(self, editor):
-        """Проверка ошибок для конкретного файла"""
-        if not editor.filename:
-            return
-            
-        errors_by_file = self.parse_error_file("err.dbg")
-        base_name = os.path.basename(editor.filename)
-        
-        if base_name in errors_by_file:
-            editor.set_errors(errors_by_file[base_name])
-            total = len(errors_by_file[base_name])
-            self.error_label.setText(f"✗ {total} error(s)")
-            self.error_label.setStyleSheet("color: #f38ba8; padding: 2px 5px;")
-        else:
-            editor.clear_errors()
-            self.error_label.setText("✓ No errors")
-            self.error_label.setStyleSheet("color: #a6e3a1; padding: 2px 5px;")
-
     def clear_all_errors(self):
-        """Очистить все ошибки в текущем редакторе"""
         editor = self.current_editor()
         if editor:
             editor.clear_errors()
@@ -1379,21 +1425,19 @@ class TwistLangEditor(QMainWindow):
             self.status_bar.showMessage("Errors cleared", 2000)
 
     def goto_next_error(self):
-        """Перейти к следующей ошибке"""
         editor = self.current_editor()
         if not editor or not editor.errors:
             self.status_bar.showMessage("No errors", 2000)
             return
-            
+
         current_line, current_col = editor.getCursorPosition()
-        
-        # Ищем следующую ошибку
+
         next_error = None
         for error in editor.errors:
             if error[0] > current_line or (error[0] == current_line and error[1] > current_col):
                 next_error = error
                 break
-                
+
         if next_error:
             line, col, _, _ = next_error
             editor.setCursorPosition(line, col)
@@ -1403,21 +1447,19 @@ class TwistLangEditor(QMainWindow):
             self.status_bar.showMessage("No more errors", 2000)
 
     def goto_prev_error(self):
-        """Перейти к предыдущей ошибке"""
         editor = self.current_editor()
         if not editor or not editor.errors:
             self.status_bar.showMessage("No errors", 2000)
             return
-            
+
         current_line, current_col = editor.getCursorPosition()
-        
-        # Ищем предыдущую ошибку
+
         prev_error = None
         for error in reversed(editor.errors):
             if error[0] < current_line or (error[0] == current_line and error[1] < current_col):
                 prev_error = error
                 break
-                
+
         if prev_error:
             line, col, _, _ = prev_error
             editor.setCursorPosition(line, col)
@@ -1434,6 +1476,10 @@ class TwistLangEditor(QMainWindow):
     def close_all_tabs(self):
         while self.tab_widget.count() > 0:
             self.tab_widget.close_tab(0)
+
+    def closeEvent(self, event):
+        self.stop_all_language_servers()
+        super().closeEvent(event)
 
     # --- Запуск кода ---
     def run_current_file(self):
@@ -1455,7 +1501,7 @@ class TwistLangEditor(QMainWindow):
                     return
             else:
                 return
-        # Сохраняем перед запуском
+
         self.save_editor_to_file(editor, filename)
 
         try:
@@ -1478,7 +1524,7 @@ class TwistLangEditor(QMainWindow):
                 else:
                     subprocess.Popen(['twistc', '--file', filename])
                 self.status_bar.showMessage(f"Running {os.path.basename(filename)}...", 3000)
-            else:  # macOS и др.
+            else:
                 QMessageBox.information(
                     self,
                     "Not Fully Supported",
@@ -1520,7 +1566,7 @@ class TwistLangEditor(QMainWindow):
                 self.status_bar.showMessage("No valid include path found", 2000)
         else:
             self.status_bar.showMessage("Not an @include line", 2000)
-   
+
     def zoom_in(self):
         editor = self.current_editor()
         if not editor:
@@ -1555,12 +1601,12 @@ def main():
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
 
-
     default_font = QFont("Segoe UI", 10)
     if not default_font.exactMatch():
         default_font = QFont("Arial", 10)
     app.setFont(default_font)
 
+    # Тёмная палитра по умолчанию
     palette = app.palette()
     palette.setColor(palette.ColorRole.Window, QColor("#1e1e2e"))
     palette.setColor(palette.ColorRole.WindowText, QColor("#cdd6f4"))
@@ -1583,5 +1629,4 @@ def main():
 
 
 if __name__ == "__main__":
-    os.system('start bin\\twist-ls --file main.twist -d')
     main()

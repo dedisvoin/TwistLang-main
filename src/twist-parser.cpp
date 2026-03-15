@@ -277,8 +277,10 @@ struct ASTGenerator {
         const vector<string>& operators, string level_name
     ) {
         Token& start_token = *walker.get();
+        Token& start_less = *walker.get(-1);
+        
         auto left = (this->*parseHigherLevel)();
-
+        
         while (true) {
             bool found_operator = false;
             string op;
@@ -299,6 +301,8 @@ struct ASTGenerator {
             auto right = (this->*parseHigherLevel)();
             if (!right)
                 throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression after " + level_name + " operator");
+            if (!left)
+                throw ERROR_THROW::UnexpectedToken(start_less, "expression before " + level_name + " operator");
 
 
             Token& end_token = *(walker.get() - 1);
@@ -1044,6 +1048,7 @@ Node* ASTGenerator::ParseLambda() {
     Token return_type_start_token = *walker.get();
     auto return_type = parse_expression();
     Token return_type_end_token = *walker.get(-1);
+
     if (!return_type)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "return type expression");
     
@@ -1060,7 +1065,11 @@ Node* ASTGenerator::ParseLambda() {
     lambda_node->name = name;
 
     // парсим тело
-    lambda_node->body = parse_expression();
+    auto body = parse_expression();
+    if (!body)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "lambda body");
+
+    lambda_node->body = body;
 
     return lambda_node;
 }

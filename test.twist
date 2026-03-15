@@ -1,0 +1,6 @@
+let a = 10;
+
+static let b: auto = 10;
+
+
+assert a + b == 110, "err";

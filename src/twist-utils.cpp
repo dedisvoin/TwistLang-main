@@ -10,7 +10,10 @@
 #include "twist-tokens.cpp"
 #include "chrono"
 
+
 #pragma once
+
+
 
 using namespace std;
 
@@ -369,6 +372,8 @@ struct ArgsParser {
 
     vector<string> args;
     string file_path;
+    string file_name;
+
     bool save_preprocessed = false;
     bool save_token = false;
     bool run_time = false;
@@ -430,6 +435,8 @@ struct ArgsParser {
         }
     }
 
+    
+
     void FileIsExist() {
         if (file_path == "") {
             _FILE_NOT_SETTED();
@@ -447,6 +454,17 @@ struct ArgsParser {
                 exit(1);
             }
             _FILE_FOUND(file_path);
+            size_t last_slash = file_path.find_last_of("/\\");
+            string full_filename = (last_slash == string::npos) ? 
+                                file_path : 
+                                file_path.substr(last_slash + 1);
+            
+            size_t dot_pos = full_filename.find_last_of(".");
+            file_name = (dot_pos == string::npos) ? 
+                        full_filename : 
+                        full_filename.substr(0, dot_pos);
         }
+
+        
     }
 };
