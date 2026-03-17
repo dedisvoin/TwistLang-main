@@ -1,10 +1,18 @@
 from PyQt6.QtGui import QColor
+
 THEMES = {
     "Catppuccin Mocha": {  # Тёмная тема
         "type": "dark",
         "colors": {
             "bg": QColor("#1e1e2e"),
             "fg": QColor("#cdd6f4"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#313244"),           # Фон заголовка
+            "title_fg": QColor("#cdd6f4"),           # Текст заголовка
+            "title_border": QColor("#45475a"),       # Граница заголовка
+            "title_inactive_bg": QColor("#2a2a3a"),  # Неактивный фон
+            "title_inactive_fg": QColor("#9399b2"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#f5c2e7"),
             "type": QColor("#cba6f7"),
             "comment": QColor("#6c7086"),
@@ -37,11 +45,19 @@ THEMES = {
             "status_border": QColor("#313244"),
         }
     },
+    
     "Lumen Classic": {  # Светлая тема
         "type": "light",
         "colors": {
             "bg": QColor("#eff1f5"),
             "fg": QColor("#4c4f69"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#dce0e8"),           # Фон заголовка
+            "title_fg": QColor("#4c4f69"),           # Текст заголовка
+            "title_border": QColor("#bcc0cc"),       # Граница заголовка
+            "title_inactive_bg": QColor("#e6e9ef"),  # Неактивный фон
+            "title_inactive_fg": QColor("#6c6f85"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#859900"),
             "type": QColor("#b58900"),
             "comment": QColor("#93a1a1"),
@@ -69,16 +85,24 @@ THEMES = {
             "autosave_off": QColor("#f38ba8"),
             "ls_active": QColor("#a6e3a1"),
             "ls_idle": QColor("#89b4fa"),
-            "status_bg": QColor("#2d2d3a"),  # Темный для светлой темы
+            "status_bg": QColor("#2d2d3a"),
             "status_fg": QColor("#ffffff"),
             "status_border": QColor("#4c4f69"),
         }
     },
+    
     "Solarized Dark": {  # Тема Solarized Dark
         "type": "dark",
         "colors": {
             "bg": QColor("#002b36"),
             "fg": QColor("#839496"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#073642"),           # Фон заголовка
+            "title_fg": QColor("#fdf6e3"),           # Текст заголовка
+            "title_border": QColor("#586e75"),       # Граница заголовка
+            "title_inactive_bg": QColor("#04323e"),  # Неактивный фон
+            "title_inactive_fg": QColor("#93a1a1"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#859900"),
             "type": QColor("#b58900"),
             "comment": QColor("#586e75"),
@@ -111,11 +135,19 @@ THEMES = {
             "status_border": QColor("#586e75"),
         }
     },
-    "Solarized Light": {  # Новая светлая тема: Solarized Light
+    
+    "Solarized Light": {  # Светлая тема Solarized Light
         "type": "light",
         "colors": {
             "bg": QColor("#fdf6e3"),
             "fg": QColor("#657b83"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#eee8d5"),           # Фон заголовка
+            "title_fg": QColor("#586e75"),           # Текст заголовка
+            "title_border": QColor("#93a1a1"),       # Граница заголовка
+            "title_inactive_bg": QColor("#f5efdb"),  # Неактивный фон
+            "title_inactive_fg": QColor("#839496"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#859900"),
             "type": QColor("#b58900"),
             "comment": QColor("#93a1a1"),
@@ -143,16 +175,24 @@ THEMES = {
             "autosave_off": QColor("#dc322f"),
             "ls_active": QColor("#2aa198"),
             "ls_idle": QColor("#268bd2"),
-            "status_bg": QColor("#073642"),  # Темный для светлой темы
+            "status_bg": QColor("#073642"),
             "status_fg": QColor("#fdf6e3"),
             "status_border": QColor("#586e75"),
         }
     },
+    
     "Nord": {  # Тема Nord
         "type": "dark",
         "colors": {
             "bg": QColor("#2e3440"),
             "fg": QColor("#d8dee9"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#3b4252"),           # Фон заголовка
+            "title_fg": QColor("#eceff4"),           # Текст заголовка
+            "title_border": QColor("#4c566a"),       # Граница заголовка
+            "title_inactive_bg": QColor("#343a46"),  # Неактивный фон
+            "title_inactive_fg": QColor("#a5abb6"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#81a1c1"),
             "type": QColor("#b48ead"),
             "comment": QColor("#4c566a"),
@@ -185,11 +225,19 @@ THEMES = {
             "status_border": QColor("#4c566a"),
         }
     },
-    "Nord Light": {  # Новая светлая тема: Nord Light
+    
+    "Nord Light": {  # Светлая тема Nord Light
         "type": "light",
         "colors": {
             "bg": QColor("#e5e9f0"),
             "fg": QColor("#2e3440"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#d8dee9"),           # Фон заголовка
+            "title_fg": QColor("#2e3440"),           # Текст заголовка
+            "title_border": QColor("#81a1c1"),       # Граница заголовка
+            "title_inactive_bg": QColor("#dee3ed"),  # Неактивный фон
+            "title_inactive_fg": QColor("#4c566a"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#5e81ac"),
             "type": QColor("#b48ead"),
             "comment": QColor("#81a1c1"),
@@ -217,16 +265,24 @@ THEMES = {
             "autosave_off": QColor("#bf616a"),
             "ls_active": QColor("#a3be8c"),
             "ls_idle": QColor("#88c0d0"),
-            "status_bg": QColor("#3b4252"),  # Темный для светлой темы
+            "status_bg": QColor("#3b4252"),
             "status_fg": QColor("#d8dee9"),
             "status_border": QColor("#4c566a"),
         }
     },
+    
     "Dracula": {  # Тёмная тема Dracula
         "type": "dark",
         "colors": {
             "bg": QColor("#282a36"),
             "fg": QColor("#f8f8f2"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#44475a"),           # Фон заголовка
+            "title_fg": QColor("#f8f8f2"),           # Текст заголовка
+            "title_border": QColor("#6272a4"),       # Граница заголовка
+            "title_inactive_bg": QColor("#3d4050"),  # Неактивный фон
+            "title_inactive_fg": QColor("#b8b8b2"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#ff79c6"),
             "type": QColor("#8be9fd"),
             "comment": QColor("#6272a4"),
@@ -259,11 +315,19 @@ THEMES = {
             "status_border": QColor("#44475a"),
         }
     },
+    
     "Monokai Pro": {  # Тёмная тема Monokai Pro
         "type": "dark",
         "colors": {
             "bg": QColor("#2d2a2e"),
             "fg": QColor("#fcfcfa"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#403e41"),           # Фон заголовка
+            "title_fg": QColor("#fcfcfa"),           # Текст заголовка
+            "title_border": QColor("#5b595c"),       # Граница заголовка
+            "title_inactive_bg": QColor("#3a383b"),  # Неактивный фон
+            "title_inactive_fg": QColor("#b8b8b6"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#ff6188"),
             "type": QColor("#78dce8"),
             "comment": QColor("#727072"),
@@ -296,11 +360,19 @@ THEMES = {
             "status_border": QColor("#403e41"),
         }
     },
+    
     "One Dark Pro": {  # Тёмная тема One Dark Pro
         "type": "dark",
         "colors": {
             "bg": QColor("#282c34"),
             "fg": QColor("#abb2bf"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#2c313a"),           # Фон заголовка
+            "title_fg": QColor("#abb2bf"),           # Текст заголовка
+            "title_border": QColor("#3e4451"),       # Граница заголовка
+            "title_inactive_bg": QColor("#252a32"),  # Неактивный фон
+            "title_inactive_fg": QColor("#7f8c9a"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#c678dd"),
             "type": QColor("#e5c07b"),
             "comment": QColor("#5c6370"),
@@ -333,11 +405,19 @@ THEMES = {
             "status_border": QColor("#3e4451"),
         }
     },
-    "Github Light": {  # Новая светлая тема: Github Light
+    
+    "Github Light": {  # Светлая тема Github Light
         "type": "light",
         "colors": {
             "bg": QColor("#ffffff"),
             "fg": QColor("#24292e"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#f6f8fa"),           # Фон заголовка
+            "title_fg": QColor("#24292e"),           # Текст заголовка
+            "title_border": QColor("#e1e4e8"),       # Граница заголовка
+            "title_inactive_bg": QColor("#fafbfc"),  # Неактивный фон
+            "title_inactive_fg": QColor("#586069"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#d73a49"),
             "type": QColor("#005cc5"),
             "comment": QColor("#6a737d"),
@@ -365,16 +445,24 @@ THEMES = {
             "autosave_off": QColor("#d73a49"),
             "ls_active": QColor("#28a745"),
             "ls_idle": QColor("#0366d6"),
-            "status_bg": QColor("#24292e"),  # Темный для светлой темы
+            "status_bg": QColor("#24292e"),
             "status_fg": QColor("#f6f8fa"),
             "status_border": QColor("#e1e4e8"),
         }
     },
-    "Visual Studio Light": {  # Новая светлая тема: Visual Studio Light
+    
+    "Visual Studio Light": {  # Светлая тема Visual Studio Light
         "type": "light",
         "colors": {
             "bg": QColor("#ffffff"),
             "fg": QColor("#000000"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#f0f0f0"),           # Фон заголовка
+            "title_fg": QColor("#000000"),           # Текст заголовка
+            "title_border": QColor("#cccccc"),       # Граница заголовка
+            "title_inactive_bg": QColor("#f5f5f5"),  # Неактивный фон
+            "title_inactive_fg": QColor("#666666"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#0000ff"),
             "type": QColor("#2b91af"),
             "comment": QColor("#008000"),
@@ -402,16 +490,24 @@ THEMES = {
             "autosave_off": QColor("#d73a49"),
             "ls_active": QColor("#107c10"),
             "ls_idle": QColor("#0078d7"),
-            "status_bg": QColor("#2d2d2d"),  # Темный для светлой темы
+            "status_bg": QColor("#2d2d2d"),
             "status_fg": QColor("#ffffff"),
             "status_border": QColor("#cccccc"),
         }
     },
+    
     "Ayu Dark": {
         "type": "dark",
         "colors": {
             "bg": QColor("#0a0e14"),
             "fg": QColor("#b3b1ad"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#1a1f29"),           # Фон заголовка
+            "title_fg": QColor("#e6e1cf"),           # Текст заголовка
+            "title_border": QColor("#273747"),       # Граница заголовка
+            "title_inactive_bg": QColor("#131721"),  # Неактивный фон
+            "title_inactive_fg": QColor("#8a8f9a"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#ff8f40"),
             "type": QColor("#39bae6"),
             "comment": QColor("#626a73"),
@@ -450,6 +546,13 @@ THEMES = {
         "colors": {
             "bg": QColor("#fafafa"),
             "fg": QColor("#5c6166"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#e9e9e9"),           # Фон заголовка
+            "title_fg": QColor("#5c6166"),           # Текст заголовка
+            "title_border": QColor("#abb0b6"),       # Граница заголовка
+            "title_inactive_bg": QColor("#f0f0f0"),  # Неактивный фон
+            "title_inactive_fg": QColor("#7c8187"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#fa8d3e"),
             "type": QColor("#399ee6"),
             "comment": QColor("#abb0b6"),
@@ -483,12 +586,18 @@ THEMES = {
         }
     },
     
-    
     "Everforest Dark": {
         "type": "dark",
         "colors": {
             "bg": QColor("#2d3c4d"),
             "fg": QColor("#d3c6aa"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#3a4a5a"),           # Фон заголовка
+            "title_fg": QColor("#d3c6aa"),           # Текст заголовка
+            "title_border": QColor("#4a5a6a"),       # Граница заголовка
+            "title_inactive_bg": QColor("#344453"),  # Неактивный фон
+            "title_inactive_fg": QColor("#9faf94"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#e6986c"),
             "type": QColor("#7fbbb3"),
             "comment": QColor("#859289"),
@@ -527,6 +636,13 @@ THEMES = {
         "colors": {
             "bg": QColor("#fef6e4"),
             "fg": QColor("#5c6a72"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#f0e8d8"),           # Фон заголовка
+            "title_fg": QColor("#5c6a72"),           # Текст заголовка
+            "title_border": QColor("#d0d8d0"),       # Граница заголовка
+            "title_inactive_bg": QColor("#f5eddd"),  # Неактивный фон
+            "title_inactive_fg": QColor("#7c8a92"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#f57b5c"),
             "type": QColor("#4f9e9e"),
             "comment": QColor("#939f91"),
@@ -565,6 +681,13 @@ THEMES = {
         "colors": {
             "bg": QColor("#011627"),
             "fg": QColor("#d6deeb"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#0b2942"),           # Фон заголовка
+            "title_fg": QColor("#d6deeb"),           # Текст заголовка
+            "title_border": QColor("#1d3b53"),       # Граница заголовка
+            "title_inactive_bg": QColor("#082030"),  # Неактивный фон
+            "title_inactive_fg": QColor("#98a8b5"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#c792ea"),
             "type": QColor("#82aaff"),
             "comment": QColor("#637777"),
@@ -603,6 +726,13 @@ THEMES = {
         "colors": {
             "bg": QColor("#191724"),
             "fg": QColor("#e0def4"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#26233a"),           # Фон заголовка
+            "title_fg": QColor("#e0def4"),           # Текст заголовка
+            "title_border": QColor("#403d52"),       # Граница заголовка
+            "title_inactive_bg": QColor("#1f1d2e"),  # Неактивный фон
+            "title_inactive_fg": QColor("#a5a2c4"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#ebbcba"),
             "type": QColor("#9ccfd8"),
             "comment": QColor("#6e6a86"),
@@ -641,6 +771,13 @@ THEMES = {
         "colors": {
             "bg": QColor("#0d1117"),
             "fg": QColor("#e6edf3"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#161b22"),           # Фон заголовка
+            "title_fg": QColor("#e6edf3"),           # Текст заголовка
+            "title_border": QColor("#30363d"),       # Граница заголовка
+            "title_inactive_bg": QColor("#12181f"),  # Неактивный фон
+            "title_inactive_fg": QColor("#b1bac4"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#ff7b72"),
             "type": QColor("#79c0ff"),
             "comment": QColor("#8b949e"),
@@ -679,6 +816,13 @@ THEMES = {
         "colors": {
             "bg": QColor("#0f111a"),
             "fg": QColor("#8f93a2"),
+            # Цвета заголовка окна
+            "title_bg": QColor("#1a1c28"),           # Фон заголовка
+            "title_fg": QColor("#8f93a2"),           # Текст заголовка
+            "title_border": QColor("#2c3e4a"),       # Граница заголовка
+            "title_inactive_bg": QColor("#141622"),  # Неактивный фон
+            "title_inactive_fg": QColor("#6a6e7d"),  # Неактивный текст
+            # Остальные цвета
             "keyword": QColor("#c792ea"),
             "type": QColor("#82aaff"),
             "comment": QColor("#5c6773"),

@@ -1,7 +1,23 @@
-#define PI = 3.141592
-#macro name(var) = "var"
+struct Person {
+    private struct Inner {
+        let a = 10;
+    }
+    
+    static let name: String?;
+    static let age: Int?;
+    static let i: Inner?;
+    let create_new = lambda(global _name: String, global _age: Int) -> typeof(Person) : namespace {
+        let p = Person();
+        p.name = _name;
+        p.age = _age;
+        let i = Inner();
+        i.a = _age;
+        p.i = i;
+    } :: p;
+}
 
 
-let pi = PI;
+let p1 = Person.create_new("Ivan", 19);
 
-outln name(pi), " test ", pi;
+
+outln p1.i.a;

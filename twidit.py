@@ -9,7 +9,7 @@ from datetime import datetime
 
 from PyQt6.Qsci import QsciScintilla, QsciLexerCustom, QsciAPIs
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QStatusBar,
+    QApplication, QMainWindow, QMenu, QStatusBar,
     QPushButton, QLabel, QTabWidget, QTabBar, QToolButton,
     QFileDialog, QMessageBox, QToolTip,
 )
@@ -726,6 +726,7 @@ class EditorTabWidget(QTabWidget):
         super().__init__(parent)
         self.setTabsClosable(False)
         self.setMovable(True)
+        self.tabBar().tabMoved.connect(self.on_tab_moved)  # Добавляем обработчик перемещения
 
     def addTab(self, widget, title):
         index = super().addTab(widget, title)
@@ -737,8 +738,22 @@ class EditorTabWidget(QTabWidget):
         self._add_close_button(index)
         return index
 
-    def _add_close_button(self, index):
-        btn = QToolButton(self.tabBar())
+    def on_tab_moved(self, from_index, to_index):
+        """Обновляем индексы у кнопок закрытия после перемещения вкладок"""
+        # Пересоздаем кнопки закрытия для всех вкладок
+        for i in range(self.count()):
+            self._update_close_button(i)
+
+    def _update_close_button(self, index):
+        """Обновить кнопку закрытия для конкретной вкладки"""
+        tab_bar = self.tabBar()
+        # Удаляем старую кнопку
+        old_btn = tab_bar.tabButton(index, QTabBar.ButtonPosition.RightSide)
+        if old_btn:
+            old_btn.deleteLater()
+        
+        # Создаем новую кнопку с актуальным индексом
+        btn = QToolButton(tab_bar)
         btn.setIcon(self._create_close_icon())
         btn.setIconSize(QSize(16, 16))
         btn.setStyleSheet("""
@@ -755,8 +770,13 @@ class EditorTabWidget(QTabWidget):
                 background-color: rgba(255, 255, 255, 60);
             }
         """)
+        
+        # Используем лямбду с захватом текущего индекса
         btn.clicked.connect(lambda checked, idx=index: self._on_close_clicked(idx))
-        self.tabBar().setTabButton(index, QTabBar.ButtonPosition.RightSide, btn)
+        tab_bar.setTabButton(index, QTabBar.ButtonPosition.RightSide, btn)
+
+    def _add_close_button(self, index):
+        self._update_close_button(index)
 
     def _create_close_icon(self):
         pixmap = QPixmap(16, 16)
@@ -778,7 +798,20 @@ class EditorTabWidget(QTabWidget):
         return QIcon(pixmap)
 
     def _on_close_clicked(self, index):
-        self.close_tab(index)
+        """Обработчик клика по кнопке закрытия"""
+        # Проверяем, что индекс все еще валидный
+        if index < self.count():
+            self.close_tab(index)
+        else:
+            # Если индекс невалидный (например, после перетаскивания), 
+            # пытаемся найти вкладку по виджету
+            sender = self.sender()
+            if sender:
+                tab_bar = self.tabBar()
+                for i in range(self.count()):
+                    if tab_bar.tabButton(i, QTabBar.ButtonPosition.RightSide) == sender:
+                        self.close_tab(i)
+                        break
 
     def close_tab(self, index):
         widget = self.widget(index)
@@ -811,14 +844,58 @@ class EditorTabWidget(QTabWidget):
 
         self.removeTab(index)
         widget.deleteLater()
+        
+        # Если после удаления не осталось вкладок, создаем новую
+        if self.count() == 0:
+            main_window = self.window()
+            if hasattr(main_window, 'new_file'):
+                main_window.new_file()
 
+class RoundedMenu(QMenu):
+    def __init__(self, title=None, parent=None):
+        super().__init__(title, parent)
+        # Важные флаги для прозрачности
+        self.setWindowFlags(
+            Qt.WindowType.Popup | 
+            Qt.WindowType.FramelessWindowHint | 
+            Qt.WindowType.NoDropShadowWindowHint
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
+        
+    def showEvent(self, event):
+        # Обновляем размер перед показом
+        self.adjustSize()
+        super().showEvent(event)
+        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Получаем цвета из текущей темы
+        main_window = self.window()
+        if hasattr(main_window, 'current_theme'):
+            colors = THEMES[main_window.current_theme]["colors"]
+        else:
+            colors = THEMES[CURRENT_THEME]["colors"]
+        
+        # Рисуем закругленный фон (весь виджет)
+        rect = self.rect()
+        painter.setBrush(QColor(colors['bg']))
+        painter.setPen(Qt.PenStyle.NoPen)  # Убираем pen для фона
+        painter.drawRoundedRect(rect, 10, 10)
+        
+        painter.drawRoundedRect(rect.adjusted(1, 1, -1, -1), 10, 10)
+        
+        # Рисуем пункты меню
+        super().paintEvent(event)
 # ----------------------------------------------------------------------
 # Главное окно редактора
 # ----------------------------------------------------------------------
 class TwistLangEditor(QMainWindow):
     def __init__(self):
         super().__init__()
+        
         self.setGeometry(100, 100, 1200, 800)
         self.setWindowTitle("Lumen IDE")
         self.setWindowIcon(QIcon(r'data\app_icon.png'))
@@ -894,6 +971,62 @@ class TwistLangEditor(QMainWindow):
         
         # Обновляем иконки закрытия
         self.update_all_close_icons()
+
+        self.update_menubar_style()
+        
+
+    def update_menubar_style(self):
+        colors = THEMES[self.current_theme]["colors"]
+        border_color = colors.get('status_border', colors.get('margin_bg', QColor("#cccccc")))
+
+        # Отключаем стандартный фон меню
+        self.menuBar().setStyleSheet(f"""
+            QMenuBar {{
+                background-color: {colors['title_bg'].name()};
+                color: {colors['title_fg'].name()};
+                
+            }}
+            QMenuBar::item {{
+                background-color: transparent;
+                color: {colors['title_fg'].name()};
+                
+            }}
+            QMenuBar::item:selected {{
+                background-color: {colors['selection_bg'].name()};
+                color: {colors['selection_fg'].name()};
+            }}
+        """)
+
+        # Для всех меню в приложении
+        app = QApplication.instance()
+        app.setStyleSheet(f"""
+            QMenu {{
+                background-color: {colors['bg'].name()};
+                color: {colors['fg'].name()};
+                border: 1px solid {border_color.name()};
+                border-radius: 10px;
+                padding: 4px;
+                
+            }}
+            QMenu::item {{
+                padding: 4px 24px 4px 8px;
+                border-radius: 6px;
+                background-color: transparent;
+            }}
+            QMenu::item:selected {{
+                background-color: {colors['selection_bg'].name()};
+                color: {colors['selection_fg'].name()};
+            }}
+            QMenu::item:pressed {{
+                background-color: {colors['selection_bg'].name()};
+                color: {colors['selection_fg'].name()};
+            }}
+            QMenu::separator {{
+                height: 0px;
+                background-color: {border_color.name()};
+                margin: px 0;
+            }}
+        """)
 
     def update_status_labels(self):
         """Обновить цвета статусных лейблов согласно текущей теме"""
@@ -996,8 +1129,24 @@ class TwistLangEditor(QMainWindow):
         colors = THEMES[self.current_theme]["colors"]
         
         palette = app.palette()
+        
+        # Основные цвета
         palette.setColor(palette.ColorRole.Window, colors["bg"])
         palette.setColor(palette.ColorRole.WindowText, colors["fg"])
+        
+        # Цвета для заголовка окна (Windows)
+        palette.setColor(palette.ColorRole.Window, colors["title_bg"])
+        palette.setColor(palette.ColorRole.WindowText, colors["title_fg"])
+        
+        # Цвета для активного заголовка
+        palette.setColor(palette.ColorGroup.Active, palette.ColorRole.Window, colors["title_bg"])
+        palette.setColor(palette.ColorGroup.Active, palette.ColorRole.WindowText, colors["title_fg"])
+        
+        # Цвета для неактивного заголовка
+        palette.setColor(palette.ColorGroup.Inactive, palette.ColorRole.Window, colors["title_inactive_bg"])
+        palette.setColor(palette.ColorGroup.Inactive, palette.ColorRole.WindowText, colors["title_inactive_fg"])
+        
+        # Остальные цвета
         palette.setColor(palette.ColorRole.Base, colors["margin_bg"])
         palette.setColor(palette.ColorRole.AlternateBase, colors["caret_line"])
         palette.setColor(palette.ColorRole.ToolTipBase, colors["selection_bg"])
@@ -1033,8 +1182,8 @@ class TwistLangEditor(QMainWindow):
 
     def create_menu(self):
         menubar = self.menuBar()
-
-        file_menu = menubar.addMenu("File")
+        file_menu = RoundedMenu("File", self)
+        menubar.addMenu(file_menu)
         new_action = QAction("New", self)
         new_action.setShortcut(QKeySequence("Ctrl+N"))
         new_action.triggered.connect(self.new_file)
@@ -1055,7 +1204,8 @@ class TwistLangEditor(QMainWindow):
         save_as_action.triggered.connect(self.save_current_file_as)
         file_menu.addAction(save_as_action)
 
-        autosave_menu = file_menu.addMenu("Auto-save")
+        autosave_menu = RoundedMenu("Auto save", self)
+        file_menu.addMenu(autosave_menu)
         self.autosave_action = QAction("Enable Auto-save", self)
         self.autosave_action.setCheckable(True)
         self.autosave_action.setChecked(True)
@@ -1063,7 +1213,8 @@ class TwistLangEditor(QMainWindow):
         autosave_menu.addAction(self.autosave_action)
 
         autosave_menu.addSeparator()
-        interval_menu = autosave_menu.addMenu("Interval")
+        interval_menu = RoundedMenu("Interval", self)
+        autosave_menu.addMenu(interval_menu)
         intervals = [
             ("0.5 seconds", 500),
             ("1 seconds", 1000),
@@ -1101,7 +1252,8 @@ class TwistLangEditor(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
-        edit_menu = menubar.addMenu("Edit")
+        edit_menu = RoundedMenu("Edit", self)
+        menubar.addMenu(edit_menu)
         undo_action = QAction("Undo", self)
         undo_action.setShortcut(QKeySequence("Ctrl+Z"))
         undo_action.triggered.connect(lambda: self.current_editor().undo())
@@ -1128,7 +1280,8 @@ class TwistLangEditor(QMainWindow):
         paste_action.triggered.connect(lambda: self.current_editor().paste())
         edit_menu.addAction(paste_action)
 
-        view_menu = menubar.addMenu("View")
+        view_menu = RoundedMenu("Editor", self)
+        menubar.addMenu(view_menu)
         zoom_in_action = QAction("Zoom In", self)
         zoom_in_action.setShortcut(QKeySequence("Ctrl+="))
         zoom_in_action.triggered.connect(self.zoom_in)
@@ -1141,8 +1294,9 @@ class TwistLangEditor(QMainWindow):
 
         view_menu.addSeparator()
         
+        theme_menu = RoundedMenu("Theme", self)
         # Меню выбора темы - ИСПРАВЛЕННАЯ ЧАСТЬ
-        theme_menu = view_menu.addMenu("Theme")
+        view_menu.addMenu(theme_menu)
         self.theme_actions = []  # Сохраняем ссылки на действия тем
         
         for theme_name in THEMES.keys():
@@ -1155,7 +1309,8 @@ class TwistLangEditor(QMainWindow):
             theme_menu.addAction(theme_action)
             self.theme_actions.append(theme_action)
 
-        run_menu = menubar.addMenu("Run")
+        run_menu = RoundedMenu("Run", self)
+        menubar.addMenu(run_menu)
         run_action = QAction("Run Code", self)
         run_action.setShortcut(QKeySequence("F5"))
         run_action.triggered.connect(self.run_current_file)
@@ -1192,6 +1347,7 @@ class TwistLangEditor(QMainWindow):
 
     def add_editor_tab(self, editor: CustomScintilla, filename: str = None, title: str = "Untitled"):
         editor.set_main_window(self)
+        editor.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         index = self.tab_widget.addTab(editor, title)
         self.tab_widget.setCurrentIndex(index)
         editor.filename = filename
@@ -1206,6 +1362,9 @@ class TwistLangEditor(QMainWindow):
 
     def setup_editor_widget(self, editor):
         editor.setUtf8(True)
+        editor.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        editor.setScrollWidthTracking(True)   # отслеживать максимальную ширину строки
+        editor.setScrollWidth(1)
         safe_font = self.get_safe_font("Consolas", self.global_font_size)
         editor.setFont(safe_font)
         # Устанавливаем такой же шрифт для номеров строк
@@ -1772,6 +1931,7 @@ class TwistLangEditor(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
+    app.setAttribute(Qt.ApplicationAttribute.AA_DontUseNativeMenuBar, True)
 
     default_font = QFont("Segoe UI", 10)
     if not default_font.exactMatch():
