@@ -87,11 +87,11 @@ void language_server(const std::string& file_path, std::string file_name) {
             
             if (assert_errors.empty()) {
                 // Нет ошибок – очищаем файл
-                std::ofstream clear_log(file_name  + "_ls.dbg", std::ios::trunc);
+                std::ofstream clear_log(string("dbg/") + file_name  + "_ls.dbg", std::ios::trunc);
                 clear_log.close();
             } else {
                 // Есть assert'ы – перезаписываем файл всеми
-                std::ofstream log(file_name + "_ls.dbg", std::ios::trunc);
+                std::ofstream log(string("dbg/") + file_name + "_ls.dbg", std::ios::trunc);
                 for (const auto& err : assert_errors) {
                     write_error_to_file(log, err);
                     log << "\n";
@@ -100,7 +100,7 @@ void language_server(const std::string& file_path, std::string file_name) {
 
         } catch (const Error& err) {
             // Фатальная ошибка (не assertion) – записываем её одну
-            std::ofstream log(file_name + "_ls.dbg", std::ios::trunc);
+            std::ofstream log(string("dbg/") + file_name + "_ls.dbg", std::ios::trunc);
             write_error_to_file(log, err);
             log << "\n";
         } catch (const std::exception& e) {

@@ -59,9 +59,7 @@ func sum(global arg_types: auto) -> auto {
     ret _;
 }
 
-
 outln sum({Int, Int})(20, 30); 
-
 
 func factorial(n: Int) -> Int {
     if (n <= 1) {
