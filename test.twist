@@ -1,5 +1,20 @@
-const let a = 10;
+namespace std {
+    let a = 10;
+    
+}
 
-static let a: auto = 10;
 
-assert a != 10, "NOO";
+let n = namespace {
+    let a = 10;
+    let p = 200;
+    namespace innner {
+        let a = 10;
+        let n;
+    }
+};
+
+
+namespace std {
+    let a = 10;
+    let test = 20;
+}

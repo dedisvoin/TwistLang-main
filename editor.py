@@ -38,6 +38,9 @@ from themes import *
 # CONSTANTS & CONFIGURATION
 # =============================================================================
 
+MAX_FONT_SIZE = 30
+MIN_FONT_SIZE = 8
+
 DEFAULT_THEME = "Lumen Classic"
 WINDOW_MIN_WIDTH = 400
 WINDOW_MIN_HEIGHT = 300
@@ -952,6 +955,9 @@ class TwistLangLexer(QsciLexerCustom):
         bold_font = get_safe_monospace_font("Consolas", self.font_size)
         bold_font.setBold(True)
         self.setFont(bold_font, self.STYLE_KEYWORD)
+
+        
+        
         
     def styleText(self, start: int, end: int):
         """Apply syntax highlighting to text range"""
@@ -1101,6 +1107,37 @@ class TwistLangLexer(QsciLexerCustom):
             # Default
             self.setStyling(ch_len, self.STYLE_DEFAULT)
             pos += ch_len
+        self.update_folding_levels(start, end)
+        
+    def update_folding_levels(self, start, end):
+        editor = self.editor()
+        if not editor: return
+        
+        # Берем строку начала и конца
+        start_line = editor.SendScintilla(editor.SCI_LINEFROMPOSITION, start)
+        end_line = editor.SendScintilla(editor.SCI_LINEFROMPOSITION, end)
+        
+        # Получаем уровень вложенности от предыдущей строки
+        current_level = 1024 # Базовый уровень
+        if start_line > 0:
+            prev_level = editor.SendScintilla(editor.SCI_GETFOLDLEVEL, start_line - 1)
+            current_level = prev_level & 0x0FFF
+            
+        for line in range(start_line, end_line + 1):
+            text = editor.text(line).strip()
+            
+            # Считаем разницу скобок
+            open_count = text.count('{') + text.count('(')
+            close_count = text.count('}') + text.count(')')
+            
+            # Флаг того, что строка является "шапкой" (на ней будет кнопка)
+            is_header = 0x2000 if open_count > close_count else 0
+            
+            # Устанавливаем уровень
+            editor.SendScintilla(editor.SCI_SETFOLDLEVEL, line, current_level | is_header)
+            
+            # Обновляем уровень для следующей строки
+            current_level += (open_count - close_count)
             
     def _get_char_at(self, text_bytes: bytes, pos: int, total_bytes: int) -> Tuple[Optional[str], int]:
         """Safely get character at byte position (UTF-8 aware)"""
@@ -1179,9 +1216,43 @@ class CustomScintilla(QsciScintilla):
         self.setMouseTracking(True)
         self._setup_editor()
         self._setup_error_highlighting()
-        
+        self.cursorPositionChanged.connect(self.highlightMatchingBrace)
         # Убираем подключение textChanged, которое вызывало лишние проверки
         # self.textChanged.connect(self._on_text_changed)
+
+    def highlightMatchingBrace(self):
+        """Custom highlight for matching braces including angle brackets"""
+        pos = self.SendScintilla(self.SCI_GETCURRENTPOS)
+        
+        # Очищаем предыдущие индикаторы
+        self.SendScintilla(self.SCI_SETINDICATORCURRENT, 1)
+        self.SendScintilla(self.SCI_INDICATORCLEARRANGE, 0, self.length())
+        
+        self.SendScintilla(self.SCI_SETINDICATORCURRENT, 2)
+        self.SendScintilla(self.SCI_INDICATORCLEARRANGE, 0, self.length())
+        
+        # Получаем символ под курсором
+        char = chr(self.SendScintilla(self.SCI_GETCHARAT, pos)) if pos < self.length() else ''
+        
+        # Проверяем, является ли символ скобкой
+        braces = {'(': ')', ')': '(', '[': ']', ']': '[', '{': '}', '}': '{', '<': '>', '>': '<'}
+        
+        if char in braces:
+            # Находим парную скобку
+            brace_pos = self.SendScintilla(self.SCI_BRACEMATCH, pos, 0)
+            
+            if brace_pos != -1:
+                # Подсвечиваем текущую скобку
+                self.SendScintilla(self.SCI_SETINDICATORCURRENT, 1)
+                self.SendScintilla(self.SCI_INDICATORFILLRANGE, pos, 1)
+                self.SendScintilla(self.SCI_SETINDICATORCURRENT, 2)
+                self.SendScintilla(self.SCI_INDICATORFILLRANGE, pos, 1)
+                
+                # Подсвечиваем парную скобку
+                self.SendScintilla(self.SCI_SETINDICATORCURRENT, 1)
+                self.SendScintilla(self.SCI_INDICATORFILLRANGE, brace_pos, 1)
+                self.SendScintilla(self.SCI_SETINDICATORCURRENT, 2)
+                self.SendScintilla(self.SCI_INDICATORFILLRANGE, brace_pos, 1)
         
     # ===== Setup methods =====
     
@@ -1203,6 +1274,11 @@ class CustomScintilla(QsciScintilla):
         self.setAutoCompletionThreshold(1)
         self.setAutoCompletionCaseSensitivity(False)
         self.setAutoCompletionReplaceWord(False)
+
+        self.setFolding(QsciScintilla.FoldStyle.CircledTreeFoldStyle) # Или BoxedTreeFolding для более современного вида
+        self.SendScintilla(self.SCI_SETMODEVENTMASK, self.SC_MOD_INSERTTEXT | self.SC_MOD_DELETETEXT)
+        
+        
         
     def _setup_error_highlighting(self):
         """Configure error indicators and markers"""
@@ -1306,7 +1382,8 @@ class CustomScintilla(QsciScintilla):
                 return text[start_angle+1:end_angle]
                 
         return None
-        
+    
+    
     def get_error_at_position(self, line: int, col: int) -> Optional[str]:
         """Get error message at specific position"""
         for error in self.errors:
@@ -1326,6 +1403,9 @@ class CustomScintilla(QsciScintilla):
             Qt.Key.Key_QuoteDbl: ('"', '"'),
             Qt.Key.Key_Apostrophe: ("'", "'")
         }
+
+        
+
         
         if event.key() in pairs:
             open_char, close_char = pairs[event.key()]
@@ -1336,6 +1416,8 @@ class CustomScintilla(QsciScintilla):
             self.ctrl_pressed = True
             
         super().keyPressEvent(event)
+        
+
         
     def keyReleaseEvent(self, event):
         if event.key() == Qt.Key.Key_Control:
@@ -1896,6 +1978,8 @@ class TwistLangEditor(QMainWindow):
         self._update_all_editor_themes()
         self._update_status_labels()
         self._update_application_palette()
+
+        
         
         # Принудительно обновляем все виджеты
         self.repaint()
@@ -1922,7 +2006,10 @@ class TwistLangEditor(QMainWindow):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla):
                 self._update_editor_theme(editor)
+
+
                 
+               
     def _update_editor_theme(self, editor: CustomScintilla):
         """Update theme for a single editor"""
         colors = THEMES[self.current_theme]["colors"]
@@ -1948,8 +2035,20 @@ class TwistLangEditor(QMainWindow):
         editor.setMarginsForegroundColor(colors["margin_fg"])
         editor.setSelectionBackgroundColor(colors["selection_bg"])
         editor.setSelectionForegroundColor(colors["selection_fg"])
-        editor.setMatchedBraceBackgroundColor(colors["brace_bg"])
-        editor.setMatchedBraceForegroundColor(colors["brace_fg"])
+        
+        # Настройка подсветки парных скобок через индикаторы
+        editor.setBraceMatching(QsciScintilla.BraceMatch.NoBraceMatch)  # Отключаем встроенную подсветку
+        
+        # Устанавливаем цвета для парных скобок через индикаторы
+        # Индикатор 1 - для выделения скобок
+        editor.SendScintilla(editor.SCI_INDICSETFORE, 1, colors["brace_fg"])
+        editor.SendScintilla(editor.SCI_INDICSETSTYLE, 1, QsciScintilla.INDIC_FULLBOX)
+        editor.SendScintilla(editor.SCI_INDICSETALPHA, 1, 30)  # Прозрачность
+        
+        # Индикатор 2 - для подсветки фона
+        editor.SendScintilla(editor.SCI_INDICSETFORE, 2, colors["brace_bg"])
+        editor.SendScintilla(editor.SCI_INDICSETSTYLE, 2, QsciScintilla.INDIC_FULLBOX)
+        editor.SendScintilla(editor.SCI_INDICSETALPHA, 2, 30)  # Прозрачность
         
         editor.setIndicatorForegroundColor(colors["error"], CustomScintilla.INDICATOR_ERROR)
         editor.setIndicatorForegroundColor(colors["warning"], CustomScintilla.WARNING_ERROR)
@@ -1965,6 +2064,12 @@ class TwistLangEditor(QMainWindow):
         editor.setMarginsFont(new_lexer.font(new_lexer.STYLE_DEFAULT))
         self._update_margin_width(editor)
         self._setup_autocompletion_icons(editor, new_lexer)
+
+        editor.setFoldMarginColors(colors["margin_bg"], colors["margin_bg"])
+
+        
+        
+        
         
         editor.repaint()
         
@@ -2612,14 +2717,14 @@ class TwistLangEditor(QMainWindow):
     
     def zoom_in(self):
         """Increase font size"""
-        if self.global_font_size < 40:
+        if self.global_font_size < MAX_FONT_SIZE:
             self.global_font_size += 1
             self._apply_global_font_to_all_editors()
             self.show_status_message(f"Font size: {self.global_font_size}pt", 2000)
             
     def zoom_out(self):
         """Decrease font size"""
-        if self.global_font_size > 7:
+        if self.global_font_size > MIN_FONT_SIZE:
             self.global_font_size -= 1
             self._apply_global_font_to_all_editors()
             self.show_status_message(f"Font size: {self.global_font_size}pt", 2000)
