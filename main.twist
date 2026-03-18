@@ -1,23 +1,7 @@
-struct Person {
-    private struct Inner {
-        let a = 10;
-    }
-    
-    static let name: String?;
-    static let age: Int?;
-    static let i: Inner?;
-    let create_new = lambda(global _name: String, global _age: Int) -> typeof(Person) : namespace {
-        let p = Person();
-        p.name = _name;
-        p.age = _age;
-        let i = Inner();
-        i.a = _age;
-        p.i = i;
-    } :: p;
-}
+static final let a: auto = 10;
+
+outln a;
+
+assert a == a * 2;
 
 
-let p1 = Person.create_new("Ivan", 19);
-
-
-outln p1.i.a;

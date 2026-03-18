@@ -8,6 +8,7 @@ THEMES = {
             "fg": QColor("#cdd6f4"),
             # Цвета заголовка окна
             "title_bg": QColor("#313244"),           # Фон заголовка
+            "title_bg_darker": QColor("#29293b"),    # Чуть темнее title_bg
             "title_fg": QColor("#cdd6f4"),           # Текст заголовка
             "title_border": QColor("#45475a"),       # Граница заголовка
             "title_inactive_bg": QColor("#2a2a3a"),  # Неактивный фон
@@ -53,6 +54,7 @@ THEMES = {
             "fg": QColor("#4c4f69"),
             # Цвета заголовка окна
             "title_bg": QColor("#dce0e8"),           # Фон заголовка
+            "title_bg_darker": QColor("#c9cdd8"),    # Чуть темнее title_bg
             "title_fg": QColor("#4c4f69"),           # Текст заголовка
             "title_border": QColor("#bcc0cc"),       # Граница заголовка
             "title_inactive_bg": QColor("#e6e9ef"),  # Неактивный фон
@@ -70,7 +72,7 @@ THEMES = {
             "literal": QColor("#dc322f"),
             "namespace": QColor("#268bd2"),
             "special": QColor("#d33682"),
-            "object": QColor("#b58900"),
+            "object": QColor("#2a9781"),
             "caret": QColor("#1e1e2e"),
             "caret_line": QColor("#e6e9ef"),
             "margin_bg": QColor("#dce0e8"),
@@ -98,6 +100,7 @@ THEMES = {
             "fg": QColor("#839496"),
             # Цвета заголовка окна
             "title_bg": QColor("#073642"),           # Фон заголовка
+            "title_bg_darker": QColor("#032f39"),    # Чуть темнее title_bg
             "title_fg": QColor("#fdf6e3"),           # Текст заголовка
             "title_border": QColor("#586e75"),       # Граница заголовка
             "title_inactive_bg": QColor("#04323e"),  # Неактивный фон
@@ -143,6 +146,7 @@ THEMES = {
             "fg": QColor("#657b83"),
             # Цвета заголовка окна
             "title_bg": QColor("#eee8d5"),           # Фон заголовка
+            "title_bg_darker": QColor("#ddd6c3"),    # Чуть темнее title_bg
             "title_fg": QColor("#586e75"),           # Текст заголовка
             "title_border": QColor("#93a1a1"),       # Граница заголовка
             "title_inactive_bg": QColor("#f5efdb"),  # Неактивный фон
@@ -188,6 +192,7 @@ THEMES = {
             "fg": QColor("#d8dee9"),
             # Цвета заголовка окна
             "title_bg": QColor("#3b4252"),           # Фон заголовка
+            "title_bg_darker": QColor("#2f3644"),    # Чуть темнее title_bg
             "title_fg": QColor("#eceff4"),           # Текст заголовка
             "title_border": QColor("#4c566a"),       # Граница заголовка
             "title_inactive_bg": QColor("#343a46"),  # Неактивный фон
@@ -233,6 +238,7 @@ THEMES = {
             "fg": QColor("#2e3440"),
             # Цвета заголовка окна
             "title_bg": QColor("#d8dee9"),           # Фон заголовка
+            "title_bg_darker": QColor("#c7ceda"),    # Чуть темнее title_bg
             "title_fg": QColor("#2e3440"),           # Текст заголовка
             "title_border": QColor("#81a1c1"),       # Граница заголовка
             "title_inactive_bg": QColor("#dee3ed"),  # Неактивный фон
@@ -278,6 +284,7 @@ THEMES = {
             "fg": QColor("#f8f8f2"),
             # Цвета заголовка окна
             "title_bg": QColor("#44475a"),           # Фон заголовка
+            "title_bg_darker": QColor("#373a4a"),    # Чуть темнее title_bg
             "title_fg": QColor("#f8f8f2"),           # Текст заголовка
             "title_border": QColor("#6272a4"),       # Граница заголовка
             "title_inactive_bg": QColor("#3d4050"),  # Неактивный фон
@@ -323,6 +330,7 @@ THEMES = {
             "fg": QColor("#fcfcfa"),
             # Цвета заголовка окна
             "title_bg": QColor("#403e41"),           # Фон заголовка
+            "title_bg_darker": QColor("#333134"),    # Чуть темнее title_bg
             "title_fg": QColor("#fcfcfa"),           # Текст заголовка
             "title_border": QColor("#5b595c"),       # Граница заголовка
             "title_inactive_bg": QColor("#3a383b"),  # Неактивный фон
@@ -368,6 +376,7 @@ THEMES = {
             "fg": QColor("#abb2bf"),
             # Цвета заголовка окна
             "title_bg": QColor("#2c313a"),           # Фон заголовка
+            "title_bg_darker": QColor("#21262e"),    # Чуть темнее title_bg
             "title_fg": QColor("#abb2bf"),           # Текст заголовка
             "title_border": QColor("#3e4451"),       # Граница заголовка
             "title_inactive_bg": QColor("#252a32"),  # Неактивный фон
@@ -413,6 +422,7 @@ THEMES = {
             "fg": QColor("#24292e"),
             # Цвета заголовка окна
             "title_bg": QColor("#f6f8fa"),           # Фон заголовка
+            "title_bg_darker": QColor("#e4e7eb"),    # Чуть темнее title_bg
             "title_fg": QColor("#24292e"),           # Текст заголовка
             "title_border": QColor("#e1e4e8"),       # Граница заголовка
             "title_inactive_bg": QColor("#fafbfc"),  # Неактивный фон
@@ -458,6 +468,7 @@ THEMES = {
             "fg": QColor("#000000"),
             # Цвета заголовка окна
             "title_bg": QColor("#f0f0f0"),           # Фон заголовка
+            "title_bg_darker": QColor("#dddddd"),    # Чуть темнее title_bg
             "title_fg": QColor("#000000"),           # Текст заголовка
             "title_border": QColor("#cccccc"),       # Граница заголовка
             "title_inactive_bg": QColor("#f5f5f5"),  # Неактивный фон
@@ -503,6 +514,7 @@ THEMES = {
             "fg": QColor("#b3b1ad"),
             # Цвета заголовка окна
             "title_bg": QColor("#1a1f29"),           # Фон заголовка
+            "title_bg_darker": QColor("#0f141e"),    # Чуть темнее title_bg
             "title_fg": QColor("#e6e1cf"),           # Текст заголовка
             "title_border": QColor("#273747"),       # Граница заголовка
             "title_inactive_bg": QColor("#131721"),  # Неактивный фон
@@ -548,6 +560,7 @@ THEMES = {
             "fg": QColor("#5c6166"),
             # Цвета заголовка окна
             "title_bg": QColor("#e9e9e9"),           # Фон заголовка
+            "title_bg_darker": QColor("#d8d8d8"),    # Чуть темнее title_bg
             "title_fg": QColor("#5c6166"),           # Текст заголовка
             "title_border": QColor("#abb0b6"),       # Граница заголовка
             "title_inactive_bg": QColor("#f0f0f0"),  # Неактивный фон
@@ -593,6 +606,7 @@ THEMES = {
             "fg": QColor("#d3c6aa"),
             # Цвета заголовка окна
             "title_bg": QColor("#3a4a5a"),           # Фон заголовка
+            "title_bg_darker": QColor("#2f3f4f"),    # Чуть темнее title_bg
             "title_fg": QColor("#d3c6aa"),           # Текст заголовка
             "title_border": QColor("#4a5a6a"),       # Граница заголовка
             "title_inactive_bg": QColor("#344453"),  # Неактивный фон
@@ -638,6 +652,7 @@ THEMES = {
             "fg": QColor("#5c6a72"),
             # Цвета заголовка окна
             "title_bg": QColor("#f0e8d8"),           # Фон заголовка
+            "title_bg_darker": QColor("#e0d8c8"),    # Чуть темнее title_bg
             "title_fg": QColor("#5c6a72"),           # Текст заголовка
             "title_border": QColor("#d0d8d0"),       # Граница заголовка
             "title_inactive_bg": QColor("#f5eddd"),  # Неактивный фон
@@ -683,6 +698,7 @@ THEMES = {
             "fg": QColor("#d6deeb"),
             # Цвета заголовка окна
             "title_bg": QColor("#0b2942"),           # Фон заголовка
+            "title_bg_darker": QColor("#051e33"),    # Чуть темнее title_bg
             "title_fg": QColor("#d6deeb"),           # Текст заголовка
             "title_border": QColor("#1d3b53"),       # Граница заголовка
             "title_inactive_bg": QColor("#082030"),  # Неактивный фон
@@ -728,6 +744,7 @@ THEMES = {
             "fg": QColor("#e0def4"),
             # Цвета заголовка окна
             "title_bg": QColor("#26233a"),           # Фон заголовка
+            "title_bg_darker": QColor("#1c192d"),    # Чуть темнее title_bg
             "title_fg": QColor("#e0def4"),           # Текст заголовка
             "title_border": QColor("#403d52"),       # Граница заголовка
             "title_inactive_bg": QColor("#1f1d2e"),  # Неактивный фон
@@ -773,6 +790,7 @@ THEMES = {
             "fg": QColor("#e6edf3"),
             # Цвета заголовка окна
             "title_bg": QColor("#161b22"),           # Фон заголовка
+            "title_bg_darker": QColor("#0c1118"),    # Чуть темнее title_bg
             "title_fg": QColor("#e6edf3"),           # Текст заголовка
             "title_border": QColor("#30363d"),       # Граница заголовка
             "title_inactive_bg": QColor("#12181f"),  # Неактивный фон
@@ -818,6 +836,7 @@ THEMES = {
             "fg": QColor("#8f93a2"),
             # Цвета заголовка окна
             "title_bg": QColor("#1a1c28"),           # Фон заголовка
+            "title_bg_darker": QColor("#11131e"),    # Чуть темнее title_bg
             "title_fg": QColor("#8f93a2"),           # Текст заголовка
             "title_border": QColor("#2c3e4a"),       # Граница заголовка
             "title_inactive_bg": QColor("#141622"),  # Неактивный фон

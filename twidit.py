@@ -6,23 +6,433 @@ import shutil
 import re
 from datetime import datetime
 
-
+from PyQt6.QtGui import QPainterPath
 from PyQt6.Qsci import QsciScintilla, QsciLexerCustom, QsciAPIs
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMenu, QStatusBar,
     QPushButton, QLabel, QTabWidget, QTabBar, QToolButton,
-    QFileDialog, QMessageBox, QToolTip,
+    QFileDialog, QMessageBox, QToolTip, QWidget, QHBoxLayout,
+    QVBoxLayout, QFrame
 )
 from PyQt6.QtGui import (
     QColor, QFont, QAction, QKeySequence, QShortcut,
     QPainter, QPen, QIcon, QPixmap, QMouseEvent,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QSize
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QSize, QPoint
 from themes import *
 
+from PyQt6.QtSvg import QSvgRenderer
+from PyQt6.QtGui import QPainter, QImage, QPixmap, QColor
+from PyQt6.QtCore import QByteArray, Qt
 
 # Текущая активная тема
 CURRENT_THEME = "Lumen Classic"  # светлая по умолчанию
+
+
+
+
+def create_colored_svg_icon(svg_path, color):
+    """
+    Создает иконку из SVG с заданным цветом
+    """
+    try:
+        # Проверяем существование файла
+        if not os.path.exists(svg_path):
+            print(f"❌ SVG file not found: {svg_path}")
+            return None
+        
+        # Читаем SVG файл
+        with open(svg_path, 'r', encoding='utf-8') as f:
+            svg_content = f.read()
+        
+        print(f"✅ SVG file loaded: {svg_path}")
+        print(f"   Original SVG size: {len(svg_content)} bytes")
+        
+        # Заменяем цвета
+        color_hex = color.name()
+        print(f"   Target color: {color_hex}")
+        
+        # Проверяем наличие fill атрибутов
+        if 'fill="' in svg_content:
+            print(f"   Found fill attributes in SVG")
+        else:
+            print(f"   ⚠️ No fill attributes found in SVG")
+        
+        svg_content = svg_content.replace('currentColor', color_hex)
+        svg_content = svg_content.replace('fill="black"', f'fill="{color_hex}"')
+        svg_content = svg_content.replace('stroke="black"', f'stroke="{color_hex}"')
+        
+        # Создаем renderer
+        renderer = QSvgRenderer(QByteArray(svg_content.encode()))
+        
+        # Проверяем, что renderer валидный
+        if not renderer.isValid():
+            print("❌ SVG Renderer is not valid")
+            return None
+        
+        print(f"✅ SVG Renderer created successfully")
+        print(f"   Default size: {renderer.defaultSize().width()}x{renderer.defaultSize().height()}")
+        
+        # Создаем pixmap
+        pixmap = QPixmap(32, 32)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        
+        # Рисуем SVG
+        painter = QPainter(pixmap)
+        renderer.render(painter)
+        painter.end()
+        
+        # Проверяем, что pixmap не пустой
+        if pixmap.isNull():
+            print("❌ Generated pixmap is null")
+            return None
+        
+        
+        print(f"   Pixmap size: {pixmap.width()}x{pixmap.height()}")
+        
+        
+        return QIcon(pixmap)
+        
+    except Exception as e:
+        print(f"❌ Error creating SVG icon: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+# ----------------------------------------------------------------------
+# Кастомный заголовок окна с меню в стиле Windows 10
+# ----------------------------------------------------------------------
+class CustomTitleBar(QFrame):
+    """Кастомный заголовок окна с встроенным меню в стиле Windows 10"""
+    
+    windowMinimized = pyqtSignal()
+    windowMaximized = pyqtSignal()
+    windowClosed = pyqtSignal()
+    windowMoved = pyqtSignal(QPoint)
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.is_window_maximized = False
+        self.parent = parent
+        self.setFixedHeight(32)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        
+        # Флаг для перетаскивания окна
+        self.dragging = False
+        self.drag_position = QPoint()
+        
+        # Основной layout
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        
+        # Иконка приложения и заголовок
+        title_widget = QWidget()
+        title_layout = QHBoxLayout(title_widget)
+        title_layout.setContentsMargins(10, 0, 0, 0)
+        title_layout.setSpacing(8)
+        
+        self.icon_label = QLabel()
+        self.icon_label.setPixmap(create_colored_svg_icon(r"data\app_icon.svg", THEMES[CURRENT_THEME]['colors']['fg']).pixmap(16, 16))
+        title_layout.addWidget(self.icon_label)
+        
+        self.title_label = QLabel("Lumen IDE")
+        self.title_label.setStyleSheet("font-size: 12px;")
+        title_layout.addWidget(self.title_label)
+        
+        layout.addWidget(title_widget)
+        
+        # Здесь будет меню
+        self.menu_container = QWidget()
+        self.menu_layout = QHBoxLayout(self.menu_container)
+        self.menu_layout.setContentsMargins(5, 0, 0, 0)
+        self.menu_layout.setSpacing(0)
+        layout.addWidget(self.menu_container)
+        
+        layout.addStretch()
+        
+        # Кнопки управления окном в стиле Windows 10
+        self.minimize_btn = QToolButton()
+        self.minimize_btn.setFixedSize(46, 32)
+        self.minimize_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.minimize_btn.clicked.connect(self.windowMinimized.emit)
+        # Отрисовываем иконку свернуть
+        self.minimize_btn.paintEvent = lambda event: self.paint_minimize_icon(event, self.minimize_btn)
+        layout.addWidget(self.minimize_btn)
+
+        self.maximize_btn = QToolButton()
+        self.maximize_btn.setFixedSize(46, 32)
+        self.maximize_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        
+        # ИСПРАВЛЕНО: Правильная функция для обработки клика
+        def on_maximize_clicked():
+            # Всегда эмитим сигнал, независимо от текущего состояния
+            # Окно само переключится между максимизированным и нормальным состоянием
+            self.windowMaximized.emit()
+            # Не меняем флаг здесь, так как окно еще не изменило состояние
+        
+        self.maximize_btn.clicked.connect(on_maximize_clicked)
+        # Отрисовываем иконку развернуть/восстановить
+        self.maximize_btn.paintEvent = lambda event: self.paint_maximize_icon(event, self.maximize_btn)
+        layout.addWidget(self.maximize_btn)
+
+        self.close_btn = QToolButton()
+        self.close_btn.setFixedSize(46, 32)
+        self.close_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.close_btn.clicked.connect(self.windowClosed.emit)
+        # Отрисовываем иконку закрыть
+        self.close_btn.paintEvent = lambda event: self.paint_close_icon(event, self.close_btn)
+        layout.addWidget(self.close_btn)
+        
+        # Устанавливаем стиль
+        self.update_style()
+
+    def update_icon(self, icon):
+        """Обновить иконку в заголовке"""
+        if icon and not icon.isNull():
+            self.icon_label.setPixmap(icon.pixmap(16, 16))
+
+    def set_maximized_state(self, maximized):
+        """Установить состояние максимизации и обновить иконку"""
+        self.is_window_maximized = maximized
+        self.maximize_btn.update()  # Обновляем отрисовку кнопки
+
+    def paint_minimize_icon(self, event, btn):
+        """Отрисовка иконки свернуть"""
+        painter = QPainter(btn)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Получаем цвета из текущей темы
+        if hasattr(self.parent, 'current_theme'):
+            colors = THEMES[self.parent.current_theme]["colors"]
+        else:
+            colors = THEMES[CURRENT_THEME]["colors"]
+        
+        # Рисуем фон при наведении
+        if btn.underMouse():
+            painter.fillRect(btn.rect(), QColor(255, 255, 255, 30))
+        
+        # Рисуем иконку (горизонтальная линия)
+        painter.setPen(QPen(colors['title_fg'], 1))
+        x = btn.width() // 2 - 7
+        y = btn.height() // 2
+        painter.drawLine(x, y, x + 12, y)
+        
+        painter.end()
+
+
+
+    def paint_maximize_icon(self, event, btn):
+        """Отрисовка иконки развернуть/восстановить"""
+        painter = QPainter(btn)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Получаем цвета из текущей темы
+        if hasattr(self.parent, 'current_theme'):
+            colors = THEMES[self.parent.current_theme]["colors"]
+        else:
+            colors = THEMES[CURRENT_THEME]["colors"]
+        
+        # Рисуем фон при наведении
+        if btn.underMouse():
+            painter.fillRect(btn.rect(), QColor(255, 255, 255, 30))
+        
+        # Определяем, максимизировано ли окно
+        is_maximized = self.is_window_maximized
+        
+        painter.setPen(QPen(colors['title_fg'], 1))
+        
+        if is_maximized:
+            # Иконка восстановления (два перекрывающихся квадрата)
+            # Внешний квадрат
+            x1 = btn.width() // 2 - 8 + 2
+            y1 = btn.height() // 2 - 2
+            painter.drawRect(x1, y1, 8, 8)
+            
+            # Внутренний квадрат (смещенный)
+            x1 = btn.width() // 2 - 5 + 2
+            y1 = btn.height() // 2 - 5
+            x2 = btn.width() // 2 + 2 + 2
+            y2 = btn.height() // 2 - 5
+            painter.drawLine(x1, y1, x2, y2)
+
+            x1 = btn.width() // 2 + 3 + 2
+            y1 = btn.height() // 2 - 5
+            x2 = btn.width() // 2 + 3 + 2
+            y2 = btn.height() // 2 + 2
+            painter.drawLine(x1, y1, x2, y2)
+        else:
+            # Иконка развернуть (один квадрат)
+            x = btn.width() // 2 - 4
+            y = btn.height() // 2 - 4
+            painter.drawRect(x, y, 8, 8)
+        
+        painter.end()
+
+    def paint_close_icon(self, event, btn):
+        """Отрисовка иконки закрыть со скруглением только правого верхнего угла"""
+        painter = QPainter(btn)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Получаем цвета из текущей темы
+        if hasattr(self.parent, 'current_theme'):
+            colors = THEMES[self.parent.current_theme]["colors"]
+        else:
+            colors = THEMES[CURRENT_THEME]["colors"]
+        
+        # Рисуем фон при наведении со скруглением только правого верхнего угла
+        if btn.underMouse():
+            rect = btn.rect()
+            painter.setBrush(QColor(196, 43, 28))  # #c42b1c
+            painter.setPen(Qt.PenStyle.NoPen)
+            
+            # Создаем путь для прямоугольника со скругленным только правым верхним углом
+            path = QPainterPath()
+            width = rect.width()
+            height = rect.height()
+            
+            # Начинаем с левого верхнего угла (без скругления)
+            path.moveTo(rect.left(), rect.top())
+            # Верхняя сторона до правого верхнего угла
+            
+            # Скругление правого верхнего угла (8px)
+            path.arcTo(rect.right() - 14.5, rect.top(), 20, 70, 90, -90)
+            # Правая сторона вниз
+            path.lineTo(rect.right(), rect.bottom() + 1)
+            # Нижняя сторона влево
+            path.lineTo(rect.left(), rect.bottom() + 1)
+            # Левая сторона вверх
+            path.lineTo(rect.left(), rect.top())
+            
+            painter.drawPath(path)
+            
+            # Рисуем крестик белым цветом
+            painter.setPen(QPen(Qt.GlobalColor.white, 2))
+        else:
+            # Без фона, только крестик цветом темы
+            painter.setPen(QPen(colors['title_fg'], 1.5))
+        
+        # Рисуем крестик
+        x1 = btn.width() // 2 - 5
+        y1 = btn.height() // 2 - 5
+        x2 = btn.width() // 2 + 5
+        y2 = btn.height() // 2 + 5
+        
+        painter.drawLine(x1, y1, x2, y2)
+        painter.drawLine(x2, y1, x1, y2)
+        
+        painter.end()
+
+    def update_style(self):
+        """Обновить стиль в соответствии с темой"""
+        if hasattr(self.parent, 'current_theme'):
+            colors = THEMES[self.parent.current_theme]["colors"]
+        else:
+            colors = THEMES[CURRENT_THEME]["colors"]
+        
+        # Проверяем, максимизировано ли окно
+        is_maximized = self.parent.isMaximized() if self.parent else False
+        
+        # Устанавливаем закругления только если окно не максимизировано
+        border_radius = "7px" if not is_maximized else "0px"
+        
+        # Базовый стиль для заголовка с закругленными верхними углами
+        self.setStyleSheet(f"""
+            CustomTitleBar {{
+                background-color: {colors['title_bg'].name()};
+                border-top-left-radius: {border_radius};
+                border-top-right-radius: {border_radius};
+            }}
+            QLabel {{
+                color: {colors['title_fg'].name()};
+                background-color: transparent;
+            }}
+        """)
+        
+        # Стиль для кнопок меню
+        for i in range(self.menu_layout.count()):
+            btn = self.menu_layout.itemAt(i).widget()
+            if isinstance(btn, QToolButton):
+                btn.setStyleSheet(f"""
+                    QToolButton {{
+                        background-color: transparent;
+                        color: {colors['title_fg'].name()};
+                        border: none;
+                        padding: 5px 12px;
+                        font-size: 12px;
+                    }}
+                    QToolButton:hover {{
+                        background-color: {colors['selection_bg'].name()};
+                        color: {colors['selection_fg'].name()};
+                    }}
+                    QToolButton:pressed {{
+                        background-color: {colors['selection_bg'].darker(120).name()};
+                    }}
+                    QToolButton::menu-indicator {{
+                        image: none;
+                    }}
+                """)
+        
+        # Для кнопок управления окном обновляем их
+        self.minimize_btn.update()
+        self.maximize_btn.update()
+        self.close_btn.update()
+        
+    def add_menu(self, menu_bar):
+        """Добавить меню в заголовок"""
+        # Очищаем контейнер
+        for i in reversed(range(self.menu_layout.count())):
+            widget = self.menu_layout.itemAt(i).widget()
+            if widget:
+                widget.setParent(None)
+            
+        # Добавляем все действия из menu_bar
+        for action in menu_bar.actions():
+            if action.menu():
+                # Это меню
+                btn = QToolButton()
+                btn.setText(action.text())
+                btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+                btn.setMenu(action.menu())
+                self.menu_layout.addWidget(btn)
+                
+        # Обновляем стиль для новых кнопок
+        self.update_style()
+                
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Проверяем, что клик не по кнопке
+            pos = event.pos()
+            if not (self.minimize_btn.geometry().contains(pos) or 
+                    self.maximize_btn.geometry().contains(pos) or 
+                    self.close_btn.geometry().contains(pos)):
+                self.dragging = True
+                self.drag_position = event.globalPosition().toPoint() - self.parent.frameGeometry().topLeft()
+                event.accept()
+                return
+        super().mousePressEvent(event)
+            
+    def mouseMoveEvent(self, event):
+        if self.dragging and event.buttons() & Qt.MouseButton.LeftButton:
+            self.parent.move(event.globalPosition().toPoint() - self.drag_position)
+            self.windowMoved.emit(self.parent.pos())
+            event.accept()
+            
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.dragging = False
+            event.accept()
+            
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Проверяем, что двойной клик не по кнопке
+            pos = event.pos()
+            if not (self.minimize_btn.geometry().contains(pos) or 
+                    self.maximize_btn.geometry().contains(pos) or 
+                    self.close_btn.geometry().contains(pos)):
+                self.windowMaximized.emit()
+                event.accept()
 
 
 # ----------------------------------------------------------------------
@@ -33,21 +443,29 @@ class RunButton(QPushButton):
         super().__init__(parent)
         self.setText("▶")
         self.setFixedSize(40, 40)
-        self.setStyleSheet("""
-            QPushButton {
-                background-color: #a6e3a1;
-                color: #1e1e2e;
+        
+    def update_style(self):
+        """Обновить стиль в соответствии с темой"""
+        if hasattr(self.window(), 'current_theme'):
+            colors = THEMES[self.window().current_theme]["colors"]
+        else:
+            colors = THEMES[CURRENT_THEME]["colors"]
+            
+        self.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {colors['autosave_on'].name()};
+                color: {colors['bg'].name()};
                 border: none;
                 border-radius: 20px;
                 font-size: 30px;
-            }
-            QPushButton:hover {
-                background-color: #a0a1a0;
-                border: 2px solid #89dceb;
-            }
-            QPushButton:pressed {
-                background-color: #74c7ec;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {colors['autosave_on'].darker(110).name()};
+                border: 2px solid {colors['ls_idle'].name()};
+            }}
+            QPushButton:pressed {{
+                background-color: {colors['ls_idle'].name()};
+            }}
         """)
 
 
@@ -106,7 +524,11 @@ class CustomScintilla(QsciScintilla):
         self.main_window = window
 
     def setup_error_indicator(self):
-        colors = THEMES[CURRENT_THEME]["colors"]
+        if self.main_window:
+            colors = THEMES[self.main_window.current_theme]["colors"]
+        else:
+            colors = THEMES[CURRENT_THEME]["colors"]
+            
         self.indicatorDefine(
             QsciScintilla.IndicatorStyle.ThickCompositionIndicator,
             self.INDICATOR_ERROR
@@ -117,12 +539,13 @@ class CustomScintilla(QsciScintilla):
         )
         self.setIndicatorForegroundColor(colors["error"], self.INDICATOR_ERROR)
         self.setIndicatorForegroundColor(colors["warning"], self.WARNING_ERROR)
-        self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, self.INDICATOR_ERROR)
-        self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, self.WARNING_ERROR)
 
     def setup_error_marker(self):
         """Настройка маркера для подсветки строк с ошибками"""
-        colors = THEMES[CURRENT_THEME]["colors"]
+        if self.main_window:
+            colors = THEMES[self.main_window.current_theme]["colors"]
+        else:
+            colors = THEMES[CURRENT_THEME]["colors"]
         
         # Создаем полупрозрачный красный цвет для фона строки с ошибкой
         error_bg_color = QColor(colors["error"])
@@ -726,7 +1149,7 @@ class EditorTabWidget(QTabWidget):
         super().__init__(parent)
         self.setTabsClosable(False)
         self.setMovable(True)
-        self.tabBar().tabMoved.connect(self.on_tab_moved)  # Добавляем обработчик перемещения
+        self.tabBar().tabMoved.connect(self.on_tab_moved)
 
     def addTab(self, widget, title):
         index = super().addTab(widget, title)
@@ -740,38 +1163,34 @@ class EditorTabWidget(QTabWidget):
 
     def on_tab_moved(self, from_index, to_index):
         """Обновляем индексы у кнопок закрытия после перемещения вкладок"""
-        # Пересоздаем кнопки закрытия для всех вкладок
         for i in range(self.count()):
             self._update_close_button(i)
 
     def _update_close_button(self, index):
         """Обновить кнопку закрытия для конкретной вкладки"""
         tab_bar = self.tabBar()
-        # Удаляем старую кнопку
         old_btn = tab_bar.tabButton(index, QTabBar.ButtonPosition.RightSide)
         if old_btn:
             old_btn.deleteLater()
         
-        # Создаем новую кнопку с актуальным индексом
         btn = QToolButton(tab_bar)
         btn.setIcon(self._create_close_icon())
-        btn.setIconSize(QSize(16, 16))
+        btn.setIconSize(QSize(14, 14))
         btn.setStyleSheet("""
             QToolButton {
                 background-color: transparent;
                 border: none;
-                padding: 1px;
+                border-radius: 3px;
+                padding: 2px;
             }
             QToolButton:hover {
                 background-color: rgba(255, 255, 255, 30);
-                border-radius: 2px;
             }
             QToolButton:pressed {
                 background-color: rgba(255, 255, 255, 60);
             }
         """)
         
-        # Используем лямбду с захватом текущего индекса
         btn.clicked.connect(lambda checked, idx=index: self._on_close_clicked(idx))
         tab_bar.setTabButton(index, QTabBar.ButtonPosition.RightSide, btn)
 
@@ -779,32 +1198,28 @@ class EditorTabWidget(QTabWidget):
         self._update_close_button(index)
 
     def _create_close_icon(self):
-        pixmap = QPixmap(16, 16)
+        pixmap = QPixmap(14, 14)
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Определяем цвет крестика в зависимости от текущей темы
         main_window = self.window()
         if hasattr(main_window, 'current_theme'):
             colors = THEMES[main_window.current_theme]["colors"]
-            painter.setPen(QPen(colors["fg"], 2))
+            painter.setPen(QPen(colors["fg"], 1.5))
         else:
-            # По умолчанию
-            painter.setPen(QPen(QColor("#cdd6f4"), 2))
+            painter.setPen(QPen(QColor("#cdd6f4"), 1.5))
         
-        painter.drawLine(4, 4, 12, 12)
-        painter.drawLine(12, 4, 4, 12)
+        painter.drawLine(4, 4, 10, 10)
+        painter.drawLine(10, 4, 4, 10)
         painter.end()
         return QIcon(pixmap)
 
     def _on_close_clicked(self, index):
         """Обработчик клика по кнопке закрытия"""
-        # Проверяем, что индекс все еще валидный
         if index < self.count():
             self.close_tab(index)
         else:
-            # Если индекс невалидный (например, после перетаскивания), 
-            # пытаемся найти вкладку по виджету
             sender = self.sender()
             if sender:
                 tab_bar = self.tabBar()
@@ -845,16 +1260,18 @@ class EditorTabWidget(QTabWidget):
         self.removeTab(index)
         widget.deleteLater()
         
-        # Если после удаления не осталось вкладок, создаем новую
         if self.count() == 0:
             main_window = self.window()
             if hasattr(main_window, 'new_file'):
                 main_window.new_file()
 
+
+# ----------------------------------------------------------------------
+# Кастомное меню с закругленными углами (восстановлено)
+# ----------------------------------------------------------------------
 class RoundedMenu(QMenu):
     def __init__(self, title=None, parent=None):
         super().__init__(title, parent)
-        # Важные флаги для прозрачности
         self.setWindowFlags(
             Qt.WindowType.Popup | 
             Qt.WindowType.FramelessWindowHint | 
@@ -862,9 +1279,7 @@ class RoundedMenu(QMenu):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        
     def showEvent(self, event):
-        # Обновляем размер перед показом
         self.adjustSize()
         super().showEvent(event)
         
@@ -872,23 +1287,27 @@ class RoundedMenu(QMenu):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Получаем цвета из текущей темы
         main_window = self.window()
         if hasattr(main_window, 'current_theme'):
             colors = THEMES[main_window.current_theme]["colors"]
         else:
             colors = THEMES[CURRENT_THEME]["colors"]
         
-        # Рисуем закругленный фон (весь виджет)
         rect = self.rect()
+        
+        # Рисуем фон с закругленными углами
         painter.setBrush(QColor(colors['bg']))
-        painter.setPen(Qt.PenStyle.NoPen)  # Убираем pen для фона
-        painter.drawRoundedRect(rect, 10, 10)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawRoundedRect(rect, 8, 8)
         
-        painter.drawRoundedRect(rect.adjusted(1, 1, -1, -1), 10, 10)
+        # Рисуем тонкую рамку
+        painter.setPen(QPen(QColor(colors['status_border']), 1))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRoundedRect(rect.adjusted(1, 1, -1, -1), 7, 7)
         
-        # Рисуем пункты меню
         super().paintEvent(event)
+
+
 # ----------------------------------------------------------------------
 # Главное окно редактора
 # ----------------------------------------------------------------------
@@ -896,23 +1315,59 @@ class TwistLangEditor(QMainWindow):
     def __init__(self):
         super().__init__()
         
+        # Убираем стандартный заголовок и делаем окно с закругленными углами
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)  # Добавляем прозрачность для закруглений
+        
         self.setGeometry(100, 100, 1200, 800)
         self.setWindowTitle("Lumen IDE")
-        self.setWindowIcon(QIcon(r'data\app_icon.png'))
+        
+        
+        # Центральный виджет с закругленными углами
+        central_widget = QWidget()
+        central_widget.setObjectName("centralWidget")
+        central_widget.setStyleSheet("""
+            QWidget#centralWidget {
+                border-radius: 10px;
+            }
+        """)
+        self.setCentralWidget(central_widget)
+        
+        # Основной layout
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        
+        # Кастомный заголовок (теперь он напрямую в central_widget)
+        self.title_bar = CustomTitleBar(self)
+        self.title_bar.setObjectName("titleBar")
+        main_layout.addWidget(self.title_bar)
+        
+        # Контейнер для контента (внутренняя часть с фоном)
+        content_widget = QWidget()
+        content_widget.setObjectName("contentWidget")
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
+        main_layout.addWidget(content_widget, 1)
 
+        # Виджет вкладок
         self.tab_widget = EditorTabWidget(self)
-        self.setCentralWidget(self.tab_widget)
+        content_layout.addWidget(self.tab_widget)
 
+        # Кнопка запуска
         self.run_button = RunButton(self)
-        self.run_button.clicked.connect(self.run_current_file)
-
+        self.run_button.hide()  # Скрываем, пока не применим тему
+        
+        # Статус бар с закругленными нижними углами
         self.status_bar = QStatusBar()
+        self.status_bar.setObjectName("statusBar")
         self.setStatusBar(self.status_bar)
 
-        self.ls_processes = {}  # ключ: путь к файлу, значение: процесс
+        self.ls_processes = {}
         self.current_file = None
-        self.current_theme = CURRENT_THEME  # светлая по умолчанию
-        self.global_font_size = 12  # глобальный размер шрифта
+        self.current_theme = CURRENT_THEME
+        self.global_font_size = 12
 
         self.autosave_timer = QTimer(self)
         self.autosave_timer.timeout.connect(self.autosave_all_files)
@@ -923,7 +1378,12 @@ class TwistLangEditor(QMainWindow):
         self.error_check_timer.timeout.connect(self.check_for_errors)
         self.error_check_timer.start(300)
 
+        # Создаем меню (но не добавляем в стандартный menuBar)
         self.create_menu()
+        
+        # Добавляем меню в кастомный заголовок
+        self.title_bar.add_menu(self.menuBar())
+        
         self.setup_shortcuts()
 
         self.setAcceptDrops(True)
@@ -940,23 +1400,122 @@ class TwistLangEditor(QMainWindow):
 
         self.autosave_count = 0
         
+        # Подключаем сигналы заголовка
+        self.title_bar.windowMinimized.connect(self.showMinimized)
+        self.title_bar.windowMaximized.connect(self.toggle_maximize)
+        self.title_bar.windowClosed.connect(self.close)
+        
         # Применяем начальную тему
         self.apply_theme(self.current_theme)
+
+    def toggle_maximize(self):
+        """Переключение между максимизированным и нормальным состоянием"""
+        if self.title_bar.is_window_maximized:
+            self.showNormal()
+        else:
+            self.showMaximized()
+        
+        # Обновляем состояние в title_bar после изменения
+        self.title_bar.set_maximized_state(self.isMaximized())
+    
+    
+
 
     def apply_theme(self, theme_name):
         """Применить тему по имени"""
         self.current_theme = theme_name
         colors = THEMES[theme_name]["colors"]
+
+        # Обновляем иконку приложения с цветом текущей темы
+        icon = create_colored_svg_icon(r"data\app_icon.svg", colors['title_fg'])
+        if icon and not icon.isNull():
+            self.setWindowIcon(icon)
+            # Обновляем иконку в заголовке
+            self.title_bar.update_icon(icon)
+            print(f"✅ Icon updated for theme: {theme_name}")
+        else:
+            print(f"⚠️ Could not update icon for theme: {theme_name}")
+            # Запасной вариант
+            if os.path.exists(r'data\app_icon.png'):
+                png_icon = QIcon(r'data\app_icon.png')
+                self.setWindowIcon(png_icon)
+                self.title_bar.update_icon(png_icon)
         
-        # Обновляем статус бар
+        # Обновляем заголовок
+        self.title_bar.update_style()
+        
+        # Обновляем кнопку запуска
+        self.run_button.update_style()
+        self.run_button.show()
+        
+        # Обновляем центральный виджет (прозрачный, только для закруглений)
+        self.centralWidget().setStyleSheet(f"""
+            QWidget#centralWidget {{
+                border-radius: 10px;
+            }}
+        """)
+        
+        # Обновляем контейнер для контента (здесь будет основной фон)
+        content_widget = self.findChild(QWidget, "contentWidget")
+        if content_widget:
+            content_widget.setStyleSheet(f"""
+                QWidget#contentWidget {{
+                    background-color: {colors['title_bg'].name()};
+                }}
+            """)
+        
+        # Обновляем статус бар с закруглениями
         self.status_bar.setStyleSheet(f"""
-            QStatusBar {{
+            QStatusBar#statusBar {{
                 background-color: {colors['status_bg'].name()};
                 color: {colors['status_fg'].name()};
                 border-top: 1px solid {colors['status_border'].name()};
+                border-bottom-left-radius: 7px;
+                border-bottom-right-radius: 7px;
             }}
             QStatusBar::item {{
                 border: none;
+            }}
+        """)
+        
+        # Обновляем стиль для таб-бара (старый стиль, но с цветами из темы)
+        self.tab_widget.setStyleSheet(f"""
+            QTabWidget::pane {{
+                background-color: {colors['bg'].name()};
+                border: none;
+            }}
+            
+            QTabBar::tab {{
+                background-color: {colors['margin_bg'].name()};
+                color: {colors['fg'].name()};
+                border: 1px solid {colors['title_bg_darker'].name()};
+                
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                min-width: 16ex;
+                padding: 5px;
+                margin-left: 2px;
+            }}
+            
+            QTabBar::tab:selected {{
+                background-color: {colors['bg'].name()};
+                border-bottom-color: {colors['bg'].name()};
+            }}
+            
+            QTabBar::tab:hover:!selected {{
+                background-color: {colors['title_border'].name()};
+            }}
+            
+            
+            
+            QTabBar QToolButton {{
+                background-color: {colors['margin_bg'].name()};
+                border: 1px solid {colors['status_border'].name()};
+                border-radius: 3px;
+            }}
+            
+            QTabBar QToolButton:hover {{
+                background-color: {colors['selection_bg'].name()};
             }}
         """)
         
@@ -971,62 +1530,6 @@ class TwistLangEditor(QMainWindow):
         
         # Обновляем иконки закрытия
         self.update_all_close_icons()
-
-        self.update_menubar_style()
-        
-
-    def update_menubar_style(self):
-        colors = THEMES[self.current_theme]["colors"]
-        border_color = colors.get('status_border', colors.get('margin_bg', QColor("#cccccc")))
-
-        # Отключаем стандартный фон меню
-        self.menuBar().setStyleSheet(f"""
-            QMenuBar {{
-                background-color: {colors['title_bg'].name()};
-                color: {colors['title_fg'].name()};
-                
-            }}
-            QMenuBar::item {{
-                background-color: transparent;
-                color: {colors['title_fg'].name()};
-                
-            }}
-            QMenuBar::item:selected {{
-                background-color: {colors['selection_bg'].name()};
-                color: {colors['selection_fg'].name()};
-            }}
-        """)
-
-        # Для всех меню в приложении
-        app = QApplication.instance()
-        app.setStyleSheet(f"""
-            QMenu {{
-                background-color: {colors['bg'].name()};
-                color: {colors['fg'].name()};
-                border: 1px solid {border_color.name()};
-                border-radius: 10px;
-                padding: 4px;
-                
-            }}
-            QMenu::item {{
-                padding: 4px 24px 4px 8px;
-                border-radius: 6px;
-                background-color: transparent;
-            }}
-            QMenu::item:selected {{
-                background-color: {colors['selection_bg'].name()};
-                color: {colors['selection_fg'].name()};
-            }}
-            QMenu::item:pressed {{
-                background-color: {colors['selection_bg'].name()};
-                color: {colors['selection_fg'].name()};
-            }}
-            QMenu::separator {{
-                height: 0px;
-                background-color: {border_color.name()};
-                margin: px 0;
-            }}
-        """)
 
     def update_status_labels(self):
         """Обновить цвета статусных лейблов согласно текущей теме"""
@@ -1047,7 +1550,6 @@ class TwistLangEditor(QMainWindow):
             self.error_label.setText("✓ No errors")
             self.error_label.setStyleSheet(f"color: {colors['autosave_on'].name()}; padding: 2px 5px;")
         
-        # Показываем количество активных языковых серверов
         active_ls_count = sum(1 for proc in self.ls_processes.values() if proc.poll() is None)
         self.ls_status_label.setText(f"⚙ LS: {active_ls_count} active")
         
@@ -1067,27 +1569,28 @@ class TwistLangEditor(QMainWindow):
     def select_theme(self, theme_name):
         """Выбор темы из меню"""
         self.apply_theme(theme_name)
+        
+        if hasattr(self, 'theme_actions'):
+            for action in self.theme_actions:
+                action.setChecked(action.text() == theme_name)
+        
         self.status_bar.showMessage(f"Theme switched to {theme_name}", 2000)
 
     def update_all_editor_themes(self):
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla):
-                # Сохраняем текст и позицию
                 text = editor.text()
                 line, col = editor.getCursorPosition()
                 scroll_pos = editor.SendScintilla(editor.SCI_GETFIRSTVISIBLELINE)
 
-                # Создаём новый лексер с текущей темой и размером шрифта
                 new_lexer = TwistLangLexer(editor, self.current_theme, self.global_font_size)
                 editor.setLexer(new_lexer)
 
-                # Восстанавливаем текст и позицию
                 editor.setText(text)
                 editor.setCursorPosition(line, col)
                 editor.SendScintilla(editor.SCI_SETFIRSTVISIBLELINE, scroll_pos)
 
-                # Применяем остальные настройки темы
                 self.apply_editor_theme(editor)
                 self.update_autocompletion_icons(editor)
                 editor.setMarginsFont(new_lexer.font(new_lexer.STYLE_DEFAULT))
@@ -1108,11 +1611,9 @@ class TwistLangEditor(QMainWindow):
         editor.setMatchedBraceBackgroundColor(colors["brace_bg"])
         editor.setMatchedBraceForegroundColor(colors["brace_fg"])
         
-        # Обновляем цвета индикаторов ошибок
         editor.setIndicatorForegroundColor(colors["error"], CustomScintilla.INDICATOR_ERROR)
         editor.setIndicatorForegroundColor(colors["warning"], CustomScintilla.WARNING_ERROR)
         
-        # Обновляем цвет маркера для строк с ошибками
         error_bg_color = QColor(colors["error"])
         error_bg_color.setAlpha(40)
         editor.setMarkerBackgroundColor(error_bg_color, CustomScintilla.ERROR_LINE_INDICATOR)
@@ -1122,7 +1623,7 @@ class TwistLangEditor(QMainWindow):
         editor.setMarkerBackgroundColor(warning_bg_color, CustomScintilla.WARNING_LINE_INDICATOR)
         
         editor.update()
-        editor.viewport().update()  # Обновляем для перерисовки inline-текста
+        editor.viewport().update()
 
     def update_application_palette(self):
         app = QApplication.instance()
@@ -1130,23 +1631,8 @@ class TwistLangEditor(QMainWindow):
         
         palette = app.palette()
         
-        # Основные цвета
         palette.setColor(palette.ColorRole.Window, colors["bg"])
         palette.setColor(palette.ColorRole.WindowText, colors["fg"])
-        
-        # Цвета для заголовка окна (Windows)
-        palette.setColor(palette.ColorRole.Window, colors["title_bg"])
-        palette.setColor(palette.ColorRole.WindowText, colors["title_fg"])
-        
-        # Цвета для активного заголовка
-        palette.setColor(palette.ColorGroup.Active, palette.ColorRole.Window, colors["title_bg"])
-        palette.setColor(palette.ColorGroup.Active, palette.ColorRole.WindowText, colors["title_fg"])
-        
-        # Цвета для неактивного заголовка
-        palette.setColor(palette.ColorGroup.Inactive, palette.ColorRole.Window, colors["title_inactive_bg"])
-        palette.setColor(palette.ColorGroup.Inactive, palette.ColorRole.WindowText, colors["title_inactive_fg"])
-        
-        # Остальные цвета
         palette.setColor(palette.ColorRole.Base, colors["margin_bg"])
         palette.setColor(palette.ColorRole.AlternateBase, colors["caret_line"])
         palette.setColor(palette.ColorRole.ToolTipBase, colors["selection_bg"])
@@ -1163,6 +1649,7 @@ class TwistLangEditor(QMainWindow):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        # Позиционируем кнопку запуска
         button_size = self.run_button.size()
         margin = 20
         x = self.width() - button_size.width() - margin
@@ -1182,6 +1669,8 @@ class TwistLangEditor(QMainWindow):
 
     def create_menu(self):
         menubar = self.menuBar()
+        menubar.setVisible(False)  # Скрываем стандартный менюбар
+        
         file_menu = RoundedMenu("File", self)
         menubar.addMenu(file_menu)
         new_action = QAction("New", self)
@@ -1295,16 +1784,14 @@ class TwistLangEditor(QMainWindow):
         view_menu.addSeparator()
         
         theme_menu = RoundedMenu("Theme", self)
-        # Меню выбора темы - ИСПРАВЛЕННАЯ ЧАСТЬ
         view_menu.addMenu(theme_menu)
-        self.theme_actions = []  # Сохраняем ссылки на действия тем
+        self.theme_actions = []
         
         for theme_name in THEMES.keys():
             theme_action = QAction(theme_name, self)
             theme_action.setCheckable(True)
             if theme_name == self.current_theme:
                 theme_action.setChecked(True)
-            # Используем functools.partial или лямбду с значением по умолчанию
             theme_action.triggered.connect(lambda checked, tn=theme_name: self.select_theme(tn))
             theme_menu.addAction(theme_action)
             self.theme_actions.append(theme_action)
@@ -1327,17 +1814,6 @@ class TwistLangEditor(QMainWindow):
         clear_errors_action.triggered.connect(self.clear_all_errors)
         run_menu.addAction(clear_errors_action)
 
-    def select_theme(self, theme_name):
-        """Выбор темы из меню"""
-        self.apply_theme(theme_name)
-        
-        # Обновляем состояние галочек в меню
-        if hasattr(self, 'theme_actions'):
-            for action in self.theme_actions:
-                action.setChecked(action.text() == theme_name)
-        
-        self.status_bar.showMessage(f"Theme switched to {theme_name}", 2000)
-
     def setup_shortcuts(self):
         QShortcut(QKeySequence("F8"), self).activated.connect(self.goto_next_error)
         QShortcut(QKeySequence("Shift+F8"), self).activated.connect(self.goto_prev_error)
@@ -1356,18 +1832,16 @@ class TwistLangEditor(QMainWindow):
         self.setup_editor_widget(editor)
         self.apply_editor_theme(editor)
         
-        # Запускаем языковой сервер для нового файла
         if filename:
             self.start_language_server(filename)
 
     def setup_editor_widget(self, editor):
         editor.setUtf8(True)
         editor.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        editor.setScrollWidthTracking(True)   # отслеживать максимальную ширину строки
+        editor.setScrollWidthTracking(True)
         editor.setScrollWidth(1)
         safe_font = self.get_safe_font("Consolas", self.global_font_size)
         editor.setFont(safe_font)
-        # Устанавливаем такой же шрифт для номеров строк
         editor.setMarginsFont(safe_font)
         editor.setCaretLineVisible(True)
         editor.setMarginType(0, QsciScintilla.MarginType.NumberMargin)
@@ -1560,13 +2034,11 @@ class TwistLangEditor(QMainWindow):
         if not file_path:
             return
 
-        # Проверяем, не запущен ли уже сервер для этого файла
         if file_path in self.ls_processes:
             proc = self.ls_processes[file_path]
-            if proc.poll() is None:  # Процесс еще работает
+            if proc.poll() is None:
                 return
             else:
-                # Процесс завершился, удаляем его из словаря
                 del self.ls_processes[file_path]
 
         try:
@@ -1586,7 +2058,6 @@ class TwistLangEditor(QMainWindow):
             print(f"Started LS for {os.path.basename(file_path)}")
             self.update_status_labels()
 
-            # Проверяем ошибки через небольшую задержку
             editor = self.find_editor_by_filename(file_path)
             if editor:
                 QTimer.singleShot(500, lambda: self.check_file_errors(editor))
@@ -1595,7 +2066,6 @@ class TwistLangEditor(QMainWindow):
             print(f"Failed to start LS for {file_path}: {e}")
 
     def find_editor_by_filename(self, filename):
-        """Найти редактор по имени файла"""
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla) and editor.filename == filename:
@@ -1626,7 +2096,6 @@ class TwistLangEditor(QMainWindow):
             self.stop_language_server(file_path)
 
     def on_tab_changed(self, index):
-        """Обработчик смены вкладки - больше не останавливаем серверы"""
         editor = self.tab_widget.widget(index)
         if not isinstance(editor, CustomScintilla):
             return
@@ -1648,7 +2117,6 @@ class TwistLangEditor(QMainWindow):
             self.open_file(filename)
 
     def open_file(self, filename):
-        # Проверяем, не открыт ли уже файл
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla) and getattr(editor, 'filename', None) == filename:
@@ -1664,9 +2132,6 @@ class TwistLangEditor(QMainWindow):
             editor.setModified(False)
             self.add_editor_tab(editor, filename=filename, title=os.path.basename(filename))
             self.status_bar.showMessage(f"Opened: {filename}", 2000)
-
-            # Запускаем сервер для нового файла (уже в add_editor_tab)
-            # Обновляем статус
             self.update_status_labels()
 
         except Exception as e:
@@ -1711,7 +2176,6 @@ class TwistLangEditor(QMainWindow):
             editor.last_save_time = datetime.now()
             self.status_bar.showMessage(f"Saved: {filename}", 2000)
 
-            # При сохранении перезапускаем сервер для этого файла
             if filename in self.ls_processes:
                 self.stop_language_server(filename)
                 QTimer.singleShot(100, lambda: self.start_language_server(filename))
@@ -1898,7 +2362,6 @@ class TwistLangEditor(QMainWindow):
             self.status_bar.showMessage("Not an @include line", 2000)
 
     def apply_global_font_to_all_editors(self):
-        """Применить глобальный размер шрифта ко всем редакторам"""
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla):
@@ -1938,7 +2401,6 @@ def main():
         default_font = QFont("Arial", 10)
     app.setFont(default_font)
 
-    # Применяем начальную тему (Catppuccin Latte)
     colors = THEMES[CURRENT_THEME]["colors"]
     palette = app.palette()
     palette.setColor(palette.ColorRole.Window, colors["bg"])
