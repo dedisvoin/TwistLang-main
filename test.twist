@@ -1,0 +1,5 @@
+const let a = 10;
+
+static let a: auto = 10;
+
+assert a != 10, "NOO";

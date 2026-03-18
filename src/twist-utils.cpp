@@ -308,7 +308,7 @@ bool SaveTokensFile(string file_name, vector<Token> tokens) {
 
     for (auto token : tokens) {
         content += TokenTypeToString(token.type) + " : " + token.value + " -> " \
-            + token.pif.file_name + ";" + to_string(token.pif.line) +  ";" + to_string(token.pif.index) \
+            + token.pif.file_path + " <-> " + token.pif.file_name + ";" + to_string(token.pif.line) +  ";" + to_string(token.pif.index) \
             + " [" + to_string(token.pif.lenght) + "]"  + "\n";
     }
     
@@ -468,3 +468,15 @@ struct ArgsParser {
         
     }
 };
+
+string GetFileName(string file_path) {
+    size_t last_slash = file_path.find_last_of("/\\");
+    string full_filename = (last_slash == string::npos) ? 
+                        file_path : 
+                        file_path.substr(last_slash + 1);
+    
+    size_t dot_pos = full_filename.find_last_of(".");
+    return (dot_pos == string::npos) ? 
+                full_filename : 
+                full_filename.substr(0, dot_pos);
+}

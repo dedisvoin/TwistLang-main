@@ -1,5 +1,10 @@
-let a = 10;
+let Number = Int | Double;
 
+outln Number;
 
-
-
+let n = 1451;
+if (typeof(n) >> Double) {
+    outln true;
+} else { 
+    outln false;
+}

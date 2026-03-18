@@ -10,8 +10,3 @@ static const final global namespace std {
     global final const let Literal = String | Char;
 
 }
-
-    
-
- 
-    

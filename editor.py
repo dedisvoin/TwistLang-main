@@ -8,6 +8,8 @@ import subprocess
 import platform
 import shutil
 import re
+import random
+import math
 from datetime import datetime
 from typing import Optional, Dict, List, Tuple, Set, Any
 from dataclasses import dataclass
@@ -19,13 +21,14 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMenu, QStatusBar,
     QLabel, QTabWidget, QTabBar, QToolButton,
     QFileDialog, QMessageBox, QToolTip, QWidget, QHBoxLayout,
-    QVBoxLayout, QFrame
+    QVBoxLayout, QFrame, QStackedWidget
 )
 from PyQt6.QtGui import (
     QColor, QFont, QAction, QKeySequence, QShortcut,
     QPainter, QPen, QIcon, QPixmap, QMouseEvent,
+    QLinearGradient, QRadialGradient
 )
-from PyQt6.QtCore import QByteArray, QRect, Qt, pyqtSignal, QTimer, QSize, QPoint
+from PyQt6.QtCore import QByteArray, QRect, Qt, pyqtSignal, QTimer, QSize, QPoint, QPropertyAnimation, QEasingCurve
 from PyQt6.QtSvg import QSvgRenderer
 
 from themes import *
@@ -137,6 +140,104 @@ def get_safe_monospace_font(preferred_font: str, size: int) -> QFont:
             return font
     
     return QFont("Consolas", size)
+
+
+
+# =============================================================================
+# WELCOME WIDGET
+# =============================================================================
+
+class WelcomeWidget(QWidget):
+    """Welcome screen shown when no files are open"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        
+        # Initialize floating text manager
+        
+        
+    def resizeEvent(self, event):
+        """Recreate floating texts when widget is resized"""
+        super().resizeEvent(event)
+        
+        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        
+        
+        colors = self._get_theme_colors()
+        
+        # Fill background with gradient
+        gradient = QLinearGradient(0, 0, self.width(), self.height())
+        gradient.setColorAt(0, colors['bg'])
+        gradient.setColorAt(1, colors['title_bg'])
+        painter.fillRect(self.rect(), gradient)
+        
+        
+        # Draw large "Lumen IDE" text
+        painter.setOpacity(1.0)
+        painter.setPen(QPen(colors['fg'], 1))
+        
+        # Use large font
+        font = QFont("Segoe UI", 100, QFont.Weight.Light)
+        font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 110)
+        painter.setFont(font)
+        
+        # Center text
+        text = "Lumen IDE"
+        metrics = painter.fontMetrics()
+        text_width = metrics.horizontalAdvance(text)
+        text_height = metrics.height()
+        
+        x = (self.width() - text_width) // 2
+        y = (self.height() - text_height) // 2 + metrics.ascent()
+        
+        # Draw with glow effect
+        for i in range(5):
+            offset = i * 2
+            painter.setOpacity(0.1 * (5 - i))
+            painter.setPen(QPen(colors['title_fg'], 1))
+            painter.drawText(x + offset, y + offset, text)
+        
+        painter.setOpacity(1.0)
+        painter.setPen(QPen(colors['title_fg'], 1))
+        painter.drawText(x, y, text)
+        
+        # Draw subtitle
+        painter.setPen(QPen(colors['title_fg'], 1))
+        subtitle_font = QFont("Consolas", 14)
+        painter.setFont(subtitle_font)
+        
+        subtitle = "Integrated development environment for Lumen"
+        metrics = painter.fontMetrics()
+        subtitle_width = metrics.horizontalAdvance(subtitle)
+        
+        subtitle_x = (self.width() - subtitle_width) // 2
+        subtitle_y = y + text_height // 2 - 50
+        
+        painter.drawText(subtitle_x, subtitle_y, subtitle)
+        
+        # Draw static author text at bottom
+        author_font = QFont("Consolas", 11)
+        painter.setFont(author_font)
+        painter.setPen(QPen(colors['title_fg'], 1))
+        painter.setOpacity(0.8)
+        
+        author_text = "By Pavlov Ivan Alexeevich"
+        metrics = painter.fontMetrics()
+        author_x = 10
+        author_y = self.height() - 10
+
+        #painter.drawText(author_x, author_y, author_text)
+        
+        painter.end()
+        
+    def _get_theme_colors(self):
+        window = self.window()
+        if hasattr(window, 'current_theme'):
+            return THEMES[window.current_theme]["colors"]
+        return THEMES[DEFAULT_THEME]["colors"]
 
 
 # =============================================================================
@@ -339,7 +440,7 @@ class CustomTitleBar(QFrame):
         colors = self._get_theme_colors()
         
         if btn.underMouse():
-            painter.fillRect(btn.rect(), QColor(255, 255, 255, 30))
+            painter.fillRect(btn.rect(), colors['title_bg_darker'])
         
         painter.setPen(QPen(colors['title_fg'], 1))
         x = btn.width() // 2 - 7
@@ -354,7 +455,7 @@ class CustomTitleBar(QFrame):
         colors = self._get_theme_colors()
         
         if btn.underMouse():
-            painter.fillRect(btn.rect(), QColor(255, 255, 255, 30))
+            painter.fillRect(btn.rect(), colors['title_bg_darker'])
         
         painter.setPen(QPen(colors['title_fg'], 1))
         
@@ -467,7 +568,7 @@ class CustomTitleBar(QFrame):
                         font-size: 12px;
                     }}
                     QToolButton:hover {{
-                        background-color: {colors['selection_bg'].name()};
+                        background-color: {colors['title_bg_darker'].name()};
                         color: {colors['selection_fg'].name()};
                     }}
                     QToolButton::menu-indicator {{
@@ -509,6 +610,11 @@ class CustomTitleBar(QFrame):
     # Mouse event handlers for window dragging
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
+            # Не начинаем перетаскивание, если окно развернуто на весь экран
+            if self.parent_window and self.is_maximized:
+                super().mousePressEvent(event)
+                return
+                
             pos = event.pos()
             # Don't start drag if clicking on buttons
             if not any(btn.geometry().contains(pos) for btn in [
@@ -521,14 +627,22 @@ class CustomTitleBar(QFrame):
         super().mousePressEvent(event)
         
     def mouseMoveEvent(self, event):
+        # Не перемещаем окно, если оно развернуто на весь экран
+        if self.parent_window and self.is_maximized:
+            super().mouseMoveEvent(event)
+            return
+            
         if self.dragging and event.buttons() & Qt.MouseButton.LeftButton:
             self.parent_window.move(event.globalPosition().toPoint() - self.drag_position)
             event.accept()
+        else:
+            super().mouseMoveEvent(event)
             
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.dragging = False
             event.accept()
+            
             
     def mouseDoubleClickEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -538,6 +652,7 @@ class CustomTitleBar(QFrame):
             ]):
                 self.window_maximized.emit()
                 event.accept()
+                self.update_style()
 
 
 class RoundedMenu(QMenu):
@@ -714,8 +829,8 @@ class EditorTabWidget(QTabWidget):
         
         if self.count() == 0:
             main_window = self.window()
-            if hasattr(main_window, 'new_file'):
-                main_window.new_file()
+            if hasattr(main_window, '_update_content_display'):
+                main_window._update_content_display()
 
 
 # =============================================================================
@@ -1065,7 +1180,8 @@ class CustomScintilla(QsciScintilla):
         self._setup_editor()
         self._setup_error_highlighting()
         
-        self.textChanged.connect(self._on_text_changed)
+        # Убираем подключение textChanged, которое вызывало лишние проверки
+        # self.textChanged.connect(self._on_text_changed)
         
     # ===== Setup methods =====
     
@@ -1200,11 +1316,6 @@ class CustomScintilla(QsciScintilla):
         
     # ===== Event handlers =====
     
-    def _on_text_changed(self):
-        """Handle text change"""
-        self.clear_errors()
-        self.content_changed.emit()
-        
     def keyPressEvent(self, event):
         """Handle key presses (bracket auto-close)"""
         # Auto-close brackets
@@ -1225,12 +1336,12 @@ class CustomScintilla(QsciScintilla):
             self.ctrl_pressed = True
             
         super().keyPressEvent(event)
-        self.content_changed.emit()
         
     def keyReleaseEvent(self, event):
         if event.key() == Qt.Key.Key_Control:
             self.ctrl_pressed = False
         super().keyReleaseEvent(event)
+        # Убираем emit отсюда
         
     def _insert_pair(self, open_char: str, close_char: str):
         """Insert matching bracket pair"""
@@ -1383,7 +1494,7 @@ class TwistLangEditor(QMainWindow):
         
         self.current_theme = DEFAULT_THEME
         self.global_font_size = DEFAULT_FONT_SIZE
-        self.autosave_interval = 500  # ms
+        self.autosave_interval = 300  # ms
         self.autosave_count = 0
         self.current_file = None
         
@@ -1428,17 +1539,33 @@ class TwistLangEditor(QMainWindow):
         self.title_bar.setObjectName("titleBar")
         main_layout.addWidget(self.title_bar)
         
-        # Content area
-        content_widget = QWidget()
-        content_widget.setObjectName("contentWidget")
-        content_layout = QVBoxLayout(content_widget)
-        content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.setSpacing(0)
-        main_layout.addWidget(content_widget, 1)
+        # Content area with stacked widget for welcome screen and tabs
+        self.content_stack = QStackedWidget()
+        self.content_stack.setObjectName("contentStack")
+        main_layout.addWidget(self.content_stack, 1)
         
-        # Tab widget
+        # Welcome widget
+        self.welcome_widget = WelcomeWidget()
+        self.content_stack.addWidget(self.welcome_widget)
+        
+        # Tab widget container with solid background
+        self.tab_container = QWidget()
+        self.tab_container.setObjectName("tabContainer")
+        print(THEMES[DEFAULT_THEME]['colors']['title_fg'])
+        self.tab_container.setStyleSheet(f"""
+            QWidget#tabContainer {{
+                background-color: {THEMES[DEFAULT_THEME]['colors']['title_bg'].name()};
+            }}
+        """)
+        
+        tab_layout = QVBoxLayout(self.tab_container)
+        tab_layout.setContentsMargins(0, 0, 0, 0)
+        tab_layout.setSpacing(0)
+        
         self.tab_widget = EditorTabWidget(self)
-        content_layout.addWidget(self.tab_widget)
+        tab_layout.addWidget(self.tab_widget)
+        self.content_stack.addWidget(self.tab_container)
+        
         self.tab_widget.currentChanged.connect(self._on_tab_changed)
         
         # Status bar
@@ -1464,6 +1591,9 @@ class TwistLangEditor(QMainWindow):
         self.title_bar.window_maximized.connect(self._toggle_maximize)
         self.title_bar.window_closed.connect(self.close)
         self.title_bar.run_clicked.connect(self.run_current_file)
+        
+        # Initially show welcome widget
+        self._update_content_display()
         
     def _create_menu(self):
         """Create application menus"""
@@ -1576,6 +1706,10 @@ class TwistLangEditor(QMainWindow):
         clear_errors_action = self._create_action("Clear Errors", "Ctrl+E", self.clear_all_errors)
         run_menu.addAction(clear_errors_action)
         
+        # Добавляем действие для ручной проверки ошибок
+        check_errors_action = self._create_action("Check Errors", "F4", self.check_current_file_errors)
+        run_menu.addAction(check_errors_action)
+        
     def _create_action(self, text: str, shortcut: Optional[str], slot) -> QAction:
         """Create a standard action with shortcut"""
         action = QAction(text, self)
@@ -1595,11 +1729,49 @@ class TwistLangEditor(QMainWindow):
         self.autosave_timer.timeout.connect(self.autosave_all_files)
         self.autosave_timer.start(self.autosave_interval)
         
-        self.error_check_timer = QTimer(self)
-        self.error_check_timer.timeout.connect(self._check_for_errors)
-        self.error_check_timer.start(300)
+        # Убираем постоянный таймер проверки ошибок
+        # self.error_check_timer = QTimer(self)
+        # self.error_check_timer.timeout.connect(self._check_for_errors)
+        # self.error_check_timer.start(300)
         
+    # ===== Content display management =====
+    
+    def _update_content_display(self):
+        """Switch between welcome screen and tab widget based on open tabs"""
+        if self.tab_widget.count() == 0:
+            self.content_stack.setCurrentWidget(self.welcome_widget)
+        else:
+            self.content_stack.setCurrentWidget(self.tab_container)
+    
     # ===== Theme management =====
+
+    def show_status_message(self, message: str, timeout: int = 2000):
+        """Show message in status bar with consistent styling"""
+        colors = THEMES[self.current_theme]["colors"]
+        status_bg = colors['status_bg']
+        text_color = QColor(status_bg).lighter(300)  # Осветляем на 300%
+        self.status_bar.setFont(QFont("Consolas"))
+        
+        self.status_bar.setStyleSheet(f"""
+            QStatusBar#statusBar {{
+                background-color: {colors['status_bg'].name()};
+                border-top: 1px solid {colors['status_border'].name()};
+                border-bottom-left-radius: 7px;
+                border-bottom-right-radius: 7px;
+                color: {text_color.name()};
+            }}
+            QStatusBar::item {{
+                border: none;
+            }}
+            QStatusBar QLabel {{
+                color: {text_color.name()};
+                padding: 2px 5px;
+                font-family: Consolas;
+                font-size: 10pt;
+            }}
+        """)
+        
+        self.status_bar.showMessage(message, timeout)
     
     def apply_theme(self, theme_name: str):
         """Apply theme to all components"""
@@ -1623,8 +1795,15 @@ class TwistLangEditor(QMainWindow):
                     background-color: {colors['title_bg'].name()};
                 }}
             """)
-            
-        # Update status bar (только фон и границы, цвет текста будет управляться отдельно)
+        
+        # Update tab container background
+        self.tab_container.setStyleSheet(f"""
+            QWidget#tabContainer {{
+                background-color: {THEMES[self.current_theme]['colors']['title_bg'].name()};
+            }}
+        """)
+
+        # Update status bar
         self.status_bar.setStyleSheet(f"""
             QStatusBar#statusBar {{
                 background-color: {colors['status_bg'].name()};
@@ -1636,6 +1815,49 @@ class TwistLangEditor(QMainWindow):
                 border: none;
             }}
         """)
+        
+        # Обновляем стили для полос прокрутки и других элементов
+        scrollbar_style = f"""
+            QScrollBar:vertical {{
+                background-color: {colors['margin_bg'].name()};
+                width: 10px;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: {colors['title_bg_darker'].name()};
+                min-height: 30px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background-color: {colors['title_bg_darker'].darker(120).name()};
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                border: none;
+                background: none;
+            }}
+            QScrollBar:horizontal {{
+                background-color: {colors['margin_bg'].name()};
+                height: 10px;
+            }}
+            QScrollBar::handle:horizontal {{
+                background-color: {colors['title_bg_darker'].name()};
+                min-width: 30px;
+            }}
+            QScrollBar::handle:horizontal:hover {{
+                background-color: {colors['title_bg_darker'].darker(120).name()};
+            }}
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+                border: none;
+                background: none;
+            }}
+        """
+        
+        # Применяем стили для полос прокрутки ко всему приложению
+        QApplication.instance().setStyleSheet(scrollbar_style)
+        
+        # Обновляем стили для всех виджетов, которые могут иметь полосы прокрутки
+        for widget in QApplication.instance().allWidgets():
+            if isinstance(widget, (QsciScintilla, QTabWidget)):
+                widget.style().unpolish(widget)
+                widget.style().polish(widget)
         
         # Update tab widget
         self.tab_widget.setStyleSheet(f"""
@@ -1675,6 +1897,16 @@ class TwistLangEditor(QMainWindow):
         self._update_status_labels()
         self._update_application_palette()
         
+        # Принудительно обновляем все виджеты
+        self.repaint()
+        for i in range(self.tab_widget.count()):
+            editor = self.tab_widget.widget(i)
+            if isinstance(editor, CustomScintilla):
+                editor.repaint()
+        
+        # Update welcome widget (force repaint)
+        self.welcome_widget.update()
+        
     def select_theme(self, theme_name: str):
         """Select theme from menu"""
         self.apply_theme(theme_name)
@@ -1682,7 +1914,7 @@ class TwistLangEditor(QMainWindow):
         for action in self.theme_actions:
             action.setChecked(action.text() == theme_name)
             
-        self.status_bar.showMessage(f"Theme switched to {theme_name}", 2000)
+        self.show_status_message(f"Theme switched to {theme_name}", 2000)
         
     def _update_all_editor_themes(self):
         """Update theme for all open editors"""
@@ -1898,6 +2130,7 @@ class TwistLangEditor(QMainWindow):
     def new_file(self):
         """Create new empty file"""
         self._add_editor_tab(CustomScintilla(), filename=None, title="Untitled")
+        self._update_content_display()
         
     def open_file_dialog(self):
         """Show open file dialog"""
@@ -1924,7 +2157,7 @@ class TwistLangEditor(QMainWindow):
             editor.setText(content)
             editor.setModified(False)
             self._add_editor_tab(editor, filename=filename, title=os.path.basename(filename))
-            self.status_bar.showMessage(f"Opened: {filename}", 2000)
+            self.show_status_message(f"Opened: {filename}", 2000)
             self._update_status_labels()
             
         except Exception as e:
@@ -1973,12 +2206,13 @@ class TwistLangEditor(QMainWindow):
                 
             editor.setModified(False)
             editor.last_save_time = datetime.now()
-            self.status_bar.showMessage(f"Saved: {filename}", 2000)
+            self.show_status_message(f"Saved: {filename}", 2000)
             
-            # Restart language server
-            if filename in self.ls_processes:
-                self.stop_language_server(filename)
-                QTimer.singleShot(100, lambda: self.start_language_server(filename))
+            # НЕ перезапускаем сервер при сохранении, просто проверяем ошибки
+            editor = self._find_editor_by_filename(filename)
+            if editor:
+                # Проверяем ошибки после сохранения, но сервер не перезапускаем
+                QTimer.singleShot(100, lambda: self._check_file_errors(editor))
                 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not save file: {e}")
@@ -1993,6 +2227,7 @@ class TwistLangEditor(QMainWindow):
         """Close all open tabs"""
         while self.tab_widget.count() > 0:
             self.tab_widget.close_tab(0)
+        self._update_content_display()
             
     def _add_editor_tab(self, editor: CustomScintilla, filename: Optional[str], title: str):
         """Add new editor tab"""
@@ -2003,13 +2238,18 @@ class TwistLangEditor(QMainWindow):
         
         editor.modificationChanged.connect(lambda modified: self._update_tab_title(editor, modified))
         editor.goto_definition_requested.connect(self.open_include_file)
+        # Убираем подключение content_changed, так как не хотим проверять ошибки при каждом изменении
+        # editor.content_changed.connect(self._on_editor_content_changed)
         
         self._setup_editor_widget(editor)
         self._update_editor_theme(editor)
         
+        # Запускаем сервер ТОЛЬКО при открытии файла
         if filename:
             self.start_language_server(filename)
             
+        self._update_content_display()
+        
     def _setup_editor_widget(self, editor: CustomScintilla):
         """Configure editor widget"""
         font = get_safe_monospace_font("Consolas", self.global_font_size)
@@ -2096,15 +2336,19 @@ class TwistLangEditor(QMainWindow):
     # ===== Language Server =====
     
     def start_language_server(self, file_path: str):
-        """Start language server for a file"""
+        """Start language server for a file - только один раз при открытии"""
         if not file_path:
             return
             
+        # Если сервер уже запущен для этого файла, ничего не делаем
         if file_path in self.ls_processes:
             proc = self.ls_processes[file_path]
-            if proc.poll() is None:
+            if proc.poll() is None:  # Сервер все еще работает
+                print(f"LS already running for {os.path.basename(file_path)}")
                 return
-            del self.ls_processes[file_path]
+            else:
+                # Сервер завершился, удаляем из словаря
+                del self.ls_processes[file_path]
             
         try:
             creationflags = subprocess.CREATE_NO_WINDOW if platform.system() == "Windows" else 0
@@ -2123,6 +2367,7 @@ class TwistLangEditor(QMainWindow):
             print(f"Started LS for {os.path.basename(file_path)}")
             self._update_status_labels()
             
+            # Первоначальная проверка ошибок через небольшую задержку
             editor = self._find_editor_by_filename(file_path)
             if editor:
                 QTimer.singleShot(500, lambda: self._check_file_errors(editor))
@@ -2168,7 +2413,7 @@ class TwistLangEditor(QMainWindow):
         if not file_path:
             return None
         base = os.path.splitext(os.path.basename(file_path))[0]
-        return f"{base}_ls.dbg"
+        return f"dbg/{base}_ls.dbg"
         
     def _parse_error_file(self, error_file_path: str) -> List[tuple]:
         """Parse language server error file"""
@@ -2206,15 +2451,6 @@ class TwistLangEditor(QMainWindow):
             
         return errors
         
-    def _check_for_errors(self):
-        """Check all editors for error files"""
-        for i in range(self.tab_widget.count()):
-            editor = self.tab_widget.widget(i)
-            if isinstance(editor, CustomScintilla) and editor.filename:
-                self._check_file_errors(editor)
-                
-        self._update_status_labels()
-        
     def _check_file_errors(self, editor: CustomScintilla):
         """Check single file for errors"""
         if not editor or not editor.filename:
@@ -2228,6 +2464,13 @@ class TwistLangEditor(QMainWindow):
             editor.clear_errors()
             
         self._update_status_labels()
+        
+    def check_current_file_errors(self):
+        """Manually check errors for current file (by F4)"""
+        editor = self.current_editor()
+        if editor and editor.filename:
+            self._check_file_errors(editor)
+            self.show_status_message("Error check completed", 2000)
         
     # ===== Run operations =====
     
@@ -2317,9 +2560,9 @@ class TwistLangEditor(QMainWindow):
             if path:
                 self.open_include_file(path, line)
             else:
-                self.status_bar.showMessage("No valid include path found", 2000)
+                self.show_status_message("No valid include path found", 2000)
         else:
-            self.status_bar.showMessage("Not an include line", 2000)
+            self.show_status_message("Not an include line", 2000)
             
     # ===== Error navigation =====
     
@@ -2327,7 +2570,7 @@ class TwistLangEditor(QMainWindow):
         """Jump to next error in current file"""
         editor = self.current_editor()
         if not editor or not editor.errors:
-            self.status_bar.showMessage("No errors", 2000)
+            self.show_status_message("No errors", 2000)
             return
             
         current_line, current_col = editor.getCursorPosition()
@@ -2335,16 +2578,16 @@ class TwistLangEditor(QMainWindow):
             if error.line > current_line or (error.line == current_line and error.start_col > current_col):
                 editor.setCursorPosition(error.line, error.start_col)
                 editor.ensureLineVisible(error.line)
-                self.status_bar.showMessage(f"Error at line {error.line + 1}", 2000)
+                self.show_status_message(f"Error at line {error.line + 1}", 2000)
                 return
                 
-        self.status_bar.showMessage("No more errors", 2000)
+        self.show_status_message("No more errors", 2000)
         
     def goto_prev_error(self):
         """Jump to previous error in current file"""
         editor = self.current_editor()
         if not editor or not editor.errors:
-            self.status_bar.showMessage("No errors", 2000)
+            self.show_status_message("No errors", 2000)
             return
             
         current_line, current_col = editor.getCursorPosition()
@@ -2352,10 +2595,10 @@ class TwistLangEditor(QMainWindow):
             if error.line < current_line or (error.line == current_line and error.start_col < current_col):
                 editor.setCursorPosition(error.line, error.start_col)
                 editor.ensureLineVisible(error.line)
-                self.status_bar.showMessage(f"Error at line {error.line + 1}", 2000)
+                self.show_status_message(f"Error at line {error.line + 1}", 2000)
                 return
                 
-        self.status_bar.showMessage("No previous errors", 2000)
+        self.show_status_message("No previous errors", 2000)
         
     def clear_all_errors(self):
         """Clear all error highlights"""
@@ -2363,7 +2606,7 @@ class TwistLangEditor(QMainWindow):
         if editor:
             editor.clear_errors()
             self._update_status_labels()
-            self.status_bar.showMessage("Errors cleared", 2000)
+            self.show_status_message("Errors cleared", 2000)
             
     # ===== Zoom operations =====
     
@@ -2372,14 +2615,14 @@ class TwistLangEditor(QMainWindow):
         if self.global_font_size < 40:
             self.global_font_size += 1
             self._apply_global_font_to_all_editors()
-            self.status_bar.showMessage(f"Font size: {self.global_font_size}pt", 2000)
+            self.show_status_message(f"Font size: {self.global_font_size}pt", 2000)
             
     def zoom_out(self):
         """Decrease font size"""
         if self.global_font_size > 7:
             self.global_font_size -= 1
             self._apply_global_font_to_all_editors()
-            self.status_bar.showMessage(f"Font size: {self.global_font_size}pt", 2000)
+            self.show_status_message(f"Font size: {self.global_font_size}pt", 2000)
             
     def _apply_global_font_to_all_editors(self):
         """Apply current font size to all editors"""
@@ -2402,10 +2645,10 @@ class TwistLangEditor(QMainWindow):
         """Enable/disable autosave"""
         if checked:
             self.autosave_timer.start(self.autosave_interval)
-            self.status_bar.showMessage("Auto-save enabled", 2000)
+            self.show_status_message("Auto-save enabled", 2000)
         else:
             self.autosave_timer.stop()
-            self.status_bar.showMessage("Auto-save disabled", 2000)
+            self.show_status_message("Auto-save disabled", 2000)
             
         self._update_status_labels()
         
@@ -2425,7 +2668,7 @@ class TwistLangEditor(QMainWindow):
             elif action.data() is not None:
                 action.setChecked(False)
                 
-        self.status_bar.showMessage(f"Auto-save interval set to {ms//1000} seconds", 2000)
+        self.show_status_message(f"Auto-save interval set to {ms//1000} seconds", 2000)
         
     def autosave_all_files(self, manual: bool = False):
         """Auto-save all modified files"""
@@ -2447,14 +2690,14 @@ class TwistLangEditor(QMainWindow):
         if saved_count > 0:
             self.autosave_count += 1
             if manual:
-                self.status_bar.showMessage(f"Manual save: {saved_count} file(s) saved", 2000)
+                self.show_status_message(f"Manual save: {saved_count} file(s) saved", 2000)
             else:
-                self.status_bar.showMessage(f"Auto-saved {saved_count} file(s) [{self.autosave_count}]", 1500)
+                self.show_status_message(f"Auto-saved {saved_count} file(s) [{self.autosave_count}]", 1500)
                 colors = THEMES[self.current_theme]["colors"]
                 self.autosave_label.setStyleSheet(f"color: {colors['warning'].name()}; padding: 2px 5px;")
                 QTimer.singleShot(1000, self._update_status_labels)
         elif manual:
-            self.status_bar.showMessage("No files to save", 2000)
+            self.show_status_message("No files to save", 2000)
             
     # ===== Status updates =====
     
@@ -2468,7 +2711,7 @@ class TwistLangEditor(QMainWindow):
         
         # Autosave label
         if self.autosave_action.isChecked():
-            self.autosave_label.setText(f"Auto-save: ON ({self.autosave_interval//1000}s)")
+            self.autosave_label.setText(f"Auto-save: ON ({self.autosave_interval/1000}s)")
         else:
             self.autosave_label.setText("Auto-save: OFF")
         

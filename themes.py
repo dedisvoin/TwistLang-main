@@ -1,7 +1,7 @@
 from PyQt6.QtGui import QColor
 
 THEMES = {
-    "Catppuccin Mocha": {  # Тёмная тема
+    "Lumen Dark": {  # Тёмная тема
         "type": "dark",
         "colors": {
             "bg": QColor("#1e1e2e"),
@@ -874,4 +874,5 @@ THEMES = {
             "status_border": QColor("#2c3e4a"),
         }
     },
+    
 }

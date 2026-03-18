@@ -34,6 +34,7 @@ const string TokenTypeToString(TokenType T) noexcept{
 
 
 struct PosInFile {
+    string file_path;
     string file_name;
     int line;
     int global_line;
@@ -41,7 +42,7 @@ struct PosInFile {
     int lenght;
 
     friend ostream& operator<< (ostream& os, const PosInFile& pif) {
-        os << "'" + pif.file_name + "':" + to_string(pif.line) + ":" + to_string(pif.index);
+        os << "'" + pif.file_path + "':" + to_string(pif.line) + ":" + to_string(pif.index);
         return os;
     }
 };

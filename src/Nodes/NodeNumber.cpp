@@ -1,5 +1,5 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 
 #include <sstream>
 #pragma once
@@ -29,15 +29,29 @@ struct NodeNumber : public Node { NO_EXEC
 
         size_t dot_count = count(token.value.begin(), token.value.end(), '.');
 
-        if (dot_count > 1) ERROR::InvalidNumber(token, token.value);
+        if (dot_count > 1) {
+            #ifndef SERVER
+                throw ERROR_THROW::InvalidNumber(token);
+            #else
+                ERROR_THROW::InvalidNumber(token).Write();
+                this->value = NewDouble(0);
+            #endif
+        }
+
 
         if (dot_count == 1) {
 
             std::istringstream iss(token.value);
             iss.imbue(std::locale::classic()); // принудительно меняем локаль с точкой
             NUMBER_ACCURACY val;
-            if (!(iss >> val)) 
-                ERROR::InvalidNumber(token, token.value);
+            if (!(iss >> val)) {
+                #ifndef SERVER
+                    throw ERROR_THROW::InvalidNumber(token);
+                #else
+                    ERROR_THROW::InvalidNumber(token).Write();
+                    this->value = NewDouble(0);
+                #endif
+            }
             
             this->value = NewDouble(val);
 

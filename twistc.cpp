@@ -33,7 +33,6 @@ void write_error_to_file(std::ostream& out, const Error& err) {
         << " message: " << err.message << "\n";
     if (err.sub_error)
         write_error_to_file(out, *err.sub_error);
-
 }
 
 vector<Error> run_with_collect(vector<Node*>& nodes, Memory* mem) {
@@ -59,6 +58,8 @@ void language_server(const std::string& file_path, std::string file_name) {
     Preprocessor preprocessor;
 
     while (true) {
+        Error::ClearBuffer(); // Очищаем буфер для ошибок
+        Memory* g_memory = new Memory();
         try {
             std::string source = OpenFile(file_path);
             
@@ -78,37 +79,34 @@ void language_server(const std::string& file_path, std::string file_name) {
 
             // 4. Подготовка памяти и выполнение
             auto nodes = std::move(parser.nodes);
-            Memory* g_memory = new Memory();
+            
             GenerateStandartTypes(g_memory, file_path);
 
             // Выполняем с накоплением assert'ов
             auto assert_errors = run_with_collect(nodes, g_memory);
 
-            
-            if (assert_errors.empty()) {
-                // Нет ошибок – очищаем файл
-                std::ofstream clear_log(string("dbg/") + file_name  + "_ls.dbg", std::ios::trunc);
-                clear_log.close();
-            } else {
-                // Есть assert'ы – перезаписываем файл всеми
-                std::ofstream log(string("dbg/") + file_name + "_ls.dbg", std::ios::trunc);
+            if (!assert_errors.empty()) {
                 for (const auto& err : assert_errors) {
-                    write_error_to_file(log, err);
-                    log << "\n";
+                    err.Write();
                 }
             }
 
         } catch (const Error& err) {
-            // Фатальная ошибка (не assertion) – записываем её одну
-            std::ofstream log(string("dbg/") + file_name + "_ls.dbg", std::ios::trunc);
-            write_error_to_file(log, err);
-            log << "\n";
+            // Фатальная ошибка (не assertion) – собираем в буфер
+            err.Write();
         } catch (const std::exception& e) {
             // Непредвиденная ошибка – можно проигнорировать или записать
-            // (по желанию)
         }
 
+        // В конце цикла записываем буфер в файл (если не пустой)
+        
+        std::ofstream log(string("dbg/") + file_name + "_ls.dbg", std::ios::trunc);
+        log << Error::GetBuffer();
+        log.close();
+        
+
         std::this_thread::sleep_for(0.1s);
+        delete g_memory;
     }
 }
 

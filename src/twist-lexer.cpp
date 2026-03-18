@@ -37,14 +37,16 @@ struct Lexer {
     int pos = 0;
     int pos_in_line = 0;
     int saved_pos_in_line = 0;
-    string this_file;
+    string file_path;
+    string file_name;
 
-    string main_file_name, file_data;
+
+    string main_file_path, file_data;
     int main_file_size;
     vector<Token> tokens;
 
-    Lexer(string main_file_name, string file_data) {
-        this->main_file_name = main_file_name;
+    Lexer(string main_file_path, string file_data) {
+        this->main_file_path = main_file_path;
         
         // Удаление пробельных символов в конце строки
         while (!file_data.empty()) {
@@ -57,7 +59,8 @@ struct Lexer {
         
         this->file_data = file_data + "\n";
         this->main_file_size = this->file_data.size();
-        this->this_file = this->main_file_name;
+        this->file_path = this->main_file_path;
+        this->file_name = GetFileName(this->file_path);
     }
 
     inline void next() { this->pos++; }
@@ -107,7 +110,8 @@ struct Lexer {
 
         int L = this->pos - P;
         PosInFile PIF = {
-            .file_name = this->this_file,
+            .file_path = this->file_path,
+            .file_name = this->file_name,
             .line = this->line,
             .global_line = global_line,
             .index = PL,
@@ -143,7 +147,8 @@ struct Lexer {
 
         int L = this->pos - P;
         PosInFile PIF = {
-            .file_name = this->this_file,
+            .file_path = this->file_path,
+            .file_name = this->file_name,
             .line = this->line,
             .global_line = global_line,
             .index = PL,
@@ -218,7 +223,8 @@ struct Lexer {
 
         int L = this->pos - P;
         PosInFile PIF = {
-            .file_name = this->this_file,
+            .file_path = this->file_path,
+            .file_name = this->file_name,
             .line = SL,
             .global_line = global_line,
             .index = PL,
@@ -246,7 +252,8 @@ struct Lexer {
         
         
         PosInFile PIF = {
-            .file_name = this->this_file,
+            .file_path = this->file_path,
+            .file_name = this->file_name,
             .line = this->line,
             .global_line = global_line,
             .index = PL,
@@ -275,7 +282,8 @@ struct Lexer {
 
         int L = this->pos - P;
         PosInFile PIF = {
-            .file_name = this->this_file,
+            .file_path = this->file_path,
+            .file_name = this->file_name,
             .line = this->line,
             .global_line = global_line,
             .index = PL,
@@ -295,7 +303,8 @@ struct Lexer {
         this->next_in_line();
         int L = this->pos - P;
         PosInFile PIF = {
-            .file_name = this->this_file,
+            .file_path = this->file_path,
+            .file_name = this->file_name,
             .line = this->line,
             .global_line = global_line,
             .index = PL,
@@ -326,7 +335,8 @@ struct Lexer {
         this->next_in_line();
         
         PosInFile PIF = {
-            .file_name = this->this_file,
+            .file_path = this->file_path,
+            .file_name = this->file_name,
             .line = this->line,
             .global_line = global_line,
             .index = PL,
@@ -361,14 +371,15 @@ struct Lexer {
             if (get() == '<' && 
                 IsSubString(this->file_data, "start", this->pos + 1)) {
                 next(13);
-                string new_file_name;
+                string new_file_path;
 
                 // new included file name parsing
                 while (get() != '"') {
-                    new_file_name += get();
+                    new_file_path += get();
                     next();
                 }
-                this->this_file = new_file_name;
+                this->file_path = new_file_path;
+                this->file_name = GetFileName(this->file_path);
                 this->line = 1; // start reline
                 
                 // found new line 
@@ -380,14 +391,15 @@ struct Lexer {
             if (get() == '<' && 
                 IsSubString(this->file_data, "end", this->pos + 1)) {
                 next(11);
-                string new_file_name;
+                string new_file_path;
 
                 // saved included file name parsing
                 while (get() != '"') {
-                    new_file_name += get();
+                    new_file_path += get();
                     next();
                 }
-                this->this_file = new_file_name;
+                this->file_path = new_file_path;
+                this->file_name = GetFileName(this->file_path);
                 
                 // found equal sym
                 while (get() != '=') { next(); }
@@ -460,7 +472,8 @@ struct Lexer {
         // Вычисляем позицию его последнего символа
         int last_char_index = last_pos.index + last_pos.lenght - 1;
         PosInFile eof_pos = {
-            .file_name = this->this_file,
+            .file_path = this->file_path,
+            .file_name = this->file_name,
             .line = last_pos.line,
             .global_line = last_pos.global_line,
             .index = last_char_index,
@@ -470,7 +483,8 @@ struct Lexer {
     } else {
         // Файл пуст – указываем на самое начало (позиция 0, длина 1)
         PosInFile eof_pos = {
-            .file_name = this->this_file,
+            .file_path = this->file_path,
+            .file_name = this->file_name,
             .line = 1,
             .global_line = 1,
             .index = 0,

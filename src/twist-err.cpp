@@ -17,6 +17,7 @@ typedef string ErrorType;
 
 
 struct Error {
+    static std::string error_buffer;
     string message;
     PosInFile pif;
     ErrorType type;
@@ -34,8 +35,37 @@ struct Error {
         this->code = code;
     }
 
+    void write_error_to_file(std::ostream& out, const Error& err) const {
+        out << "pif: " << err.pif << ":" << err.pif.lenght << ":" << err.assertion
+            << " message: " << err.message << "\n";
+        if (err.sub_error)
+            write_error_to_file(out, *err.sub_error);
+    }
+
+    std::string ToString() const {
+        std::ostringstream oss;
+        write_error_to_file(oss, *this);
+        return oss.str();
+    }
+
+    void Write() const {
+        error_buffer += ToString();
+        error_buffer += "\n";
+    }
+
+    static void ClearBuffer() {
+        error_buffer.clear();
+    }
+    static const std::string& GetBuffer() {
+        return error_buffer;
+    }
+
+
+    // Старый Write больше не нужен, используйте Write(buffer)
+
     Error(string message, PosInFile start_pif, PosInFile end_pif, ErrorType type, string code) {
         PosInFile new_pif;
+        new_pif.file_path = start_pif.file_path;
         new_pif.file_name = start_pif.file_name;
         new_pif.global_line = start_pif.global_line;
         new_pif.line = start_pif.line;
@@ -68,6 +98,7 @@ struct Error {
     }
 };
 
+std::string Error::error_buffer = "";
 namespace ERROR_THROW {
     static string PREPROCESSOR_OUTPUT;
 
@@ -126,6 +157,12 @@ namespace ERROR_THROW {
 
     Error AssertionFailed(const Token& start, const Token& end) {
         Error err = Error("Assertion failed", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        err.assertion = true;
+        return err;
+    }
+
+    Error InputWarning(const Token& start, const Token& end) {
+        Error err = Error("Input is run time instruction. Default return - ''", start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
         err.assertion = true;
         return err;
     }
@@ -237,6 +274,11 @@ namespace ERROR_THROW {
 
     Error InvalidObjectAccessorType(const Token& start, const Token& end, Type type) {
         Error err = Error("Cannot access members of type `" + type.pool + "`", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidNumber(const Token& token) {
+        Error err = Error(" Invalid number format: '" + token.value + "'", token.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
         return err;
     }
 }
