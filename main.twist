@@ -1,7 +1,5 @@
-static final let a: auto = 10;
+let a = 10;
 
-outln a;
 
-assert a == a * 2;
 
 
