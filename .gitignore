@@ -3,4 +3,7 @@ main.twist
 tokens.txt
 .vs
 .vscode
+__pycache__
 err.dbg
+LumenIDE.exe
+compile.py

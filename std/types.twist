@@ -23,7 +23,7 @@ GFC func union(T[]: Type) -> Type {
     }
     ret u_T;
 }
-
+assert "This is work!" == "This is don't work";
 
 
 
