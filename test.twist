@@ -1,20 +1,12 @@
 namespace std {
     let a = 10;
-    
+    let c = 10;
+    let b = a + c;
 }
 
 
-let n = namespace {
-    let a = 10;
-    let p = 200;
-    namespace innner {
-        let a = 10;
-        let n;
-    }
-};
+{
+    
 
 
-namespace std {
-    let a = 10;
-    let test = 20;
 }

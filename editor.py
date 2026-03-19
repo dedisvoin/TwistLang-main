@@ -15,20 +15,20 @@ from typing import Optional, Dict, List, Tuple, Set, Any
 from dataclasses import dataclass
 from enum import Enum
 
-from PyQt6.QtGui import QPainterPath
+from PyQt6.QtGui import QPainterPath, QRegion
 from PyQt6.Qsci import QsciScintilla, QsciLexerCustom, QsciAPIs
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMenu, QStatusBar,
     QLabel, QTabWidget, QTabBar, QToolButton,
     QFileDialog, QMessageBox, QToolTip, QWidget, QHBoxLayout,
-    QVBoxLayout, QFrame, QStackedWidget
+    QVBoxLayout, QFrame, QStackedWidget, QCheckBox
 )
 from PyQt6.QtGui import (
     QColor, QFont, QAction, QKeySequence, QShortcut,
     QPainter, QPen, QIcon, QPixmap, QMouseEvent,
-    QLinearGradient, QRadialGradient
+    QLinearGradient
 )
-from PyQt6.QtCore import QByteArray, QRect, Qt, pyqtSignal, QTimer, QSize, QPoint, QPropertyAnimation, QEasingCurve
+from PyQt6.QtCore import QByteArray, QRect, QRectF, Qt, pyqtSignal, QTimer, QSize, QPoint, QPropertyAnimation, QEasingCurve, pyqtProperty
 from PyQt6.QtSvg import QSvgRenderer
 
 from themes import *
@@ -144,6 +144,79 @@ def get_safe_monospace_font(preferred_font: str, size: int) -> QFont:
     
     return QFont("Consolas", size)
 
+# =============================================================================
+# CUSTOM WIDGETS
+# =============================================================================
+
+class AnimatedToggle(QToolButton):
+    """Кастомный переключатель-ползунок с анимацией кружка"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setCheckable(True)
+        self.setFixedSize(32, 14)
+        
+        # Внутреннее состояние свойства для анимации
+        self._handle_position = 0.0 if not self.isChecked() else 1.0
+        
+        self.animation = QPropertyAnimation(self, b"handle_position")
+        self.animation.setDuration(200)
+        self.animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        
+        # Цвета по умолчанию (обновляются через apply_theme)
+        self.bg_color = QColor("#3e4a5a")
+        self.active_color = QColor("#82aaff")
+        self.handle_color = QColor("#ffffff")
+
+    @pyqtProperty(float) # type: ignore
+    def handle_position(self):
+        return self._handle_position
+
+    @handle_position.setter
+    def handle_position(self, pos):
+        self._handle_position = pos
+        self.update()
+
+    def nextCheckState(self):
+        # Вызывается при клике перед переключением состояния
+        super().nextCheckState()
+        self.animation.stop()
+        self.animation.setStartValue(self._handle_position)
+        self.animation.setEndValue(1.0 if self.isChecked() else 0.0)
+        self.animation.start()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Рисуем подложку (track)
+        track_rect = QRectF(0, 0, self.width(), self.height())
+        r = track_rect.height() / 2
+        
+        # Используем анимированную позицию для цвета
+        # Плавный переход между цветами
+        bg_color = self.bg_color
+        active_color = self.active_color
+        
+        # Интерполируем цвет в зависимости от позиции
+        r_bg = bg_color.red() + (active_color.red() - bg_color.red()) * self._handle_position
+        g_bg = bg_color.green() + (active_color.green() - bg_color.green()) * self._handle_position
+        b_bg = bg_color.blue() + (active_color.blue() - bg_color.blue()) * self._handle_position
+        
+        current_color = QColor(int(r_bg), int(g_bg), int(b_bg))
+        
+        painter.setBrush(current_color)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawRoundedRect(track_rect, r, r)
+        
+        # Рисуем кружок (handle)
+        margin = 3
+        handle_size = self.height() - (margin * 2)
+        # Вычисляем X координату на основе анимированного свойства
+        available_width = self.width() - handle_size - (margin * 2)
+        x_pos = margin + (available_width * self._handle_position)
+        
+        painter.setBrush(self.handle_color)
+        painter.drawEllipse(QRectF(x_pos, margin, handle_size, handle_size))
 
 
 # =============================================================================
@@ -569,6 +642,7 @@ class CustomTitleBar(QFrame):
                         border: none;
                         padding: 8px 12px;
                         font-size: 12px;
+                        font: Consolas;
                     }}
                     QToolButton:hover {{
                         background-color: {colors['title_bg_darker'].name()};
@@ -658,6 +732,131 @@ class CustomTitleBar(QFrame):
                 self.update_style()
 
 
+class AboutDialog(QWidget):
+    """Custom About dialog window"""
+    
+    def __init__(self, parent=None):
+        super().__init__(None, Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.NoDropShadowWindowHint)
+        self.parent_window = parent
+        self.setFixedSize(600, 400)
+        # Apply rounded corner mask
+        self._apply_rounded_mask()
+        
+    def _apply_rounded_mask(self):
+        """Apply rounded corner mask to window"""
+        radius = 10
+        path = QPainterPath()
+        rect = self.rect()
+        path.addRoundedRect(float(rect.x()), float(rect.y()), float(rect.width()), float(rect.height()), radius, radius)
+        region = QRegion(path.toFillPolygon().toPolygon())
+        self.setMask(region)
+        
+    def resizeEvent(self, event):
+        """Reapply mask on resize"""
+        super().resizeEvent(event)
+        self._apply_rounded_mask()
+        
+    def mousePressEvent(self, event):
+        """Close window on any mouse press outside"""
+        self.close()
+        super().mousePressEvent(event)
+        
+    def focusOutEvent(self, event):
+        """Close window when focus is lost"""
+        QTimer.singleShot(100, self.close)
+        super().focusOutEvent(event)
+        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        colors = self._get_theme_colors()
+        
+        # Fill background with gradient
+        gradient = QLinearGradient(0, 0, self.width(), self.height())
+        gradient.setColorAt(0, colors['bg'])
+        gradient.setColorAt(1, colors['title_bg'])
+        painter.fillRect(self.rect(), colors['bg'])
+        
+        # Draw rounded border (matching CSS border-radius: 10px)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.setPen(QPen(colors['status_border'], 1))
+        painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 10, 10)
+        
+        # Draw large "Lumen IDE" text
+        painter.setOpacity(1.0)
+        painter.setPen(QPen(colors['fg'], 1))
+        
+        # Use large font
+        font = QFont("Segoe UI", 60, QFont.Weight.Light)
+        font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 110)
+        painter.setFont(font)
+        
+        # Center text
+        text = "Lumen IDE"
+        metrics = painter.fontMetrics()
+        text_width = metrics.horizontalAdvance(text)
+        text_height = metrics.height()
+        
+        x = (self.width() - text_width) // 2
+        y = (self.height() - text_height) // 2 + metrics.ascent() - 70
+        
+        # Draw with glow effect
+        for i in range(5):
+            offset = i * 2
+            painter.setOpacity(0.1 * (5 - i))
+            painter.setPen(QPen(colors['title_fg'], 1))
+            painter.drawText(x + offset, y + offset, text)
+        
+        painter.setOpacity(1.0)
+        painter.setPen(QPen(colors['title_fg'], 1))
+        painter.drawText(x, y, text)
+        
+        # Draw subtitle
+        painter.setPen(QPen(colors['title_fg'], 1))
+        subtitle_font = QFont("Consolas", 11)
+        painter.setFont(subtitle_font)
+        x = (self.width() - text_width) // 2
+        y = (self.height() - text_height) // 2 + metrics.ascent()  - 50
+        subtitle = "Integrated development environment for Lumen"
+        metrics = painter.fontMetrics()
+        subtitle_width = metrics.horizontalAdvance(subtitle)
+        
+        subtitle_x = (self.width() - subtitle_width) // 2
+        subtitle_y = y + text_height // 2 - 40
+        
+        painter.drawText(subtitle_x, subtitle_y, subtitle)
+        
+        # Draw static author text at bottom
+        author_font = QFont("Consolas", 10)
+        painter.setFont(author_font)
+        painter.setPen(QPen(colors['title_fg'], 1))
+        painter.setOpacity(0.8)
+        
+        author_text = "By Pavlov Ivan Alexeevich"
+        metrics = painter.fontMetrics()
+        author_x = 10
+        author_y = self.height() - 10
+
+        painter.drawText(author_x, author_y, author_text)
+        
+        # Draw version at bottom right
+        version_text = "Version 1.0"
+        version_width = metrics.horizontalAdvance(version_text)
+        painter.drawText(self.width() - version_width - 10, author_y, version_text)
+        
+        painter.end()
+        
+    def _get_theme_colors(self):
+        if self.parent_window and hasattr(self.parent_window, 'current_theme'):
+            return THEMES[self.parent_window.current_theme]["colors"]
+        return THEMES[DEFAULT_THEME]["colors"]
+        
+
+
 class RoundedMenu(QMenu):
     """Custom menu with rounded corners"""
     
@@ -669,6 +868,10 @@ class RoundedMenu(QMenu):
             Qt.WindowType.NoDropShadowWindowHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        
+        # Установка шрифта Consolas для меню
+        font = QFont("Consolas", 11)
+        self.setFont(font)
         
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -1111,33 +1314,48 @@ class TwistLangLexer(QsciLexerCustom):
         
     def update_folding_levels(self, start, end):
         editor = self.editor()
-        if not editor: return
-        
-        # Берем строку начала и конца
+        if not editor:
+            return
+
         start_line = editor.SendScintilla(editor.SCI_LINEFROMPOSITION, start)
         end_line = editor.SendScintilla(editor.SCI_LINEFROMPOSITION, end)
-        
-        # Получаем уровень вложенности от предыдущей строки
-        current_level = 1024 # Базовый уровень
+        total_lines = editor.lines()
+
+        # Получаем уровень предыдущей строки или базовый (1024)
+        current_level = 1024
         if start_line > 0:
             prev_level = editor.SendScintilla(editor.SCI_GETFOLDLEVEL, start_line - 1)
             current_level = prev_level & 0x0FFF
-            
-        for line in range(start_line, end_line + 1):
-            text = editor.text(line).strip()
-            
-            # Считаем разницу скобок
-            open_count = text.count('{') + text.count('(')
-            close_count = text.count('}') + text.count(')')
-            
-            # Флаг того, что строка является "шапкой" (на ней будет кнопка)
-            is_header = 0x2000 if open_count > close_count else 0
-            
-            # Устанавливаем уровень
-            editor.SendScintilla(editor.SCI_SETFOLDLEVEL, line, current_level | is_header)
-            
-            # Обновляем уровень для следующей строки
-            current_level += (open_count - close_count)
+            if prev_level & 0x2000:
+                current_level += 1
+
+        for line in range(start_line, total_lines):
+            text = editor.text(line)
+            open_count = text.count('{')
+            close_count = text.count('}')
+
+            # Флаг заголовка: если есть открывающая скобка и она не закрывается на этой же строке
+            is_header = 0
+            if open_count > 0 and (open_count > close_count or text.find('{') < text.find('}') or close_count == 0):
+                is_header = 0x2000
+
+            new_fold_level = current_level | is_header
+            old_fold_level = editor.SendScintilla(editor.SCI_GETFOLDLEVEL, line)
+
+            # Оптимизация выхода
+            if old_fold_level == new_fold_level and line > end_line:
+                break
+
+            editor.SendScintilla(editor.SCI_SETFOLDLEVEL, line, new_fold_level)
+
+            # Сначала увеличиваем уровень для следующей строки, если есть открывающая скобка
+            current_level += open_count
+            # Затем уменьшаем, если есть закрывающая скобка
+            current_level -= close_count
+            if current_level < 1024:
+                current_level = 1024
+
+        
             
     def _get_char_at(self, text_bytes: bytes, pos: int, total_bytes: int) -> Tuple[Optional[str], int]:
         """Safely get character at byte position (UTF-8 aware)"""
@@ -1217,8 +1435,25 @@ class CustomScintilla(QsciScintilla):
         self._setup_editor()
         self._setup_error_highlighting()
         self.cursorPositionChanged.connect(self.highlightMatchingBrace)
-        # Убираем подключение textChanged, которое вызывало лишние проверки
-        # self.textChanged.connect(self._on_text_changed)
+        self.textChanged.connect(self._on_text_changed)
+        
+    # Внутри класса CodeEditor в editor.py
+
+    def set_folding_visible(self, visible: bool):
+        """Включает или выключает отображение области сворачивания кода."""
+        if visible:
+            self.setFolding(QsciScintilla.FoldStyle.CircledTreeFoldStyle)
+            self.setMarginWidth(2, 14) # Марджин 2 зарезервирован под folding
+            
+        else:
+            self.setFolding(QsciScintilla.FoldStyle.NoFoldStyle)
+            self.setMarginWidth(2, 0)
+    
+    def _on_text_changed(self):
+        """Обновить folding при любом изменении текста"""
+        lexer = self.lexer()
+        if lexer and hasattr(lexer, 'update_folding_levels'):
+            lexer.update_folding_levels(0, self.length())
 
     def highlightMatchingBrace(self):
         """Custom highlight for matching braces including angle brackets"""
@@ -1258,6 +1493,7 @@ class CustomScintilla(QsciScintilla):
     
     def _setup_editor(self):
         """Configure basic editor settings"""
+        
         self.setUtf8(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setScrollWidthTracking(True)
@@ -1275,9 +1511,9 @@ class CustomScintilla(QsciScintilla):
         self.setAutoCompletionCaseSensitivity(False)
         self.setAutoCompletionReplaceWord(False)
 
-        self.setFolding(QsciScintilla.FoldStyle.CircledTreeFoldStyle) # Или BoxedTreeFolding для более современного вида
-        self.SendScintilla(self.SCI_SETMODEVENTMASK, self.SC_MOD_INSERTTEXT | self.SC_MOD_DELETETEXT)
-        
+        self.setFolding(QsciScintilla.FoldStyle.CircledTreeFoldStyle)
+        #self.SendScintilla(self.SCI_SETMODEVENTMASK, self.SC_MOD_INSERTTEXT | self.SC_MOD_DELETETEXT)
+        self.SendScintilla(self.SCI_SETAUTOMATICFOLD, 0x0001 | 0x0002 | 0x0004)
         
         
     def _setup_error_highlighting(self):
@@ -1633,7 +1869,7 @@ class TwistLangEditor(QMainWindow):
         # Tab widget container with solid background
         self.tab_container = QWidget()
         self.tab_container.setObjectName("tabContainer")
-        print(THEMES[DEFAULT_THEME]['colors']['title_fg'])
+        
         self.tab_container.setStyleSheet(f"""
             QWidget#tabContainer {{
                 background-color: {THEMES[DEFAULT_THEME]['colors']['title_bg'].name()};
@@ -1656,6 +1892,32 @@ class TwistLangEditor(QMainWindow):
         self.status_bar.setSizeGripEnabled(False)
         self.setStatusBar(self.status_bar)
         
+        # Create a container widget for the toggle with right margin and separator
+        toggle_container = QWidget()
+        toggle_layout = QHBoxLayout(toggle_container)
+        toggle_layout.setContentsMargins(10, 0, 10, 0)  # Right margin of 10 pixels
+        toggle_layout.setSpacing(5)  # Spacing between elements
+        
+        self.folding_toggle = AnimatedToggle()
+        self.folding_toggle.setChecked(False)
+        self.folding_toggle.toggled.connect(self._toggle_folding_handler)
+        self.folding_toggle.setToolTip("Toggle code folding (show/hide fold margins)\n [This function in beta test]")
+        
+        toggle_layout.addWidget(self.folding_toggle)
+        
+        # Add separator line
+        self.separator = QFrame()
+        self.separator.setFrameShape(QFrame.Shape.VLine)
+        self.separator.setFrameShadow(QFrame.Shadow.Sunken)
+        self.separator.setFixedWidth(2)
+        self.separator.setStyleSheet(f"""
+            QFrame {{
+                background-color: {THEMES[DEFAULT_THEME]['colors']['status_border'].name()};
+                margin: 2px 0px;
+            }}
+        """)
+        
+        
         self.autosave_label = QLabel()
         self.error_label = QLabel()
         self.ls_status_label = QLabel()
@@ -1663,10 +1925,15 @@ class TwistLangEditor(QMainWindow):
         self.status_bar.addPermanentWidget(self.autosave_label)
         self.status_bar.addPermanentWidget(self.error_label)
         self.status_bar.addPermanentWidget(self.ls_status_label)
+        self.status_bar.addPermanentWidget(self.separator)
+        self.status_bar.addPermanentWidget(toggle_container)  # Add container instead of direct toggle
         
         # Menu
+        # Установка шрифта для менюбара
+        menubar = self.menuBar()
+        menubar.setFont(QFont("Consolas", 11))
         self._create_menu()
-        self.title_bar.add_menu(self.menuBar())
+        self.title_bar.add_menu(menubar)
         
         # Connect title bar signals
         self.title_bar.window_minimized.connect(self.showMinimized)
@@ -1676,14 +1943,34 @@ class TwistLangEditor(QMainWindow):
         
         # Initially show welcome widget
         self._update_content_display()
+
+    def _toggle_folding_handler(self, enabled: bool):
+        """Переключает сворачивание во всех открытых вкладках"""
+        # enabled = True когда переключатель включен (checked)
+        # enabled = False когда переключатель выключен (unchecked)
+        
+        # Применяем ко всем текущим открытым файлам
+        for i in range(self.tab_widget.count()):
+            editor = self.tab_widget.widget(i)
+            if isinstance(editor, CustomScintilla):
+                # Когда включен (enabled=True) - показываем folding
+                # Когда выключен (enabled=False) - скрываем folding
+                editor.set_folding_visible(enabled)
+        
+        state_text = "ON" if enabled else "OFF"
+        self.show_status_message(f"Code folding: {state_text}", 2000)
         
     def _create_menu(self):
         """Create application menus"""
         menubar = self.menuBar()
         menubar.setVisible(False)  # Hide default menubar
         
+        # Шрифт для меню
+        consolas_font = QFont("Consolas", 11)
+        
         # File menu
         file_menu = RoundedMenu("File", self)
+        file_menu.setFont(consolas_font)
         menubar.addMenu(file_menu)
         
         new_action = self._create_action("New", "Ctrl+N", self.new_file)
@@ -1700,23 +1987,27 @@ class TwistLangEditor(QMainWindow):
         
         # Auto-save submenu
         autosave_menu = RoundedMenu("Auto save", self)
+        autosave_menu.setFont(consolas_font)
         file_menu.addMenu(autosave_menu)
         
         self.autosave_action = QAction("Enable Auto-save", self)
         self.autosave_action.setCheckable(True)
         self.autosave_action.setChecked(True)
+        self.autosave_action.setFont(consolas_font)
         self.autosave_action.triggered.connect(self._toggle_autosave)
         autosave_menu.addAction(self.autosave_action)
         
         autosave_menu.addSeparator()
         
         interval_menu = RoundedMenu("Interval", self)
+        interval_menu.setFont(consolas_font)
         autosave_menu.addMenu(interval_menu)
         
         for name, ms in AUTOSAVE_INTERVALS:
             action = QAction(name, self)
             action.setCheckable(True)
             action.setData(ms)
+            action.setFont(consolas_font)
             if ms == self.autosave_interval:
                 action.setChecked(True)
             action.triggered.connect(lambda checked, ms=ms: self._set_autosave_interval(ms))
@@ -1727,7 +2018,8 @@ class TwistLangEditor(QMainWindow):
         save_now_action = self._create_action("Save Now", "Ctrl+Shift+S", 
                                               lambda: self.autosave_all_files(manual=True))
         autosave_menu.addAction(save_now_action)
-        
+
+    
         file_menu.addSeparator()
         
         close_action = self._create_action("Close", "Ctrl+W", self.close_current_tab)
@@ -1743,6 +2035,7 @@ class TwistLangEditor(QMainWindow):
         
         # Edit menu
         edit_menu = RoundedMenu("Edit", self)
+        edit_menu.setFont(consolas_font)
         menubar.addMenu(edit_menu)
         
         edit_menu.addAction(self._create_action("Undo", "Ctrl+Z", lambda: self.current_editor().undo()))
@@ -1753,7 +2046,8 @@ class TwistLangEditor(QMainWindow):
         edit_menu.addAction(self._create_action("Paste", "Ctrl+V", lambda: self.current_editor().paste()))
         
         # View menu
-        view_menu = RoundedMenu("Editor", self)
+        view_menu = RoundedMenu("Settings", self)
+        view_menu.setFont(consolas_font)
         menubar.addMenu(view_menu)
         
         view_menu.addAction(self._create_action("Zoom In", "Ctrl+=", self.zoom_in))
@@ -1762,19 +2056,27 @@ class TwistLangEditor(QMainWindow):
         
         # Theme submenu
         theme_menu = RoundedMenu("Theme", self)
+        theme_menu.setFont(consolas_font)
         view_menu.addMenu(theme_menu)
         
         for theme_name in THEMES.keys():
             theme_action = QAction(theme_name, self)
             theme_action.setCheckable(True)
+            theme_action.setFont(consolas_font)
             if theme_name == self.current_theme:
                 theme_action.setChecked(True)
+                # НЕ УСТАНАВЛИВАЕМ ИКОНКУ ЗДЕСЬ
             theme_action.triggered.connect(lambda checked, tn=theme_name: self.select_theme(tn))
             theme_menu.addAction(theme_action)
             self.theme_actions.append(theme_action)
+        
+        view_menu.addSeparator()
+        about_action = self._create_action("About Lumen IDE", None, self.show_about_dialog)
+        view_menu.addAction(about_action)
             
         # Run menu
         run_menu = RoundedMenu("Run", self)
+        run_menu.setFont(consolas_font)
         menubar.addMenu(run_menu)
         
         run_action = self._create_action("Run Code", "F5", self.run_current_file)
@@ -1798,7 +2100,16 @@ class TwistLangEditor(QMainWindow):
         if shortcut:
             action.setShortcut(QKeySequence(shortcut))
         action.triggered.connect(slot)
+        action.setFont(QFont("Consolas", 10))
         return action
+    
+    def show_about_dialog(self):
+        """Show About dialog window with same content as WelcomeWidget"""
+        about_win = AboutDialog(self)
+        about_win.setWindowTitle("About Lumen IDE")
+        about_win.show()
+        # Save reference so window doesn't close immediately
+        self._about_window = about_win
         
     def _setup_shortcuts(self):
         """Setup keyboard shortcuts not in menus"""
@@ -1859,13 +2170,34 @@ class TwistLangEditor(QMainWindow):
         """Apply theme to all components"""
         self.current_theme = theme_name
         colors = THEMES[theme_name]["colors"]
+
+        bg = colors["bg"].name()
+        fg = colors["fg"].name()
+        accent = colors["autosave_on"]# Используем цвет функций для акцента
+        border = colors["status_border"].name()
+
+        self.folding_toggle.bg_color = colors.get("bg", QColor("#333"))
+        self.folding_toggle.active_color = accent
+        self.folding_toggle.handle_color = colors.get("status_bg")
+        
+        
+        self.folding_toggle.update()
+        
+        
+
+        self.separator.setStyleSheet(f"""
+                    QFrame {{
+                        background-color: {colors['status_border'].name()};
+                        margin: 3px 0px;
+                    }}
+                """)
         
         # Update window icon
         icon = create_svg_icon(r"data\app_icon.svg", colors['title_fg'])
         if icon and not icon.isNull():
             self.setWindowIcon(icon)
             self.title_bar.update_icon(icon)
-            
+        
         # Update title bar
         self.title_bar.update_style()
         
@@ -1932,8 +2264,75 @@ class TwistLangEditor(QMainWindow):
             }}
         """
         
-        # Применяем стили для полос прокрутки ко всему приложению
-        QApplication.instance().setStyleSheet(scrollbar_style)
+        # Стили для меню
+        menu_style = f"""
+            QMenu {{
+                background-color: {colors['bg'].name()};
+                border: 1px solid {colors['status_border'].name()};
+                border-radius: 8px;
+                padding: 4px 0px;
+                font-family: Consolas;
+                font-size: 11pt;
+            }}
+            QMenu::item {{
+                padding: 6px 35px 6px 25px;
+                background-color: transparent;
+                color: {colors['fg'].name()};
+                font-family: Consolas;
+            }}
+            QMenu::item:selected {{
+                background-color: {colors['title_bg'].name()};
+                color: {colors['selection_fg'].name()};
+                border-radius: 7px;
+                margin: 0px 4px;
+            }}
+            QMenu::item:disabled {{
+                color: {colors['comment'].name()};
+            }}
+            QMenu::separator {{
+                height: 2px;
+                background-color: {colors['title_bg'].name()};
+                margin: 3px 12px;
+            }}
+            QMenu::indicator {{
+                width: 16px;
+                height: 16px;
+                left: 12;
+
+                position: absolute;
+            }}
+            QMenu::indicator:checked {{
+                image: url(data/check.svg);
+            }}
+            QMenu::icon {{
+                left: 5px;
+                right: auto;
+                position: absolute;
+                width: 16px;
+                height: 16px;
+            }}
+            QMenuBar {{
+                background-color: transparent;
+                font-family: Consolas;
+                font-size: 11pt;
+            }}
+            QMenuBar::item {{
+                background-color: transparent;
+                color: {colors['title_fg'].name()};
+                padding: 6px 10px;
+                font-family: Consolas;
+            }}
+            QMenuBar::item:selected {{
+                background-color: {colors['title_bg_darker'].name()};
+                border-radius: 4px;
+            }}
+            QMenuBar::item:pressed {{
+                background-color: {colors['selection_bg'].name()};
+            }}
+        """
+        
+        # Применяем стили
+        QApplication.instance().setStyleSheet(scrollbar_style + menu_style)
         
         # Обновляем стили для всех виджетов, которые могут иметь полосы прокрутки
         for widget in QApplication.instance().allWidgets():
@@ -1978,8 +2377,6 @@ class TwistLangEditor(QMainWindow):
         self._update_all_editor_themes()
         self._update_status_labels()
         self._update_application_palette()
-
-        
         
         # Принудительно обновляем все виджеты
         self.repaint()
@@ -1996,7 +2393,12 @@ class TwistLangEditor(QMainWindow):
         self.apply_theme(theme_name)
         
         for action in self.theme_actions:
-            action.setChecked(action.text() == theme_name)
+            if action.text() == theme_name:
+                action.setChecked(True)
+                # НЕ УСТАНАВЛИВАЕМ ИКОНКУ ЗДЕСЬ
+            else:
+                action.setChecked(False)
+                # НЕ УСТАНАВЛИВАЕМ ИКОНКУ ЗДЕСЬ
             
         self.show_status_message(f"Theme switched to {theme_name}", 2000)
         
@@ -2068,8 +2470,7 @@ class TwistLangEditor(QMainWindow):
         editor.setFoldMarginColors(colors["margin_bg"], colors["margin_bg"])
 
         
-        
-        
+    
         
         editor.repaint()
         
@@ -2348,6 +2749,9 @@ class TwistLangEditor(QMainWindow):
         
         self._setup_editor_widget(editor)
         self._update_editor_theme(editor)
+        
+        # Применяем текущее состояние folding toggle к новому редактору
+        editor.set_folding_visible(self.folding_toggle.isChecked())
         
         # Запускаем сервер ТОЛЬКО при открытии файла
         if filename:
