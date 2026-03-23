@@ -58,6 +58,12 @@ AUTOSAVE_INTERVALS = [
 ]
 
 
+class Language(Enum):
+    """Supported languages"""
+    ENGLISH = 0
+    RUSSIAN = 1
+
+
 class ErrorType(Enum):
     """Error severity levels"""
     ERROR = 0
@@ -74,6 +80,223 @@ class ResizeDirection(Enum):
     TOP_RIGHT = "topright"
     BOTTOM_LEFT = "bottomleft"
     BOTTOM_RIGHT = "bottomright"
+
+
+# =============================================================================
+# LOCALIZATION STRINGS
+# =============================================================================
+
+class Strings:
+    """Localization strings container"""
+    
+    # English strings
+    EN = {
+        # Window title
+        "window_title": "Lumen IDE",
+        
+        # File menu
+        "file_menu": "File",
+        "new": "New",
+        "open": "Open...",
+        "save": "Save",
+        "save_as": "Save As...",
+        "auto_save": "Auto save",
+        "enable_auto_save": "Enable Auto-save",
+        "interval": "Interval",
+        "save_now": "Save Now",
+        "close": "Close",
+        "close_all": "Close All",
+        "exit": "Exit",
+        
+        # Edit menu
+        "edit_menu": "Edit",
+        "undo": "Undo",
+        "redo": "Redo",
+        "cut": "Cut",
+        "copy": "Copy",
+        "paste": "Paste",
+        
+        # Settings menu
+        "settings_menu": "Settings",
+        "zoom_in": "Zoom In",
+        "zoom_out": "Zoom Out",
+        "theme": "Theme",
+        "language": "Language",
+        "english": "English",
+        "russian": "Russian",
+        "about": "About Lumen IDE",
+        
+        # Run menu
+        "run_menu": "Run",
+        "run_code": "Run Code",
+        "go_to_include": "Go to Include",
+        "restart_ls": "Restart Language Server",
+        "clear_errors": "Clear Errors",
+        "check_errors": "Check Errors",
+        
+        # Status bar
+        "auto_save_on": "Auto-save: ON ({}s)",
+        "auto_save_off": "Auto-save: OFF",
+        "no_errors": "✓ No errors",
+        "errors_count": "✗ {} error(s)",
+        "ls_active": "LS: {} active",
+        
+        # Messages
+        "opened_file": "Opened: {}",
+        "saved_file": "Saved: {}",
+        "theme_switched": "Theme switched to {}",
+        "auto_save_enabled": "Auto-save enabled",
+        "auto_save_disabled": "Auto-save disabled",
+        "auto_save_interval_set": "Auto-save interval set to {} seconds",
+        "manual_save": "Manual save: {} file(s) saved",
+        "auto_saved": "Auto-saved {} file(s) [{}]",
+        "no_files_to_save": "No files to save",
+        "font_size": "Font size: {}pt",
+        "code_folding_on": "Code folding: ON",
+        "code_folding_off": "Code folding: OFF",
+        "no_file_open_ls": "No file open to restart language server",
+        "ls_restarted": "Language server restarted for {}",
+        "no_errors_status": "No errors",
+        "error_at_line": "Error at line {}",
+        "no_more_errors": "No more errors",
+        "no_previous_errors": "No previous errors",
+        "errors_cleared": "Errors cleared",
+        "not_include_line": "Not an include line",
+        "no_valid_include_path": "No valid include path found",
+        "save_before_run": "File is not saved. Save before running?",
+        "running_file": "Running {}...",
+        "not_supported": "Not Supported",
+        "run_manually": "Please run manually:\ntwistc --file {}",
+        "failed_to_run": "Failed to run: {}",
+        "file_not_found": "File not found",
+        "cannot_find_include": "Cannot find include file: {}",
+        "could_not_open": "Could not open file: {}",
+        "could_not_save": "Could not save file: {}",
+        "save_changes": "Save Changes",
+        "save_changes_question": "Save changes to {}?",
+        "error_check_completed": "Error check completed",
+        
+        # Welcome screen
+        "welcome_title": "Lumen IDE",
+        "welcome_subtitle": "Integrated development environment for Lumen",
+        "author_text": "By Pavlov Ivan Alexeevich",
+        "version": "Version 1.0",
+        
+        # Tooltips
+        "toggle_folding": "Toggle code folding (show/hide fold margins)\n[This function in beta test]"
+    }
+    
+    # Russian strings
+    RU = {
+        # Window title
+        "window_title": "Lumen IDE",
+        
+        # File menu
+        "file_menu": "Файл",
+        "new": "Новый",
+        "open": "Открыть...",
+        "save": "Сохранить",
+        "save_as": "Сохранить как...",
+        "auto_save": "Автосохранение",
+        "enable_auto_save": "Включить автосохранение",
+        "interval": "Интервал",
+        "save_now": "Сохранить сейчас",
+        "close": "Закрыть",
+        "close_all": "Закрыть все",
+        "exit": "Выход",
+        
+        # Edit menu
+        "edit_menu": "Правка",
+        "undo": "Отменить",
+        "redo": "Повторить",
+        "cut": "Вырезать",
+        "copy": "Копировать",
+        "paste": "Вставить",
+        
+        # Settings menu
+        "settings_menu": "Настройки",
+        "zoom_in": "Увеличить",
+        "zoom_out": "Уменьшить",
+        "theme": "Тема",
+        "language": "Язык",
+        "english": "Английский",
+        "russian": "Русский",
+        "about": "О Lumen IDE",
+        
+        # Run menu
+        "run_menu": "Запуск",
+        "run_code": "Запустить код",
+        "go_to_include": "Перейти к include",
+        "restart_ls": "Перезапустить языковой сервер",
+        "clear_errors": "Очистить ошибки",
+        "check_errors": "Проверить ошибки",
+        
+        # Status bar
+        "auto_save_on": "Автосохранение: ВКЛ ({}с)",
+        "auto_save_off": "Автосохранение: ВЫКЛ",
+        "no_errors": "✓ Нет ошибок",
+        "errors_count": "✗ {} ошибка(и)",
+        "ls_active": "LS: {} активно",
+        
+        # Messages
+        "opened_file": "Открыт: {}",
+        "saved_file": "Сохранен: {}",
+        "theme_switched": "Тема изменена на {}",
+        "auto_save_enabled": "Автосохранение включено",
+        "auto_save_disabled": "Автосохранение выключено",
+        "auto_save_interval_set": "Интервал автосохранения установлен на {} секунд",
+        "manual_save": "Сохранено вручную: {} файл(ов)",
+        "auto_saved": "Автосохранено {} файл(ов) [{}]",
+        "no_files_to_save": "Нет файлов для сохранения",
+        "font_size": "Размер шрифта: {}pt",
+        "code_folding_on": "Сворачивание кода: ВКЛ",
+        "code_folding_off": "Сворачивание кода: ВЫКЛ",
+        "no_file_open_ls": "Нет открытого файла для перезапуска языкового сервера",
+        "ls_restarted": "Языковой сервер перезапущен для {}",
+        "no_errors_status": "Нет ошибок",
+        "error_at_line": "Ошибка в строке {}",
+        "no_more_errors": "Больше нет ошибок",
+        "no_previous_errors": "Предыдущих ошибок нет",
+        "errors_cleared": "Ошибки очищены",
+        "not_include_line": "Это не строка include",
+        "no_valid_include_path": "Не найден корректный путь include",
+        "save_before_run": "Файл не сохранен. Сохранить перед запуском?",
+        "running_file": "Запуск {}...",
+        "not_supported": "Не поддерживается",
+        "run_manually": "Пожалуйста, запустите вручную:\ntwistc --file {}",
+        "failed_to_run": "Не удалось запустить: {}",
+        "file_not_found": "Файл не найден",
+        "cannot_find_include": "Не удается найти файл include: {}",
+        "could_not_open": "Не удалось открыть файл: {}",
+        "could_not_save": "Не удалось сохранить файл: {}",
+        "save_changes": "Сохранить изменения",
+        "save_changes_question": "Сохранить изменения в {}?",
+        "error_check_completed": "Проверка ошибок завершена",
+        
+        # Welcome screen
+        "welcome_title": "Lumen IDE",
+        "welcome_subtitle": "Интегрированная среда разработки для Lumen",
+        "author_text": "Автор: Павлов Иван Алексеевич",
+        "version": "Версия 1.0",
+        
+        # Tooltips
+        "toggle_folding": "Переключить сворачивание кода (показать/скрыть поля сворачивания)\n[Функция в бета-тестировании]"
+    }
+    
+    current_language = Language.ENGLISH
+    
+    @classmethod
+    def set_language(cls, lang: Language):
+        """Set current language"""
+        cls.current_language = lang
+    
+    @classmethod
+    def get(cls, key: str) -> str:
+        """Get localized string"""
+        if cls.current_language == Language.ENGLISH:
+            return cls.EN.get(key, key)
+        else:
+            return cls.RU.get(key, key)
 
 
 # =============================================================================
@@ -146,25 +369,24 @@ def get_safe_monospace_font(preferred_font: str, size: int) -> QFont:
     
     return QFont("Consolas", size)
 
+
 # =============================================================================
 # CUSTOM WIDGETS
 # =============================================================================
 
 class AnimatedToggle(QToolButton):
-    """Кастомный переключатель-ползунок с анимацией кружка"""
+    """Custom toggle switch with animated handle"""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setCheckable(True)
         self.setFixedSize(32, 14)
         
-        # Внутреннее состояние свойства для анимации
         self._handle_position = 0.0 if not self.isChecked() else 1.0
         
         self.animation = QPropertyAnimation(self, b"handle_position")
         self.animation.setDuration(200)
         self.animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
         
-        # Цвета по умолчанию (обновляются через apply_theme)
         self.bg_color = QColor("#3e4a5a")
         self.active_color = QColor("#82aaff")
         self.handle_color = QColor("#ffffff")
@@ -179,7 +401,6 @@ class AnimatedToggle(QToolButton):
         self.update()
 
     def nextCheckState(self):
-        # Вызывается при клике перед переключением состояния
         super().nextCheckState()
         self.animation.stop()
         self.animation.setStartValue(self._handle_position)
@@ -190,16 +411,12 @@ class AnimatedToggle(QToolButton):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Рисуем подложку (track)
         track_rect = QRectF(0, 0, self.width(), self.height())
         r = track_rect.height() / 2
         
-        # Используем анимированную позицию для цвета
-        # Плавный переход между цветами
         bg_color = self.bg_color
         active_color = self.active_color
         
-        # Интерполируем цвет в зависимости от позиции
         r_bg = bg_color.red() + (active_color.red() - bg_color.red()) * self._handle_position
         g_bg = bg_color.green() + (active_color.green() - bg_color.green()) * self._handle_position
         b_bg = bg_color.blue() + (active_color.blue() - bg_color.blue()) * self._handle_position
@@ -210,10 +427,8 @@ class AnimatedToggle(QToolButton):
         painter.setPen(Qt.PenStyle.NoPen)
         painter.drawRoundedRect(track_rect, r, r)
         
-        # Рисуем кружок (handle)
         margin = 3
         handle_size = self.height() - (margin * 2)
-        # Вычисляем X координату на основе анимированного свойства
         available_width = self.width() - handle_size - (margin * 2)
         x_pos = margin + (available_width * self._handle_position)
         
@@ -232,38 +447,24 @@ class WelcomeWidget(QWidget):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         
-        # Initialize floating text manager
-        
-        
-    def resizeEvent(self, event):
-        """Recreate floating texts when widget is resized"""
-        super().resizeEvent(event)
-        
-        
     def paintEvent(self, event):
         painter = QPainter(self)
         
-        
         colors = self._get_theme_colors()
         
-        # Fill background with gradient
         gradient = QLinearGradient(0, 0, self.width(), self.height())
         gradient.setColorAt(0, colors['bg'])
         gradient.setColorAt(1, colors['title_bg'])
         painter.fillRect(self.rect(), gradient)
         
-        
-        # Draw large "Lumen IDE" text
         painter.setOpacity(1.0)
         painter.setPen(QPen(colors['fg'], 1))
         
-        # Use large font
         font = QFont("Segoe UI", 100, QFont.Weight.Light)
         font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 110)
         painter.setFont(font)
         
-        # Center text
-        text = "Lumen IDE"
+        text = Strings.get("welcome_title")
         metrics = painter.fontMetrics()
         text_width = metrics.horizontalAdvance(text)
         text_height = metrics.height()
@@ -271,7 +472,6 @@ class WelcomeWidget(QWidget):
         x = (self.width() - text_width) // 2
         y = (self.height() - text_height) // 2 + metrics.ascent()
         
-        # Draw with glow effect
         for i in range(5):
             offset = i * 2
             painter.setOpacity(0.1 * (5 - i))
@@ -282,12 +482,11 @@ class WelcomeWidget(QWidget):
         painter.setPen(QPen(colors['title_fg'], 1))
         painter.drawText(x, y, text)
         
-        # Draw subtitle
         painter.setPen(QPen(colors['title_fg'], 1))
         subtitle_font = QFont("Consolas", 14)
         painter.setFont(subtitle_font)
         
-        subtitle = "Integrated development environment for Lumen"
+        subtitle = Strings.get("welcome_subtitle")
         metrics = painter.fontMetrics()
         subtitle_width = metrics.horizontalAdvance(subtitle)
         
@@ -296,18 +495,15 @@ class WelcomeWidget(QWidget):
         
         painter.drawText(subtitle_x, subtitle_y, subtitle)
         
-        # Draw static author text at bottom
         author_font = QFont("Consolas", 11)
         painter.setFont(author_font)
         painter.setPen(QPen(colors['title_fg'], 1))
         painter.setOpacity(0.8)
         
-        author_text = "By Pavlov Ivan Alexeevich"
+        author_text = Strings.get("author_text")
         metrics = painter.fontMetrics()
         author_x = 10
         author_y = self.height() - 10
-
-        #painter.drawText(author_x, author_y, author_text)
         
         painter.end()
         
@@ -319,7 +515,7 @@ class WelcomeWidget(QWidget):
 
 
 # =============================================================================
-# CUSTOM WIDGETS
+# CUSTOM WIDGETS (continued)
 # =============================================================================
 
 class AnimatedTitleButton(QToolButton):
@@ -336,7 +532,7 @@ class AnimatedTitleButton(QToolButton):
         
         self._animation_timer = QTimer(self)
         self._animation_timer.timeout.connect(self._update_animation)
-        self._animation_timer.setInterval(16)  # ~60 FPS
+        self._animation_timer.setInterval(16)
         
     def enterEvent(self, event):
         self._is_hovered = True
@@ -377,13 +573,11 @@ class RunButton(AnimatedTitleButton):
         
         colors = self._get_theme_colors()
         
-        # Draw background with fade
         if self._opacity > 0:
             green_color = QColor(colors['autosave_on'])
             green_color.setAlphaF(self._opacity)
             painter.fillRect(self.rect(), green_color)
         
-        # Draw play triangle
         icon_color = QColor(colors['title_fg']) if not self._is_hovered else QColor(colors['bg'])
         
         center_x = self.width() // 2
@@ -417,7 +611,6 @@ class RunButton(AnimatedTitleButton):
 class CustomTitleBar(QFrame):
     """
     Custom window title bar with integrated menu and window controls.
-    Mimics Windows 10 style with rounded corners.
     """
     
     window_minimized = pyqtSignal()
@@ -439,16 +632,13 @@ class CustomTitleBar(QFrame):
         self.update_style()
         
     def _setup_ui(self):
-        """Initialize UI components"""
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         
-        # Title section with icon
         title_widget = self._create_title_section()
         layout.addWidget(title_widget)
         
-        # Menu container
         self.menu_container = QWidget()
         self.menu_layout = QHBoxLayout(self.menu_container)
         self.menu_layout.setContentsMargins(5, 0, 0, 0)
@@ -457,12 +647,10 @@ class CustomTitleBar(QFrame):
         
         layout.addStretch()
         
-        # Run button
         self.run_button = RunButton(self)
         self.run_button.clicked.connect(self.run_clicked.emit)
         layout.addWidget(self.run_button)
         
-        # Window controls
         self.minimize_btn = self._create_minimize_button()
         self.maximize_btn = self._create_maximize_button()
         self.close_btn = self._create_close_button()
@@ -472,7 +660,6 @@ class CustomTitleBar(QFrame):
         layout.addWidget(self.close_btn)
         
     def _create_title_section(self) -> QWidget:
-        """Create title section with icon and window title"""
         widget = QWidget()
         layout = QHBoxLayout(widget)
         layout.setContentsMargins(10, 0, 0, 0)
@@ -481,8 +668,8 @@ class CustomTitleBar(QFrame):
         self.icon_label = QLabel()
         layout.addWidget(self.icon_label)
         
-        self.title_label = QLabel("Lumen IDE")
-        self.title_label.setStyleSheet("font-size: 12px; font-family: Consolas;")
+        self.title_label = QLabel(Strings.get("window_title"))
+        self.title_label.setStyleSheet("font-size: 14px; font-family: Consolas;")
         layout.addWidget(self.title_label)
         
         return widget
@@ -538,7 +725,6 @@ class CustomTitleBar(QFrame):
         painter.setPen(QPen(colors['title_fg'], 1))
         
         if self.is_maximized:
-            # Restore icon (overlapping squares)
             x1 = btn.width() // 2 - 8 + 2
             y1 = btn.height() // 2 - 2
             painter.drawRect(x1, y1, 8, 8)
@@ -555,7 +741,6 @@ class CustomTitleBar(QFrame):
             y2 = btn.height() // 2 + 2
             painter.drawLine(x1, y1, x2, y2)
         else:
-            # Maximize icon (single square)
             x = btn.width() // 2 - 4
             y = btn.height() // 2 - 4
             painter.drawRect(x, y, 8, 8)
@@ -574,7 +759,6 @@ class CustomTitleBar(QFrame):
         else:
             painter.setPen(QPen(colors['title_fg'], 1.5))
         
-        # Draw X
         x1 = btn.width() // 2 - 5
         y1 = btn.height() // 2 - 5
         x2 = btn.width() // 2 + 5
@@ -585,9 +769,8 @@ class CustomTitleBar(QFrame):
         painter.end()
         
     def _draw_close_hover_background(self, painter, btn):
-        """Draw red background for close button hover with rounded top-right corner"""
         rect = btn.rect()
-        painter.setBrush(QColor(196, 43, 28))  # #c42b1c
+        painter.setBrush(QColor(196, 43, 28))
         painter.setPen(Qt.PenStyle.NoPen)
         
         path = QPainterPath()
@@ -605,18 +788,15 @@ class CustomTitleBar(QFrame):
         return THEMES[DEFAULT_THEME]["colors"]
         
     def update_icon(self, icon):
-        """Update title bar icon"""
         if icon and not icon.isNull():
             self.icon_label.setPixmap(icon.pixmap(16, 16))
             
     def set_maximized_state(self, maximized: bool):
-        """Update maximize button state"""
         self.is_maximized = maximized
         self.maximize_btn.update()
-        self.update_style()  # Обновляем стиль для скругления углов
+        self.update_style()
         
     def update_style(self):
-        """Apply current theme styles"""
         colors = self._get_theme_colors()
         is_maximized = self.parent_window.isMaximized() if self.parent_window else False
         border_radius = "7px" if not is_maximized else "0px"
@@ -634,7 +814,6 @@ class CustomTitleBar(QFrame):
             }}
         """)
         
-        # Update menu buttons
         for i in range(self.menu_layout.count()):
             btn = self.menu_layout.itemAt(i).widget()
             if isinstance(btn, QToolButton):
@@ -644,7 +823,7 @@ class CustomTitleBar(QFrame):
                         color: {colors['title_fg'].name()};
                         border: none;
                         padding: 8px 12px;
-                        font-size: 12px;
+                        font-size: 10pt;
                         font-family: Consolas;
                     }}
                     QToolButton:hover {{
@@ -657,28 +836,23 @@ class CustomTitleBar(QFrame):
                     }}
                 """)
         
-        # Update window controls
         self.minimize_btn.update()
         self.maximize_btn.update()
         self.close_btn.update()
         self.run_button.update()
         
     def add_menu(self, menu_bar):
-        """Add menu bar items to title bar"""
-        # Clear container
         for i in reversed(range(self.menu_layout.count())):
             widget = self.menu_layout.itemAt(i).widget()
             if widget:
                 widget.setParent(None)
         
-        # Add menu actions as buttons
         for action in menu_bar.actions():
             if action.menu():
                 btn = QToolButton()
                 btn.setText(action.text())
                 btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
                 btn.setMenu(action.menu())
-                # Убираем стрелку индикатора меню
                 btn.setStyleSheet("""
                     QToolButton::menu-indicator {
                         image: none;
@@ -691,16 +865,13 @@ class CustomTitleBar(QFrame):
         
         self.update_style()
         
-    # Mouse event handlers for window dragging
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            # Не начинаем перетаскивание, если окно развернуто на весь экран
             if self.parent_window and self.is_maximized:
                 super().mousePressEvent(event)
                 return
                 
             pos = event.pos()
-            # Don't start drag if clicking on buttons
             if not any(btn.geometry().contains(pos) for btn in [
                 self.minimize_btn, self.maximize_btn, self.close_btn, self.run_button
             ]):
@@ -711,7 +882,6 @@ class CustomTitleBar(QFrame):
         super().mousePressEvent(event)
         
     def mouseMoveEvent(self, event):
-        # Не перемещаем окно, если оно развернуто на весь экран
         if self.parent_window and self.is_maximized:
             super().mouseMoveEvent(event)
             return
@@ -726,7 +896,6 @@ class CustomTitleBar(QFrame):
         if event.button() == Qt.MouseButton.LeftButton:
             self.dragging = False
             event.accept()
-            
             
     def mouseDoubleClickEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -749,11 +918,9 @@ class AboutDialog(QWidget):
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.NoDropShadowWindowHint)
         self.parent_window = parent
         self.setFixedSize(600, 400)
-        # Apply rounded corner mask
         self._apply_rounded_mask()
         
     def _apply_rounded_mask(self):
-        """Apply rounded corner mask to window"""
         radius = 10
         path = QPainterPath()
         rect = self.rect()
@@ -762,17 +929,14 @@ class AboutDialog(QWidget):
         self.setMask(region)
         
     def resizeEvent(self, event):
-        """Reapply mask on resize"""
         super().resizeEvent(event)
         self._apply_rounded_mask()
         
     def mousePressEvent(self, event):
-        """Close window on any mouse press outside"""
         self.close()
         super().mousePressEvent(event)
         
     def focusOutEvent(self, event):
-        """Close window when focus is lost"""
         QTimer.singleShot(100, self.close)
         super().focusOutEvent(event)
         
@@ -782,28 +946,23 @@ class AboutDialog(QWidget):
         
         colors = self._get_theme_colors()
         
-        # Fill background with gradient
         gradient = QLinearGradient(0, 0, self.width(), self.height())
         gradient.setColorAt(0, colors['bg'])
         gradient.setColorAt(1, colors['title_bg'])
         painter.fillRect(self.rect(), colors['bg'])
         
-        # Draw rounded border (matching CSS border-radius: 10px)
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.setPen(QPen(colors['status_border'], 1))
         painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 10, 10)
         
-        # Draw large "Lumen IDE" text
         painter.setOpacity(1.0)
         painter.setPen(QPen(colors['fg'], 1))
         
-        # Use large font
         font = QFont("Segoe UI", 60, QFont.Weight.Light)
         font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 110)
         painter.setFont(font)
         
-        # Center text
-        text = "Lumen IDE"
+        text = Strings.get("welcome_title")
         metrics = painter.fontMetrics()
         text_width = metrics.horizontalAdvance(text)
         text_height = metrics.height()
@@ -811,7 +970,6 @@ class AboutDialog(QWidget):
         x = (self.width() - text_width) // 2
         y = (self.height() - text_height) // 2 + metrics.ascent() - 70
         
-        # Draw with glow effect
         for i in range(5):
             offset = i * 2
             painter.setOpacity(0.1 * (5 - i))
@@ -822,13 +980,12 @@ class AboutDialog(QWidget):
         painter.setPen(QPen(colors['title_fg'], 1))
         painter.drawText(x, y, text)
         
-        # Draw subtitle
         painter.setPen(QPen(colors['title_fg'], 1))
         subtitle_font = QFont("Consolas", 11)
         painter.setFont(subtitle_font)
         x = (self.width() - text_width) // 2
-        y = (self.height() - text_height) // 2 + metrics.ascent()  - 50
-        subtitle = "Integrated development environment for Lumen"
+        y = (self.height() - text_height) // 2 + metrics.ascent() - 50
+        subtitle = Strings.get("welcome_subtitle")
         metrics = painter.fontMetrics()
         subtitle_width = metrics.horizontalAdvance(subtitle)
         
@@ -837,21 +994,19 @@ class AboutDialog(QWidget):
         
         painter.drawText(subtitle_x, subtitle_y, subtitle)
         
-        # Draw static author text at bottom
         author_font = QFont("Consolas", 10)
         painter.setFont(author_font)
         painter.setPen(QPen(colors['title_fg'], 1))
         painter.setOpacity(0.8)
         
-        author_text = "By Pavlov Ivan Alexeevich"
+        author_text = Strings.get("author_text")
         metrics = painter.fontMetrics()
         author_x = 10
         author_y = self.height() - 10
 
         painter.drawText(author_x, author_y, author_text)
         
-        # Draw version at bottom right
-        version_text = "Version 1.0"
+        version_text = Strings.get("version")
         version_width = metrics.horizontalAdvance(version_text)
         painter.drawText(self.width() - version_width - 10, author_y, version_text)
         
@@ -876,7 +1031,6 @@ class RoundedMenu(QMenu):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
-        # Установка шрифта Consolas для меню
         consolas_font = QFont("Consolas", 11)
         self.setFont(consolas_font)
         
@@ -887,12 +1041,10 @@ class RoundedMenu(QMenu):
         colors = self._get_theme_colors()
         rect = self.rect()
         
-        # Draw background
         painter.setBrush(QColor(colors['bg']))
         painter.setPen(Qt.PenStyle.NoPen)
         painter.drawRoundedRect(rect, 8, 8)
         
-        # Draw border
         painter.setPen(QPen(QColor(colors['status_border']), 1))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawRoundedRect(rect.adjusted(1, 1, -1, -1), 7, 7)
@@ -932,11 +1084,9 @@ class EditorTabWidget(QTabWidget):
         self._update_movable_state()
         
     def _update_movable_state(self):
-        """Enable moving only if more than one tab"""
         self.setMovable(self.count() > 1)
         
     def _on_tab_moved(self, from_index, to_index):
-        """Update close buttons after tab move"""
         for i in range(self.count()):
             self._update_close_button(i)
             
@@ -944,7 +1094,6 @@ class EditorTabWidget(QTabWidget):
         self._update_close_button(index)
         
     def _update_close_button(self, index):
-        """Create or update close button for a tab"""
         tab_bar = self.tabBar()
         old_btn = tab_bar.tabButton(index, QTabBar.ButtonPosition.RightSide)
         if old_btn:
@@ -954,7 +1103,6 @@ class EditorTabWidget(QTabWidget):
         btn.setIcon(self._create_close_icon())
         btn.setIconSize(QSize(14, 14))
         
-        # Get theme colors for styling
         colors = self._get_theme_colors()
         
         btn.setStyleSheet(f"""
@@ -979,18 +1127,14 @@ class EditorTabWidget(QTabWidget):
         tab_bar.setTabButton(index, QTabBar.ButtonPosition.RightSide, btn)
         
     def _create_close_icon(self) -> QIcon:
-        """Create close icon with current theme's title_fg color"""
         pixmap = QPixmap(14, 14)
         pixmap.fill(Qt.GlobalColor.transparent)
         
         painter = QPainter(pixmap)
-        #painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Get the current theme's title_fg color
         colors = self._get_theme_colors()
         painter.setPen(QPen(colors["title_fg"], 1.5))
         
-        # Draw X
         painter.drawLine(4, 4, 10, 10)
         painter.drawLine(10, 4, 4, 10)
         painter.end()
@@ -998,19 +1142,16 @@ class EditorTabWidget(QTabWidget):
         return QIcon(pixmap)
         
     def _get_theme_colors(self):
-        """Get current theme colors from main window"""
         window = self.window()
         if hasattr(window, 'current_theme'):
             return THEMES[window.current_theme]["colors"]
         return THEMES[DEFAULT_THEME]["colors"]
         
     def update_all_close_buttons(self):
-        """Update all close buttons when theme changes"""
         for i in range(self.count()):
             self._update_close_button(i)
         
     def _on_close_clicked(self, index):
-        """Handle close button click"""
         if index < self.count():
             self.close_tab(index)
         else:
@@ -1023,7 +1164,6 @@ class EditorTabWidget(QTabWidget):
                         break
                         
     def close_tab(self, index):
-        """Close tab with confirmation if modified"""
         widget = self.widget(index)
         if isinstance(widget, CustomScintilla):
             editor = widget
@@ -1038,8 +1178,8 @@ class EditorTabWidget(QTabWidget):
                 name = os.path.basename(filename) if filename else "Untitled"
                 reply = QMessageBox.question(
                     self,
-                    "Save Changes",
-                    f"Save changes to {name}?",
+                    Strings.get("save_changes"),
+                    Strings.get("save_changes_question").format(name),
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
                 )
                 if reply == QMessageBox.StandardButton.Cancel:
@@ -1060,6 +1200,7 @@ class EditorTabWidget(QTabWidget):
             if hasattr(main_window, '_update_content_display'):
                 main_window._update_content_display()
 
+
 # =============================================================================
 # LEXER
 # =============================================================================
@@ -1067,10 +1208,8 @@ class EditorTabWidget(QTabWidget):
 class TwistLangLexer(QsciLexerCustom):
     """
     Custom lexer for TwistLang syntax highlighting.
-    Supports multiple themes and configurable font sizes.
     """
     
-    # Style constants
     STYLE_DEFAULT = 0
     STYLE_KEYWORD = 1
     STYLE_TYPE = 2
@@ -1131,17 +1270,14 @@ class TwistLangLexer(QsciLexerCustom):
         return descriptions.get(style, "")
         
     def set_theme(self, theme_name: str):
-        """Change current theme"""
         self.theme_name = theme_name
         self.setup_styles()
         
     def set_font_size(self, size: int):
-        """Change font size"""
         self.font_size = size
         self.setup_styles()
         
     def setup_styles(self):
-        """Apply current theme colors and font"""
         theme = THEMES[self.theme_name]
         colors = theme["colors"]
         
@@ -1151,7 +1287,6 @@ class TwistLangLexer(QsciLexerCustom):
         safe_font = get_safe_monospace_font("Consolas", self.font_size)
         self.setFont(safe_font)
         
-        # Style colors
         style_colors = {
             self.STYLE_KEYWORD: colors["keyword"],
             self.STYLE_TYPE: colors["type"],
@@ -1171,7 +1306,6 @@ class TwistLangLexer(QsciLexerCustom):
         for style, color in style_colors.items():
             self.setColor(color, style)
             
-        # Special font styles
         italic_font = get_safe_monospace_font("Consolas", self.font_size)
         italic_font.setItalic(True)
         self.setFont(italic_font, self.STYLE_COMMENT)
@@ -1180,11 +1314,7 @@ class TwistLangLexer(QsciLexerCustom):
         bold_font.setBold(True)
         self.setFont(bold_font, self.STYLE_KEYWORD)
 
-        
-        
-        
     def styleText(self, start: int, end: int):
-        """Apply syntax highlighting to text range"""
         editor = self.editor()
         if not editor:
             return
@@ -1212,7 +1342,6 @@ class TwistLangLexer(QsciLexerCustom):
             if ch_len == 0:
                 break
                 
-            # Single-line comment
             if ch == '/' and pos + ch_len < end:
                 next_ch, next_len = self._get_char_at(text_bytes, pos + ch_len, total_bytes)
                 if next_ch == '/':
@@ -1228,7 +1357,6 @@ class TwistLangLexer(QsciLexerCustom):
                     pos = j
                     continue
                     
-            # String literals
             if ch in ('"', "'"):
                 expecting_namespace = False
                 quote = ch
@@ -1248,7 +1376,6 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
                 
-            # Numbers
             if ch.isdigit() or (ch == '.' and pos + ch_len < end and 
                                 self._get_char_at(text_bytes, pos + ch_len, total_bytes)[0].isdigit()):
                 expecting_namespace = False
@@ -1265,7 +1392,6 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
                 
-            # Identifiers and keywords
             if ch.isalpha() or ch == '_' or ch == '#':
                 j = pos
                 while j < end:
@@ -1309,7 +1435,6 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
                 
-            # Operators
             if ch in '+-*/%=&|^!<>~?.:;(){}[]':
                 expecting_namespace = False
                 j = pos + ch_len
@@ -1328,7 +1453,6 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
                 
-            # Default
             self.setStyling(ch_len, self.STYLE_DEFAULT)
             pos += ch_len
         self.update_folding_levels(start, end)
@@ -1342,7 +1466,6 @@ class TwistLangLexer(QsciLexerCustom):
         end_line = editor.SendScintilla(editor.SCI_LINEFROMPOSITION, end)
         total_lines = editor.lines()
 
-        # Получаем уровень предыдущей строки или базовый (1024)
         current_level = 1024
         if start_line > 0:
             prev_level = editor.SendScintilla(editor.SCI_GETFOLDLEVEL, start_line - 1)
@@ -1355,7 +1478,6 @@ class TwistLangLexer(QsciLexerCustom):
             open_count = text.count('{')
             close_count = text.count('}')
 
-            # Флаг заголовка: если есть открывающая скобка и она не закрывается на этой же строке
             is_header = 0
             if open_count > 0 and (open_count > close_count or text.find('{') < text.find('}') or close_count == 0):
                 is_header = 0x2000
@@ -1363,15 +1485,12 @@ class TwistLangLexer(QsciLexerCustom):
             new_fold_level = current_level | is_header
             old_fold_level = editor.SendScintilla(editor.SCI_GETFOLDLEVEL, line)
 
-            # Оптимизация выхода
             if old_fold_level == new_fold_level and line > end_line:
                 break
 
             editor.SendScintilla(editor.SCI_SETFOLDLEVEL, line, new_fold_level)
 
-            # Сначала увеличиваем уровень для следующей строки, если есть открывающая скобка
             current_level += open_count
-            # Затем уменьшаем, если есть закрывающая скобка
             current_level -= close_count
             if current_level < 1024:
                 current_level = 1024
@@ -1379,7 +1498,6 @@ class TwistLangLexer(QsciLexerCustom):
         
             
     def _get_char_at(self, text_bytes: bytes, pos: int, total_bytes: int) -> Tuple[Optional[str], int]:
-        """Safely get character at byte position (UTF-8 aware)"""
         if pos >= total_bytes:
             return (None, 0)
             
@@ -1412,7 +1530,6 @@ class TwistLangLexer(QsciLexerCustom):
 
 @dataclass
 class ErrorInfo:
-    """Information about a syntax error or warning"""
     line: int
     start_col: int
     end_col: int
@@ -1422,20 +1539,15 @@ class ErrorInfo:
 
 SCI_SETYOFFSET = 2397
 SCI_GETYOFFSET = 2398
+
 class CustomScintilla(QsciScintilla):
     """
-    Enhanced Scintilla editor with:
-    - Auto-closing brackets
-    - Ctrl+Click to follow includes
-    - Error highlighting
-    - Tooltips for errors
-    - Zoom with Ctrl+Wheel
+    Enhanced Scintilla editor.
     """
     
-    goto_definition_requested = pyqtSignal(str, int)  # path, line
+    goto_definition_requested = pyqtSignal(str, int)
     content_changed = pyqtSignal()
     
-    # Indicator constants
     INDICATOR_ERROR = 8
     WARNING_ERROR = 9
     ERROR_LINE_MARKER = 10
@@ -1461,66 +1573,50 @@ class CustomScintilla(QsciScintilla):
         self.textChanged.connect(self._on_text_changed)
 
         self.scroll_animation = QPropertyAnimation(self.verticalScrollBar(), b"value")
-        self.scroll_animation.setDuration(250)  # Длительность анимации в мс
-        self.scroll_animation.setEasingCurve(QEasingCurve.Type.OutCubic) # Плавное замедление в конце
+        self.scroll_animation.setDuration(250)
+        self.scroll_animation.setEasingCurve(QEasingCurve.Type.OutCubic)
         
-    # Внутри класса CodeEditor в editor.py
-
     def set_folding_visible(self, visible: bool):
-        """Включает или выключает отображение области сворачивания кода."""
         if visible:
             self.setFolding(QsciScintilla.FoldStyle.CircledTreeFoldStyle)
-            self.setMarginWidth(2, 14) # Марджин 2 зарезервирован под folding
-            
+            self.setMarginWidth(2, 14)
         else:
             self.setFolding(QsciScintilla.FoldStyle.NoFoldStyle)
             self.setMarginWidth(2, 0)
     
     def _on_text_changed(self):
-        """Обновить folding при любом изменении текста"""
         lexer = self.lexer()
         if lexer and hasattr(lexer, 'update_folding_levels'):
             lexer.update_folding_levels(0, self.length())
 
     def highlightMatchingBrace(self):
-        """Custom highlight for matching braces including angle brackets"""
         pos = self.SendScintilla(self.SCI_GETCURRENTPOS)
         
-        # Очищаем предыдущие индикаторы
         self.SendScintilla(self.SCI_SETINDICATORCURRENT, 1)
         self.SendScintilla(self.SCI_INDICATORCLEARRANGE, 0, self.length())
         
         self.SendScintilla(self.SCI_SETINDICATORCURRENT, 2)
         self.SendScintilla(self.SCI_INDICATORCLEARRANGE, 0, self.length())
         
-        # Получаем символ под курсором
         char = chr(self.SendScintilla(self.SCI_GETCHARAT, pos)) if pos < self.length() else ''
         
-        # Проверяем, является ли символ скобкой
         braces = {'(': ')', ')': '(', '[': ']', ']': '[', '{': '}', '}': '{', '<': '>', '>': '<'}
         
         if char in braces:
-            # Находим парную скобку
             brace_pos = self.SendScintilla(self.SCI_BRACEMATCH, pos, 0)
             
             if brace_pos != -1:
-                # Подсвечиваем текущую скобку
                 self.SendScintilla(self.SCI_SETINDICATORCURRENT, 1)
                 self.SendScintilla(self.SCI_INDICATORFILLRANGE, pos, 1)
                 self.SendScintilla(self.SCI_SETINDICATORCURRENT, 2)
                 self.SendScintilla(self.SCI_INDICATORFILLRANGE, pos, 1)
                 
-                # Подсвечиваем парную скобку
                 self.SendScintilla(self.SCI_SETINDICATORCURRENT, 1)
                 self.SendScintilla(self.SCI_INDICATORFILLRANGE, brace_pos, 1)
                 self.SendScintilla(self.SCI_SETINDICATORCURRENT, 2)
                 self.SendScintilla(self.SCI_INDICATORFILLRANGE, brace_pos, 1)
         
-    # ===== Setup methods =====
-    
     def _setup_editor(self):
-        """Configure basic editor settings"""
-        
         self.setUtf8(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setScrollWidthTracking(True)
@@ -1539,12 +1635,9 @@ class CustomScintilla(QsciScintilla):
         self.setAutoCompletionReplaceWord(False)
 
         self.setFolding(QsciScintilla.FoldStyle.CircledTreeFoldStyle)
-        #self.SendScintilla(self.SCI_SETMODEVENTMASK, self.SC_MOD_INSERTTEXT | self.SC_MOD_DELETETEXT)
         self.SendScintilla(self.SCI_SETAUTOMATICFOLD, 0x0001 | 0x0002 | 0x0004)
         
-        
     def _setup_error_highlighting(self):
-        """Configure error indicators and markers"""
         self.indicatorDefine(
             QsciScintilla.IndicatorStyle.ThickCompositionIndicator,
             self.INDICATOR_ERROR
@@ -1558,20 +1651,15 @@ class CustomScintilla(QsciScintilla):
         self.markerDefine(QsciScintilla.MarkerSymbol.Background, self.WARNING_LINE_MARKER)
         
     def set_main_window(self, window):
-        """Set reference to main window"""
         self.main_window = window
         
-    # ===== Public API =====
-    
     def set_errors(self, errors: List[tuple]):
-        """Set errors for highlighting"""
         self.clear_errors()
         for error in errors:
             self.add_error(*error)
         self.viewport().update()
         
     def clear_errors(self):
-        """Remove all error highlights"""
         self.clearIndicatorRange(0, 0, self.lines(), 0, self.INDICATOR_ERROR)
         self.clearIndicatorRange(0, 0, self.lines(), 0, self.WARNING_ERROR)
         self.markerDeleteAll(self.ERROR_LINE_MARKER)
@@ -1583,7 +1671,6 @@ class CustomScintilla(QsciScintilla):
         self.viewport().update()
         
     def add_error(self, line: int, start_col: int, end_col: int, message: str, error_type: int):
-        """Add a single error highlight"""
         start_col += 1
         end_col += 1
         
@@ -1593,10 +1680,10 @@ class CustomScintilla(QsciScintilla):
         self.fillIndicatorRange(line, start_col, line, end_col,
                                self.INDICATOR_ERROR if error_type == 0 else self.WARNING_ERROR)
         
-        if error_type == 0:  # Error
+        if error_type == 0:
             self.markerAdd(line, self.ERROR_LINE_MARKER)
             self.error_messages[line] = f"Error: {message}"
-        else:  # Warning
+        else:
             self.markerAdd(line, self.WARNING_LINE_MARKER)
             self.error_messages[line] = f"Warning: {message}"
             
@@ -1604,7 +1691,6 @@ class CustomScintilla(QsciScintilla):
         self.errors.append(ErrorInfo(line, start_col, end_col, message, ErrorType(error_type)))
         
     def get_line_text(self, line: int) -> str:
-        """Get text of a specific line"""
         try:
             start_pos = self.SendScintilla(self.SCI_POSITIONFROMLINE, line)
             if start_pos < 0:
@@ -1622,12 +1708,10 @@ class CustomScintilla(QsciScintilla):
             return ""
             
     def is_include_line(self, line: int) -> bool:
-        """Check if line contains an include directive"""
         text = self.text(line).strip()
         return text.startswith('#include')
         
     def extract_include_path(self, line: int) -> Optional[str]:
-        """Extract file path from include directive"""
         text = self.text(line).strip()
         if not text.startswith('#include'):
             return None
@@ -1646,19 +1730,13 @@ class CustomScintilla(QsciScintilla):
                 
         return None
     
-    
     def get_error_at_position(self, line: int, col: int) -> Optional[str]:
-        """Get error message at specific position"""
         for error in self.errors:
             if error.line == line and error.start_col <= col < error.end_col:
                 return error.message
         return None
         
-    # ===== Event handlers =====
-    
     def keyPressEvent(self, event):
-        """Handle key presses (bracket auto-close)"""
-        # Auto-close brackets
         pairs = {
             Qt.Key.Key_ParenLeft: ('(', ')'),
             Qt.Key.Key_BracketLeft: ('[', ']'),
@@ -1666,9 +1744,6 @@ class CustomScintilla(QsciScintilla):
             Qt.Key.Key_QuoteDbl: ('"', '"'),
             Qt.Key.Key_Apostrophe: ("'", "'")
         }
-
-        
-
         
         if event.key() in pairs:
             open_char, close_char = pairs[event.key()]
@@ -1680,22 +1755,17 @@ class CustomScintilla(QsciScintilla):
             
         super().keyPressEvent(event)
         
-
-        
     def keyReleaseEvent(self, event):
         if event.key() == Qt.Key.Key_Control:
             self.ctrl_pressed = False
         super().keyReleaseEvent(event)
-        # Убираем emit отсюда
         
     def _insert_pair(self, open_char: str, close_char: str):
-        """Insert matching bracket pair"""
         line, col = self.getCursorPosition()
         self.insertAt(open_char + close_char, line, col)
         self.setCursorPosition(line, col + 1)
         
     def mouseMoveEvent(self, event: QMouseEvent):
-        """Handle mouse move (tooltips for errors)"""
         try:
             pos = event.pos()
             position = self.SendScintilla(self.SCI_POSITIONFROMPOINT, pos.x(), pos.y())
@@ -1716,7 +1786,6 @@ class CustomScintilla(QsciScintilla):
             super().mouseMoveEvent(event)
             
     def mousePressEvent(self, event: QMouseEvent):
-        """Handle mouse press (Ctrl+Click for includes)"""
         if event.button() == Qt.MouseButton.LeftButton and self.ctrl_pressed:
             pos = event.pos()
             position = self.SendScintilla(self.SCI_POSITIONFROMPOINT, pos.x(), pos.y())
@@ -1732,7 +1801,6 @@ class CustomScintilla(QsciScintilla):
         super().mousePressEvent(event)
         
     def wheelEvent(self, event):
-        """Handle wheel (zoom with Ctrl)"""
         if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
             delta = event.angleDelta().y()
             if delta > 0 and self.main_window:
@@ -1743,11 +1811,8 @@ class CustomScintilla(QsciScintilla):
         else:
             delta = event.angleDelta().y()
     
-            # Получаем текущее и целевое значения
             current_value = self.verticalScrollBar().value()
             
-            # Рассчитываем шаг (например, прокрутка на 3 строки за один шаг колесика)
-            # Можно подстроить множитель (здесь 3), чтобы изменить скорость
             scroll_step = 10
             
             if delta > 0:
@@ -1755,17 +1820,14 @@ class CustomScintilla(QsciScintilla):
             else:
                 target_value = current_value + scroll_step
 
-            # Ограничиваем значения пределами скроллбара
             target_value = max(0, min(target_value, self.verticalScrollBar().maximum()))
 
-            # Запускаем анимацию
             self.scroll_animation.stop()
             self.scroll_animation.setStartValue(current_value)
             self.scroll_animation.setEndValue(target_value)
             self.scroll_animation.start()
             
     def paintEvent(self, event):
-        """Custom paint for error messages inline"""
         super().paintEvent(event)
         
         if not self.error_messages:
@@ -1790,7 +1852,6 @@ class CustomScintilla(QsciScintilla):
             print(f"Error in paintEvent: {e}")
             
     def _paint_error_for_line(self, painter: QPainter, line: int, colors: dict, margin_width: int):
-        """Paint error message for a specific line"""
         try:
             pos = self.SendScintilla(self.SCI_POSITIONFROMLINE, line)
             if pos < 0:
@@ -1806,7 +1867,6 @@ class CustomScintilla(QsciScintilla):
                 
             x = end_x + 35
             
-            # Determine error type
             error_type = 0
             for err in self.errors:
                 if err.line == line:
@@ -1822,7 +1882,6 @@ class CustomScintilla(QsciScintilla):
                 font.setPointSize(self.main_window.global_font_size)
             painter.setFont(font)
             
-            # Truncate if too long
             metrics = painter.fontMetrics()
             text_width = metrics.horizontalAdvance(error_text)
             max_width = self.width() - x - 20
@@ -1860,13 +1919,14 @@ class TwistLangEditor(QMainWindow):
         
         self.current_theme = DEFAULT_THEME
         self.global_font_size = DEFAULT_FONT_SIZE
-        self.autosave_interval = 300  # ms
+        self.autosave_interval = 300
         self.autosave_count = 0
         self.current_file = None
         
         self.ls_processes: Dict[str, subprocess.Popen] = {}
         self.theme_actions: List[QAction] = []
-        self.interval_actions: List[QAction] = []  # Store interval actions for updating icons
+        self.interval_actions: List[QAction] = []
+        self.language_actions: List[QAction] = []  # Store language actions
         
         self.resizing = False
         self.resize_direction = None
@@ -1879,28 +1939,242 @@ class TwistLangEditor(QMainWindow):
         self._setup_timers()
         
         self.apply_theme(self.current_theme)
-
         
-        
-
-       
-        # Initialize checkmark for current theme
         QTimer.singleShot(100, self._initialize_theme_checkmark)
-        # Initialize interval menu icons
         QTimer.singleShot(200, self._initialize_interval_icons)
         
-    # ===== Setup methods =====
-    
     def _setup_window(self):
-        """Configure main window"""
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setGeometry(100, 100, 1200, 800)
         self.setAcceptDrops(True)
+
+    def _rebuild_menus(self):
+        """Полностью пересоздает все меню с текущим языком"""
+        menubar = self.menuBar()
+        menubar.clear()
+        menubar.setVisible(False)
         
+        consolas_font = QFont("Consolas", 11)
+        menubar.setFont(consolas_font)
+
+        self.theme_actions.clear()
+        self.interval_actions.clear()
+        self.language_actions.clear()
+    
+        
+        menubar = self.menuBar()
+        menubar.setVisible(False)
+        
+        consolas_font = QFont("Consolas", 11)
+        
+        # File menu
+        file_menu = RoundedMenu(Strings.get("file_menu"), self)
+        file_menu.setFont(consolas_font)
+        menubar.addMenu(file_menu)
+        
+        new_action = self._create_action(Strings.get("new"), "Ctrl+N", self.new_file)
+        file_menu.addAction(new_action)
+        
+        open_action = self._create_action(Strings.get("open"), "Ctrl+O", self.open_file_dialog)
+        file_menu.addAction(open_action)
+        
+        save_action = self._create_action(Strings.get("save"), "Ctrl+S", self.save_current_file)
+        file_menu.addAction(save_action)
+        
+        save_as_action = self._create_action(Strings.get("save_as"), "Ctrl+Shift+S", self.save_current_file_as)
+        file_menu.addAction(save_as_action)
+        
+        autosave_menu = RoundedMenu(Strings.get("auto_save"), self)
+        autosave_menu.setFont(consolas_font)
+        file_menu.addMenu(autosave_menu)
+        
+        self.autosave_action = QAction(Strings.get("enable_auto_save"), self)
+        self.autosave_action.setCheckable(True)
+        self.autosave_action.setChecked(True)
+        self.autosave_action.setFont(consolas_font)
+        self.autosave_action.triggered.connect(self._toggle_autosave)
+        autosave_menu.addAction(self.autosave_action)
+        
+        colors = THEMES[self.current_theme]["colors"]
+        self.autosave_action.setIcon(self._create_check_icon(colors["fg"]))
+        
+        autosave_menu.addSeparator()
+        
+        interval_menu = RoundedMenu(Strings.get("interval"), self)
+        interval_menu.setFont(consolas_font)
+        autosave_menu.addMenu(interval_menu)
+        
+        for name, ms in AUTOSAVE_INTERVALS:
+            action = QAction(name, self)
+            action.setCheckable(True)
+            action.setData(ms)
+            action.setFont(consolas_font)
+            if ms == self.autosave_interval:
+                action.setChecked(True)
+                colors = THEMES[self.current_theme]["colors"]
+                action.setIcon(self._create_check_icon(colors["fg"]))
+            action.triggered.connect(lambda checked, ms=ms: self._set_autosave_interval(ms))
+            interval_menu.addAction(action)
+            self.interval_actions.append(action)
+            
+        autosave_menu.addSeparator()
+        
+        save_now_action = self._create_action(Strings.get("save_now"), "Ctrl+Shift+S", 
+                                              lambda: self.autosave_all_files(manual=True))
+        autosave_menu.addAction(save_now_action)
+    
+        file_menu.addSeparator()
+        
+        close_action = self._create_action(Strings.get("close"), "Ctrl+W", self.close_current_tab)
+        file_menu.addAction(close_action)
+        
+        close_all_action = self._create_action(Strings.get("close_all"), None, self.close_all_tabs)
+        file_menu.addAction(close_all_action)
+        
+        file_menu.addSeparator()
+        
+        exit_action = self._create_action(Strings.get("exit"), None, self.close)
+        file_menu.addAction(exit_action)
+        
+        # Edit menu
+        edit_menu = RoundedMenu(Strings.get("edit_menu"), self)
+        edit_menu.setFont(consolas_font)
+        menubar.addMenu(edit_menu)
+        
+        edit_menu.addAction(self._create_action(Strings.get("undo"), "Ctrl+Z", lambda: self.current_editor().undo() if self.current_editor() else None))
+        edit_menu.addAction(self._create_action(Strings.get("redo"), "Ctrl+Y", lambda: self.current_editor().redo() if self.current_editor() else None))
+        edit_menu.addSeparator()
+        edit_menu.addAction(self._create_action(Strings.get("cut"), "Ctrl+X", lambda: self.current_editor().cut() if self.current_editor() else None))
+        edit_menu.addAction(self._create_action(Strings.get("copy"), "Ctrl+C", lambda: self.current_editor().copy() if self.current_editor() else None))
+        edit_menu.addAction(self._create_action(Strings.get("paste"), "Ctrl+V", lambda: self.current_editor().paste() if self.current_editor() else None))
+        
+        # Settings menu
+        settings_menu = RoundedMenu(Strings.get("settings_menu"), self)
+        settings_menu.setFont(consolas_font)
+        menubar.addMenu(settings_menu)
+        
+        settings_menu.addAction(self._create_action(Strings.get("zoom_in"), "Ctrl+=", self.zoom_in))
+        settings_menu.addAction(self._create_action(Strings.get("zoom_out"), "Ctrl+-", self.zoom_out))
+        settings_menu.addSeparator()
+        
+        # Theme submenu
+        theme_menu = RoundedMenu(Strings.get("theme"), self)
+        theme_menu.setFont(consolas_font)
+        settings_menu.addMenu(theme_menu)
+        
+        for theme_name in THEMES.keys():
+            theme_action = QAction(theme_name, self)
+            theme_action.setCheckable(True)
+            theme_action.setFont(consolas_font)
+            if theme_name == self.current_theme:
+                theme_action.setChecked(True)
+            theme_action.triggered.connect(lambda checked, tn=theme_name: self.select_theme(tn))
+            theme_menu.addAction(theme_action)
+            self.theme_actions.append(theme_action)
+        
+        settings_menu.addSeparator()
+        
+        # Language submenu
+        language_menu = RoundedMenu(Strings.get("language"), self)
+        language_menu.setFont(consolas_font)
+        settings_menu.addMenu(language_menu)
+        
+        # English action
+        eng_action = QAction(Strings.get("english"), self)
+        eng_action.setCheckable(True)
+        eng_action.setFont(consolas_font)
+        if Strings.current_language == Language.ENGLISH:
+            eng_action.setChecked(True)
+        eng_action.triggered.connect(lambda: self._switch_language(Language.ENGLISH))
+        language_menu.addAction(eng_action)
+        self.language_actions.append(eng_action)
+        
+        # Russian action
+        ru_action = QAction(Strings.get("russian"), self)
+        ru_action.setCheckable(True)
+        ru_action.setFont(consolas_font)
+        if Strings.current_language == Language.RUSSIAN:
+            ru_action.setChecked(True)
+        ru_action.triggered.connect(lambda: self._switch_language(Language.RUSSIAN))
+        language_menu.addAction(ru_action)
+        self.language_actions.append(ru_action)
+        
+        settings_menu.addSeparator()
+        
+        about_action = self._create_action(Strings.get("about"), None, self.show_about_dialog)
+        settings_menu.addAction(about_action)
+            
+        # Run menu
+        run_menu = RoundedMenu(Strings.get("run_menu"), self)
+        run_menu.setFont(consolas_font)
+        menubar.addMenu(run_menu)
+        
+        run_action = self._create_action(Strings.get("run_code"), "F5", self.run_current_file)
+        run_menu.addAction(run_action)
+        
+        go_to_action = self._create_action(Strings.get("go_to_include"), "F12", self.goto_include_under_cursor)
+        run_menu.addAction(go_to_action)
+        
+        run_menu.addSeparator()
+
+        restart_ls_action = self._create_action(Strings.get("restart_ls"), "Ctrl+Shift+R", self.restart_language_server)
+        run_menu.addAction(restart_ls_action)
+
+        run_menu.addSeparator()
+        
+        clear_errors_action = self._create_action(Strings.get("clear_errors"), "Ctrl+E", self.clear_all_errors)
+        run_menu.addAction(clear_errors_action)
+        
+        check_errors_action = self._create_action(Strings.get("check_errors"), "F4", self.check_current_file_errors)
+        run_menu.addAction(check_errors_action)
+
+        
+        # В конце обновите title bar
+        self.title_bar.add_menu(menubar)
+        self._update_checkmarks_after_rebuild()
+
+    def _update_checkmarks_after_rebuild(self):
+        """Восстанавливает состояние галочек после пересоздания меню"""
+        colors = THEMES[self.current_theme]["colors"]
+        self.check_icon = self._create_check_icon(colors["fg"])
+        
+        # Восстанавливаем галочку для текущей темы
+        for action in self.theme_actions:
+            if action.text() == self.current_theme:
+                action.setChecked(True)
+                action.setIcon(self.check_icon)
+            else:
+                action.setChecked(False)
+                action.setIcon(QIcon())
+        
+        # Восстанавливаем состояние автосохранения
+        if hasattr(self, 'autosave_action'):
+            if self.autosave_action.isChecked():
+                self.autosave_action.setIcon(self.check_icon)
+            else:
+                self.autosave_action.setIcon(QIcon())
+        
+        # Восстанавливаем галочки для интервалов автосохранения
+        for action in self.interval_actions:
+            if action.data() == self.autosave_interval:
+                action.setChecked(True)
+                action.setIcon(self.check_icon)
+            else:
+                action.setChecked(False)
+                action.setIcon(QIcon())
+        
+        # Восстанавливаем галочку для текущего языка
+        for action in self.language_actions:
+            if (Strings.current_language == Language.ENGLISH and action.text() == Strings.get("english")) or \
+            (Strings.current_language == Language.RUSSIAN and action.text() == Strings.get("russian")):
+                action.setChecked(True)
+                action.setIcon(self.check_icon)
+            else:
+                action.setChecked(False)
+                action.setIcon(QIcon())
         
     def _setup_ui(self):
-        """Initialize UI components"""
         central_widget = QWidget()
         central_widget.setObjectName("centralWidget")
         central_widget.setStyleSheet("QWidget#centralWidget { border-radius: 10px; }")
@@ -1910,21 +2184,17 @@ class TwistLangEditor(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
-        # Title bar
         self.title_bar = CustomTitleBar(self)
         self.title_bar.setObjectName("titleBar")
         main_layout.addWidget(self.title_bar)
         
-        # Content area with stacked widget for welcome screen and tabs
         self.content_stack = QStackedWidget()
         self.content_stack.setObjectName("contentStack")
         main_layout.addWidget(self.content_stack, 1)
         
-        # Welcome widget
         self.welcome_widget = WelcomeWidget()
         self.content_stack.addWidget(self.welcome_widget)
         
-        # Tab widget container with solid background
         self.tab_container = QWidget()
         self.tab_container.setObjectName("tabContainer")
         
@@ -1944,26 +2214,23 @@ class TwistLangEditor(QMainWindow):
         
         self.tab_widget.currentChanged.connect(self._on_tab_changed)
         
-        # Status bar
         self.status_bar = QStatusBar()
         self.status_bar.setObjectName("statusBar")
         self.status_bar.setSizeGripEnabled(False)
         self.setStatusBar(self.status_bar)
         
-        # Create a container widget for the toggle with right margin and separator
         toggle_container = QWidget()
         toggle_layout = QHBoxLayout(toggle_container)
-        toggle_layout.setContentsMargins(10, 0, 10, 0)  # Right margin of 10 pixels
-        toggle_layout.setSpacing(5)  # Spacing between elements
+        toggle_layout.setContentsMargins(10, 0, 10, 0)
+        toggle_layout.setSpacing(5)
         
         self.folding_toggle = AnimatedToggle()
         self.folding_toggle.setChecked(False)
         self.folding_toggle.toggled.connect(self._toggle_folding_handler)
-        self.folding_toggle.setToolTip("Toggle code folding (show/hide fold margins)\n [This function in beta test]")
+        self.folding_toggle.setToolTip(Strings.get("toggle_folding"))
         
         toggle_layout.addWidget(self.folding_toggle)
         
-        # Add separator line
         self.separator = QFrame()
         self.separator.setFrameShape(QFrame.Shape.VLine)
         self.separator.setFrameShadow(QFrame.Shadow.Sunken)
@@ -1975,7 +2242,6 @@ class TwistLangEditor(QMainWindow):
             }}
         """)
         
-        
         self.autosave_label = QLabel()
         self.error_label = QLabel()
         self.ls_status_label = QLabel()
@@ -1984,39 +2250,31 @@ class TwistLangEditor(QMainWindow):
         self.status_bar.addPermanentWidget(self.error_label)
         self.status_bar.addPermanentWidget(self.ls_status_label)
         self.status_bar.addPermanentWidget(self.separator)
-        self.status_bar.addPermanentWidget(toggle_container)  # Add container instead of direct toggle
+        self.status_bar.addPermanentWidget(toggle_container)
         
-        # Menu
         menubar = self.menuBar()
-        # Устанавливаем шрифт Consolas для менюбара
         consolas_font = QFont("Consolas", 11)
         menubar.setFont(consolas_font)
-        self._create_menu()
-        self.title_bar.add_menu(menubar)
         
-        # Connect title bar signals
+        self._rebuild_menus()
+        
         self.title_bar.window_minimized.connect(self.showMinimized)
         self.title_bar.window_maximized.connect(self._toggle_maximize)
         self.title_bar.window_closed.connect(self.close)
         self.title_bar.run_clicked.connect(self.run_current_file)
         
-        # Initially show welcome widget
         self._update_content_display()
         
     def _initialize_theme_checkmark(self):
-        """Initialize checkmark for current theme"""
-        # Create icon with current color
         colors = THEMES[self.current_theme]["colors"]
         self.check_icon = self._create_check_icon(colors["fg"])
         
-        # Set icon for current theme
         for action in self.theme_actions:
             if action.text() == self.current_theme:
                 action.setChecked(True)
                 action.setIcon(self.check_icon)
                 break
         
-        # Set icon for autosave action
         if hasattr(self, 'autosave_action'):
             if self.autosave_action.isChecked():
                 self.autosave_action.setIcon(self.check_icon)
@@ -2024,11 +2282,9 @@ class TwistLangEditor(QMainWindow):
                 self.autosave_action.setIcon(QIcon())
     
     def _initialize_interval_icons(self):
-        """Initialize checkmark icons for interval menu"""
         colors = THEMES[self.current_theme]["colors"]
         check_icon = self._create_check_icon(colors["fg"])
         
-        # Update interval actions
         for action in self.interval_actions:
             if action.data() == self.autosave_interval:
                 action.setChecked(True)
@@ -2036,193 +2292,59 @@ class TwistLangEditor(QMainWindow):
             else:
                 action.setChecked(False)
                 action.setIcon(QIcon())
-
+                
     def _toggle_folding_handler(self, enabled: bool):
-        """Переключает сворачивание во всех открытых вкладках"""
-        # enabled = True когда переключатель включен (checked)
-        # enabled = False когда переключатель выключен (unchecked)
-        
-        # Применяем ко всем текущим открытым файлам
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla):
-                # Когда включен (enabled=True) - показываем folding
-                # Когда выключен (enabled=False) - скрываем folding
                 editor.set_folding_visible(enabled)
         
-        state_text = "ON" if enabled else "OFF"
-        self.show_status_message(f"Code folding: {state_text}", 2000)
+        state_text = Strings.get("code_folding_on") if enabled else Strings.get("code_folding_off")
+        self.show_status_message(state_text, 2000)
         
-    def _create_menu(self):
-        """Create application menus"""
-        menubar = self.menuBar()
-        menubar.setVisible(False)  # Hide default menubar
         
-        # Шрифт для меню
-        consolas_font = QFont("Consolas", 11)
+    def _switch_language(self, language: Language):
+        """Переключение языка с пересозданием меню"""
+        Strings.set_language(language)
         
-        # File menu
-        file_menu = RoundedMenu("File", self)
-        file_menu.setFont(consolas_font)
-        menubar.addMenu(file_menu)
+        # Пересоздаем все меню
+        self._rebuild_menus()
         
-        new_action = self._create_action("New", "Ctrl+N", self.new_file)
-        file_menu.addAction(new_action)
+        # Обновляем заголовок окна
+        self.title_bar.title_label.setText(Strings.get("window_title"))
         
-        open_action = self._create_action("Open...", "Ctrl+O", self.open_file_dialog)
-        file_menu.addAction(open_action)
+        # Обновляем приветственный виджет
+        self.welcome_widget.update()
         
-        save_action = self._create_action("Save", "Ctrl+S", self.save_current_file)
-        file_menu.addAction(save_action)
+        # Обновляем статусные метки
+        self._update_status_labels()
         
-        save_as_action = self._create_action("Save As...", "Ctrl+Shift+S", self.save_current_file_as)
-        file_menu.addAction(save_as_action)
+        # Обновляем подсказку для переключателя
+        self.folding_toggle.setToolTip(Strings.get("toggle_folding"))
         
-        # Auto-save submenu
-        autosave_menu = RoundedMenu("Auto save", self)
-        autosave_menu.setFont(consolas_font)
-        file_menu.addMenu(autosave_menu)
-        
-        self.autosave_action = QAction("Enable Auto-save", self)
-        self.autosave_action.setCheckable(True)
-        self.autosave_action.setChecked(True)
-        self.autosave_action.setFont(consolas_font)
-        self.autosave_action.triggered.connect(self._toggle_autosave)
-        autosave_menu.addAction(self.autosave_action)
-        
-        # Add checkmark icon for autosave action (will be updated in apply_theme)
-        colors = THEMES[self.current_theme]["colors"]
-        self.autosave_action.setIcon(self._create_check_icon(colors["fg"]))
-        
-        autosave_menu.addSeparator()
-        
-        interval_menu = RoundedMenu("Interval", self)
-        interval_menu.setFont(consolas_font)
-        autosave_menu.addMenu(interval_menu)
-        
-        for name, ms in AUTOSAVE_INTERVALS:
-            action = QAction(name, self)
-            action.setCheckable(True)
-            action.setData(ms)
-            action.setFont(consolas_font)
-            if ms == self.autosave_interval:
-                action.setChecked(True)
-                colors = THEMES[self.current_theme]["colors"]
-                action.setIcon(self._create_check_icon(colors["fg"]))
-            action.triggered.connect(lambda checked, ms=ms: self._set_autosave_interval(ms))
-            interval_menu.addAction(action)
-            self.interval_actions.append(action)
-            
-        autosave_menu.addSeparator()
-        
-        save_now_action = self._create_action("Save Now", "Ctrl+Shift+S", 
-                                              lambda: self.autosave_all_files(manual=True))
-        autosave_menu.addAction(save_now_action)
+        # Показываем сообщение
+        lang_name = Strings.get("english") if language == Language.ENGLISH else Strings.get("russian")
+        self.show_status_message(f"Language switched to {lang_name}", 2000)
 
-    
-        file_menu.addSeparator()
-        
-        close_action = self._create_action("Close", "Ctrl+W", self.close_current_tab)
-        file_menu.addAction(close_action)
-        
-        close_all_action = self._create_action("Close All", None, self.close_all_tabs)
-        file_menu.addAction(close_all_action)
-        
-        file_menu.addSeparator()
-        
-        exit_action = self._create_action("Exit", None, self.close)
-        file_menu.addAction(exit_action)
-        
-        # Edit menu
-        edit_menu = RoundedMenu("Edit", self)
-        edit_menu.setFont(consolas_font)
-        menubar.addMenu(edit_menu)
-        
-        edit_menu.addAction(self._create_action("Undo", "Ctrl+Z", lambda: self.current_editor().undo()))
-        edit_menu.addAction(self._create_action("Redo", "Ctrl+Y", lambda: self.current_editor().redo()))
-        edit_menu.addSeparator()
-        edit_menu.addAction(self._create_action("Cut", "Ctrl+X", lambda: self.current_editor().cut()))
-        edit_menu.addAction(self._create_action("Copy", "Ctrl+C", lambda: self.current_editor().copy()))
-        edit_menu.addAction(self._create_action("Paste", "Ctrl+V", lambda: self.current_editor().paste()))
-        
-        # View menu
-        view_menu = RoundedMenu("Settings", self)
-        view_menu.setFont(consolas_font)
-        menubar.addMenu(view_menu)
-        
-        view_menu.addAction(self._create_action("Zoom In", "Ctrl+=", self.zoom_in))
-        view_menu.addAction(self._create_action("Zoom Out", "Ctrl+-", self.zoom_out))
-        view_menu.addSeparator()
-        
-        # Theme submenu
-        theme_menu = RoundedMenu("Theme", self)
-        theme_menu.setFont(consolas_font)
-        view_menu.addMenu(theme_menu)
-        
-        for theme_name in THEMES.keys():
-            theme_action = QAction(theme_name, self)
-            theme_action.setCheckable(True)
-            theme_action.setFont(consolas_font)
-            if theme_name == self.current_theme:
-                theme_action.setChecked(True)
-            theme_action.triggered.connect(lambda checked, tn=theme_name: self.select_theme(tn))
-            theme_menu.addAction(theme_action)
-            self.theme_actions.append(theme_action)
-        
-        view_menu.addSeparator()
-        about_action = self._create_action("About Lumen IDE", None, self.show_about_dialog)
-        view_menu.addAction(about_action)
-            
-        # Run menu
-        run_menu = RoundedMenu("Run", self)
-        run_menu.setFont(consolas_font)
-        menubar.addMenu(run_menu)
-        
-        run_action = self._create_action("Run Code", "F5", self.run_current_file)
-        run_menu.addAction(run_action)
-        
-        go_to_action = self._create_action("Go to Include", "F12", self.goto_include_under_cursor)
-        run_menu.addAction(go_to_action)
-        
-        run_menu.addSeparator()
-
-        restart_ls_action = self._create_action("Restart Language Server", "Ctrl+Shift+R", self.restart_language_server)
-        run_menu.addAction(restart_ls_action)
-
-        run_menu.addSeparator()
-        
-        clear_errors_action = self._create_action("Clear Errors", "Ctrl+E", self.clear_all_errors)
-        run_menu.addAction(clear_errors_action)
-        
-        # Добавляем действие для ручной проверки ошибок
-        check_errors_action = self._create_action("Check Errors", "F4", self.check_current_file_errors)
-        run_menu.addAction(check_errors_action)
-        
     def _create_action(self, text: str, shortcut: Optional[str], slot) -> QAction:
-        """Create a standard action with shortcut"""
         action = QAction(text, self)
         if shortcut:
             action.setShortcut(QKeySequence(shortcut))
         action.triggered.connect(slot)
-        # Устанавливаем шрифт Consolas для действий
         action.setFont(QFont("Consolas", 10))
         return action
     
     def show_about_dialog(self):
-        """Show About dialog window with same content as WelcomeWidget"""
         about_win = AboutDialog(self)
-        about_win.setWindowTitle("About Lumen IDE")
+        about_win.setWindowTitle(Strings.get("about"))
         about_win.show()
-        # Save reference so window doesn't close immediately
         self._about_window = about_win
         
     def _setup_shortcuts(self):
-        """Setup keyboard shortcuts not in menus"""
         QShortcut(QKeySequence("F8"), self).activated.connect(self.goto_next_error)
         QShortcut(QKeySequence("Shift+F8"), self).activated.connect(self.goto_prev_error)
 
     def _create_check_icon(self, color: QColor) -> QIcon:
-        """Create checkmark icon with specified color"""
         try:
             svg_path = r"data\check.svg"
             if os.path.exists(svg_path):
@@ -2230,7 +2352,6 @@ class TwistLangEditor(QMainWindow):
         except Exception as e:
             print(f"Error creating check icon: {e}")
         
-        # Fallback: create a simple pixmap checkmark
         pixmap = QPixmap(16, 16)
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
@@ -2242,53 +2363,44 @@ class TwistLangEditor(QMainWindow):
         return QIcon(pixmap)
         
     def _setup_timers(self):
-        """Setup timers for autosave and error checking"""
         self.autosave_timer = QTimer(self)
         self.autosave_timer.timeout.connect(self.autosave_all_files)
         self.autosave_timer.start(self.autosave_interval)
         
-        # Убираем постоянный таймер проверки ошибок
-        # self.error_check_timer = QTimer(self)
-        # self.error_check_timer.timeout.connect(self._check_for_errors)
-        # self.error_check_timer.start(300)
-        
-    # ===== Content display management =====
-    
     def _update_content_display(self):
-        """Switch between welcome screen and tab widget based on open tabs"""
         if self.tab_widget.count() == 0:
             self.content_stack.setCurrentWidget(self.welcome_widget)
         else:
             self.content_stack.setCurrentWidget(self.tab_container)
     
-    # ===== Theme management =====
-
     def show_status_message(self, message: str, timeout: int = 2000):
-        """Показывает сообщение с уже настроенным в теме стилем"""
         self.status_bar.showMessage(message, timeout)
     
     def apply_theme(self, theme_name: str):
-        """Apply theme to all components"""
         self.current_theme = theme_name
         colors = THEMES[theme_name]["colors"]
         
-        # Update check icon for current theme
         self.check_icon = self._create_check_icon(colors["fg"])
         
-        # Update autosave action icon based on its state
         if hasattr(self, 'autosave_action'):
             if self.autosave_action.isChecked():
                 self.autosave_action.setIcon(self.check_icon)
             else:
                 self.autosave_action.setIcon(QIcon())
         
-        # Update interval menu items icons
         for action in self.interval_actions:
             if action.data() == self.autosave_interval:
                 action.setIcon(self.check_icon)
             else:
                 action.setIcon(QIcon())
-
+                
+        # Update language menu icons
+        for action in self.language_actions:
+            if (Strings.current_language == Language.ENGLISH and action.text() == Strings.EN["english"]) or \
+               (Strings.current_language == Language.RUSSIAN and action.text() == Strings.RU["russian"]):
+                action.setIcon(self.check_icon)
+            else:
+                action.setIcon(QIcon())
 
         accent = colors["autosave_on"] 
 
@@ -2296,11 +2408,8 @@ class TwistLangEditor(QMainWindow):
         self.folding_toggle.active_color = accent
         self.folding_toggle.handle_color = colors.get("status_bg")
         
-        
         self.folding_toggle.update()
         
-        
-
         self.separator.setStyleSheet(f"""
             QFrame {{
                 background-color: {colors['status_border'].name()};
@@ -2308,21 +2417,15 @@ class TwistLangEditor(QMainWindow):
             }}
         """)
         
-        # Создаем иконку галочки с текущим цветом текста
         self.check_icon = self._create_check_icon(colors["fg"])
         
-        
-        
-        # Update window icon
         icon = create_svg_icon(r"data\app_icon.svg", colors['title_fg'])
         if icon and not icon.isNull():
             self.setWindowIcon(icon)
             self.title_bar.update_icon(icon)
         
-        # Update title bar
         self.title_bar.update_style()
         
-        # Update content widget
         content_widget = self.findChild(QWidget, "contentWidget")
         if content_widget:
             content_widget.setStyleSheet(f"""
@@ -2331,17 +2434,14 @@ class TwistLangEditor(QMainWindow):
                 }}
             """)
         
-        # Update tab container background
         self.tab_container.setStyleSheet(f"""
             QWidget#tabContainer {{
                 background-color: {THEMES[self.current_theme]['colors']['title_bg'].name()};
             }}
         """)
 
-        # Цвет текста для статус-бара (чуть светлее фона)
         status_text_color = QColor(colors['status_bg']).lighter(300).name()
         
-        # Единый шрифт для статус-бара
         status_font_family = "Consolas"
         status_font_size = "10pt"
 
@@ -2355,27 +2455,23 @@ class TwistLangEditor(QMainWindow):
                 font-family: {status_font_family};
                 font-size: {status_font_size};
             }}
-            /* Убираем рамки вокруг элементов */
             QStatusBar::item {{
                 border: none;
             }}
-            /* Стилизуем все надписи (Labels) внутри статус-бара одинаково */
             QStatusBar QLabel {{
                 color: {status_text_color};
                 font-family: {status_font_family};
                 font-size: {status_font_size};
-                padding: 0px 10px;  /* Одинаковые отступы слева и справа */
+                padding: 0px 10px;
             }}
         """)
         
-        # Также обновим разделитель, чтобы он не выбивался
         if hasattr(self, 'separator'):
             self.separator.setStyleSheet(f"""
                 background-color: {colors['status_border'].name()}; 
                 margin: 4px 0px;
         """)
         
-        # Обновляем стили для полос прокрутки и других элементов
         scrollbar_style = f"""
             QScrollBar:vertical {{
                 background-color: {colors['margin_bg'].name()};
@@ -2409,7 +2505,6 @@ class TwistLangEditor(QMainWindow):
             }}
         """
         
-        # Стили для меню с явным указанием шрифта Consolas
         menu_style = f"""
             QMenu {{
                 background-color: {colors['bg'].name()};
@@ -2476,16 +2571,13 @@ class TwistLangEditor(QMainWindow):
             }}
         """
         
-        # Применяем стили
         QApplication.instance().setStyleSheet(scrollbar_style + menu_style)
         
-        # Обновляем стили для всех виджетов, которые могут иметь полосы прокрутки
         for widget in QApplication.instance().allWidgets():
             if isinstance(widget, (QsciScintilla, QTabWidget)):
                 widget.style().unpolish(widget)
                 widget.style().polish(widget)
         
-        # Update tab widget
         self.tab_widget.setStyleSheet(f"""
             QTabWidget::pane {{
                 background-color: {colors['bg'].name()};
@@ -2520,13 +2612,11 @@ class TwistLangEditor(QMainWindow):
             }}
         """)
         
-        # Update all editors
         self._update_all_editor_themes()
         self._update_status_labels()
         self._update_application_palette()
         self.tab_widget.update_all_close_buttons()
 
-        # Обновляем фон центрального виджета (скруглённые углы)
         self.centralWidget().setStyleSheet(f"""
             QWidget#centralWidget {{
                 background-color: {colors['bg'].name()};
@@ -2535,7 +2625,6 @@ class TwistLangEditor(QMainWindow):
         """)
         self.centralWidget().update()
 
-        # Опционально — обновляем фон стека контента
         self.content_stack.setStyleSheet(f"""
             QStackedWidget#contentStack {{
                 background-color: {colors['bg'].name()};
@@ -2543,79 +2632,62 @@ class TwistLangEditor(QMainWindow):
         """)
         self.content_stack.update()
         
-        # Принудительно обновляем все виджеты
         self.repaint()
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla):
                 editor.repaint()
         
-        # Update welcome widget (force repaint)
         self.welcome_widget.update()
         
     def select_theme(self, theme_name: str):
-        """Select theme from menu"""
-        # First apply the theme
         self.apply_theme(theme_name)
         
-        # Create new icon for the new color
         colors = THEMES[theme_name]["colors"]
         self.check_icon = self._create_check_icon(colors["fg"])
         
-        # Update icons for all actions in theme menu
         for action in self.theme_actions:
             if action.text() == theme_name:
                 action.setChecked(True)
                 action.setIcon(self.check_icon)
             else:
                 action.setChecked(False)
-                action.setIcon(QIcon())  # Remove icon for others
+                action.setIcon(QIcon())
         
-        # Update autosave action icon based on its state
         if hasattr(self, 'autosave_action'):
             if self.autosave_action.isChecked():
                 self.autosave_action.setIcon(self.check_icon)
             else:
                 self.autosave_action.setIcon(QIcon())
         
-        # Update interval actions icons
         for action in self.interval_actions:
             if action.data() == self.autosave_interval:
                 action.setIcon(self.check_icon)
             else:
                 action.setIcon(QIcon())
                 
-        self.show_status_message(f"Theme switched to {theme_name}", 2000)
+        self.show_status_message(Strings.get("theme_switched").format(theme_name), 2000)
         
     def _update_all_editor_themes(self):
-        """Update theme for all open editors"""
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla):
                 self._update_editor_theme(editor)
 
-
-                
-               
     def _update_editor_theme(self, editor: CustomScintilla):
-        """Update theme for a single editor"""
         colors = THEMES[self.current_theme]["colors"]
         
-        # Save state
         text = editor.text()
         line, col = editor.getCursorPosition()
         scroll_pos = editor.SendScintilla(editor.SCI_GETFIRSTVISIBLELINE)
         
-        # Update lexer
         new_lexer = TwistLangLexer(editor, self.current_theme, self.global_font_size)
         editor.setLexer(new_lexer)
         
-        # Restore state
         editor.setText(text)
         editor.setCursorPosition(line, col)
         editor.SendScintilla(editor.SCI_SETFIRSTVISIBLELINE, scroll_pos)
         
-        # Apply colors
         editor.setCaretForegroundColor(colors["caret"])
         editor.setCaretLineBackgroundColor(colors["caret_line"])
         editor.setMarginsBackgroundColor(colors["margin_bg"])
@@ -2623,10 +2695,8 @@ class TwistLangEditor(QMainWindow):
         editor.setSelectionBackgroundColor(colors["selection_bg"])
         editor.setSelectionForegroundColor(colors["selection_fg"])
         
-        # Настройка подсветки парных скобок через индикаторы
         editor.setBraceMatching(QsciScintilla.BraceMatch.NoBraceMatch)
         
-        # Устанавливаем цвета для парных скобок через индикаторы
         editor.SendScintilla(editor.SCI_INDICSETFORE, 1, colors["brace_fg"])
         editor.SendScintilla(editor.SCI_INDICSETSTYLE, 1, QsciScintilla.INDIC_FULLBOX)
         editor.SendScintilla(editor.SCI_INDICSETALPHA, 1, 30)
@@ -2650,35 +2720,28 @@ class TwistLangEditor(QMainWindow):
         self._update_margin_width(editor)
         self._setup_autocompletion_icons(editor, new_lexer)
 
-        # Установка цветов для folding margin
         margin_bg = colors["margin_bg"]
         margin_rgb = (margin_bg.red() << 16) | (margin_bg.green() << 8) | margin_bg.blue()
         
-        # Устанавливаем цвет фона folding margin
         editor.setFoldMarginColors(colors["margin_bg"], colors["margin_bg"])
-        
         
         editor.repaint()
 
     def restart_language_server(self):
-        """Restart language server for current file"""
         editor = self.current_editor()
         if not editor or not editor.filename:
-            self.show_status_message("No file open to restart language server", 2000)
+            self.show_status_message(Strings.get("no_file_open_ls"), 2000)
             return
             
         filename = editor.filename
         
-        # Останавливаем текущий сервер
         self.stop_language_server(filename)
         
-        # Запускаем новый сервер
         self.start_language_server(filename)
         
-        self.show_status_message(f"Language server restarted for {os.path.basename(filename)}", 2000)
+        self.show_status_message(Strings.get("ls_restarted").format(os.path.basename(filename)), 2000)
             
     def _update_application_palette(self):
-        """Update global application palette"""
         app = QApplication.instance()
         colors = THEMES[self.current_theme]["colors"]
         
@@ -2700,10 +2763,7 @@ class TwistLangEditor(QMainWindow):
         
         app.setPalette(palette)
         
-    # ===== Window resize handling =====
-    
     def _get_resize_direction(self, pos: QPoint) -> Optional[str]:
-        """Determine resize direction from mouse position"""
         rect = self.rect()
         margin = RESIZE_MARGIN
         
@@ -2770,7 +2830,6 @@ class TwistLangEditor(QMainWindow):
             if "bottom" in self.resize_direction:
                 new_geo.setBottom(new_geo.bottom() + dy)
                 
-            # Enforce minimum size
             if new_geo.width() < WINDOW_MIN_WIDTH:
                 if "left" in self.resize_direction:
                     new_geo.setLeft(new_geo.right() - WINDOW_MIN_WIDTH)
@@ -2822,36 +2881,27 @@ class TwistLangEditor(QMainWindow):
             super().mouseReleaseEvent(event)
             
     def _toggle_maximize(self):
-        """Toggle between maximized and normal state"""
         if self.title_bar.is_maximized:
             self.showNormal()
         else:
             self.showMaximized()
         self.title_bar.is_maximized = not self.title_bar.is_maximized
         
-        
-    # ===== File operations =====
-    
     def current_editor(self) -> Optional[CustomScintilla]:
-        """Get currently active editor"""
         return self.tab_widget.currentWidget()
         
     def new_file(self):
-        """Create new empty file"""
         self._add_editor_tab(CustomScintilla(), filename=None, title="Untitled")
         self._update_content_display()
         
     def open_file_dialog(self):
-        """Show open file dialog"""
         filename, _ = QFileDialog.getOpenFileName(
-            self, "Open File", "", "TwistLang Files (*.twist);;All Files (*.*)"
+            self, Strings.get("open"), "", "TwistLang Files (*.twist);;All Files (*.*)"
         )
         if filename:
             self.open_file(filename)
             
     def open_file(self, filename: str):
-        """Open file by path"""
-        # Check if already open
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla) and getattr(editor, 'filename', None) == filename:
@@ -2866,14 +2916,13 @@ class TwistLangEditor(QMainWindow):
             editor.setText(content)
             editor.setModified(False)
             self._add_editor_tab(editor, filename=filename, title=os.path.basename(filename))
-            self.show_status_message(f"Opened: {filename}", 2000)
+            self.show_status_message(Strings.get("opened_file").format(filename), 2000)
             self._update_status_labels()
             
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Could not open file: {e}")
+            QMessageBox.critical(self, Strings.get("file_not_found"), Strings.get("could_not_open").format(e))
             
     def save_current_file(self):
-        """Save currently active file"""
         editor = self.current_editor()
         if not editor:
             return
@@ -2885,13 +2934,11 @@ class TwistLangEditor(QMainWindow):
             self.save_editor_as(editor)
             
     def save_current_file_as(self):
-        """Save current file with new name"""
         self.save_editor_as(self.current_editor())
         
     def save_editor_as(self, editor: CustomScintilla):
-        """Save editor content with new filename"""
         filename, _ = QFileDialog.getSaveFileName(
-            self, "Save File As", "", "TwistLang Files (*.twist);;All Files (*.*)"
+            self, Strings.get("save_as"), "", "TwistLang Files (*.twist);;All Files (*.*)"
         )
         if filename:
             if not filename.endswith('.twist'):
@@ -2904,7 +2951,6 @@ class TwistLangEditor(QMainWindow):
                                           ('*' if editor.isModified() else ''))
                 
     def save_editor(self, editor: CustomScintilla, filename: str):
-        """Save editor content to file"""
         try:
             text = editor.text()
             cleaned = text.replace('\x00', '')
@@ -2915,31 +2961,26 @@ class TwistLangEditor(QMainWindow):
                 
             editor.setModified(False)
             editor.last_save_time = datetime.now()
-            self.show_status_message(f"Saved: {filename}", 2000)
+            self.show_status_message(Strings.get("saved_file").format(filename), 2000)
             
-            # НЕ перезапускаем сервер при сохранении, просто проверяем ошибки
             editor = self._find_editor_by_filename(filename)
             if editor:
-                # Проверяем ошибки после сохранения, но сервер не перезапускаем
                 QTimer.singleShot(100, lambda: self._check_file_errors(editor))
                 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Could not save file: {e}")
+            QMessageBox.critical(self, Strings.get("file_not_found"), Strings.get("could_not_save").format(e))
             
     def close_current_tab(self):
-        """Close currently active tab"""
         index = self.tab_widget.currentIndex()
         if index >= 0:
             self.tab_widget.close_tab(index)
             
     def close_all_tabs(self):
-        """Close all open tabs"""
         while self.tab_widget.count() > 0:
             self.tab_widget.close_tab(0)
         self._update_content_display()
             
     def _add_editor_tab(self, editor: CustomScintilla, filename: Optional[str], title: str):
-        """Add new editor tab"""
         editor.set_main_window(self)
         index = self.tab_widget.addTab(editor, title)
         self.tab_widget.setCurrentIndex(index)
@@ -2947,23 +2988,18 @@ class TwistLangEditor(QMainWindow):
         
         editor.modificationChanged.connect(lambda modified: self._update_tab_title(editor, modified))
         editor.goto_definition_requested.connect(self.open_include_file)
-        # Убираем подключение content_changed, так как не хотим проверять ошибки при каждом изменении
-        # editor.content_changed.connect(self._on_editor_content_changed)
         
         self._setup_editor_widget(editor)
         self._update_editor_theme(editor)
         
-        # Применяем текущее состояние folding toggle к новому редактору
         editor.set_folding_visible(self.folding_toggle.isChecked())
         
-        # Запускаем сервер ТОЛЬКО при открытии файла
         if filename:
             self.start_language_server(filename)
             
         self._update_content_display()
         
     def _setup_editor_widget(self, editor: CustomScintilla):
-        """Configure editor widget"""
         font = get_safe_monospace_font("Consolas", self.global_font_size)
         editor.setFont(font)
         editor.setMarginsFont(font)
@@ -2973,14 +3009,11 @@ class TwistLangEditor(QMainWindow):
         editor.setLexer(lexer)
         
         self._setup_autocompletion_icons(editor, lexer)
-
         
     def _setup_autocompletion_icons(self, editor: CustomScintilla, lexer: TwistLangLexer):
-        """Setup icons for autocompletion"""
         colors = THEMES[self.current_theme]["colors"]
         size = lexer.font_size
         
-        # Create icon pixmaps
         icons = {
             1: ("K", colors["keyword"]),
             2: ("M", colors["modifier"]),
@@ -2995,7 +3028,6 @@ class TwistLangEditor(QMainWindow):
             pixmap = self._create_type_pixmap(text, color, size)
             editor.registerImage(img_id, pixmap)
             
-        # Setup APIs
         api = QsciAPIs(lexer)
         
         for word in lexer.keywords:
@@ -3011,12 +3043,15 @@ class TwistLangEditor(QMainWindow):
         for word in lexer.directives:
             if word == '#include':
                 api.add(word + " : Include another file: #include \"filename\" ?5")
+            elif word == "#define":
+                api.add(word + " : Define a macro: #define NAME = value ?5")
+            elif word == "#macro":
+                api.add(word + " : Define a macro function ?5")
                 
         api.prepare()
         lexer.setAPIs(api)
         
     def _create_type_pixmap(self, text: str, color: QColor, size: int) -> QPixmap:
-        """Create pixmap for autocompletion icon"""
         pixmap = QPixmap(size, size)
         pixmap.fill(Qt.GlobalColor.transparent)
         
@@ -3029,13 +3064,11 @@ class TwistLangEditor(QMainWindow):
         return pixmap
         
     def _update_margin_width(self, editor: CustomScintilla):
-        """Update line number margin width based on line count"""
         lines = max(editor.lines(), 1)
         digits = len(str(lines))
         editor.setMarginWidth(0, "9" * (digits + 2))
         
     def _update_tab_title(self, editor: CustomScintilla, modified: bool):
-        """Update tab title with modified indicator"""
         index = self.tab_widget.indexOf(editor)
         if index == -1:
             return
@@ -3045,21 +3078,16 @@ class TwistLangEditor(QMainWindow):
             base = base[:-1]
         self.tab_widget.setTabText(index, base + ('*' if modified else ''))
         
-    # ===== Language Server =====
-    
     def start_language_server(self, file_path: str):
-        """Start language server for a file - только один раз при открытии"""
         if not file_path:
             return
             
-        # Если сервер уже запущен для этого файла, ничего не делаем
         if file_path in self.ls_processes:
             proc = self.ls_processes[file_path]
-            if proc.poll() is None:  # Сервер все еще работает
+            if proc.poll() is None:
                 print(f"LS already running for {os.path.basename(file_path)}")
                 return
             else:
-                # Сервер завершился, удаляем из словаря
                 del self.ls_processes[file_path]
             
         try:
@@ -3079,7 +3107,6 @@ class TwistLangEditor(QMainWindow):
             print(f"Started LS for {os.path.basename(file_path)}")
             self._update_status_labels()
             
-            # Первоначальная проверка ошибок через небольшую задержку
             editor = self._find_editor_by_filename(file_path)
             if editor:
                 QTimer.singleShot(500, lambda: self._check_file_errors(editor))
@@ -3088,46 +3115,39 @@ class TwistLangEditor(QMainWindow):
             print(f"Failed to start LS for {file_path}: {e}")
             
     def stop_language_server(self, file_path: str):
-        """Остановить языковой сервер для файла (блокирующий вызов)"""
         if file_path not in self.ls_processes:
             return
 
         try:
             process = self.ls_processes[file_path]
-            if process.poll() is None:  # процесс ещё жив
-                process.terminate()     # пытаемся завершить корректно
+            if process.poll() is None:
+                process.terminate()
                 try:
-                    process.wait(timeout=2)  # ждём до 2 секунд
+                    process.wait(timeout=2)
                 except subprocess.TimeoutExpired:
-                    process.kill()      # принудительно убиваем
-                    process.wait()      # ждём завершения (теперь должно быть быстро)
+                    process.kill()
+                    process.wait()
             print(f"Stopped LS for {os.path.basename(file_path)}")
         except Exception as e:
             print(f"Failed to stop LS for {file_path}: {e}")
         finally:
-            # Удаляем из словаря в любом случае
             if file_path in self.ls_processes:
                 del self.ls_processes[file_path]
             self._update_status_labels()
 
     def closeEvent(self, event):
-        """Закрытие приложения с принудительной остановкой всех серверов"""
-        # Останавливаем все языковые серверы, дожидаясь их завершения
         for file_path in list(self.ls_processes.keys()):
             self.stop_language_server(file_path)
 
-        # Даём Qt завершить события (если нужно)
         QApplication.processEvents()
 
         super().closeEvent(event)
             
     def stop_all_language_servers(self):
-        """Stop all running language servers"""
         for file_path in list(self.ls_processes.keys()):
             self.stop_language_server(file_path)
             
     def _find_editor_by_filename(self, filename: str) -> Optional[CustomScintilla]:
-        """Find editor by filename"""
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla) and editor.filename == filename:
@@ -3135,14 +3155,12 @@ class TwistLangEditor(QMainWindow):
         return None
         
     def _get_error_filename(self, file_path: str) -> Optional[str]:
-        """Get error output filename for a source file"""
         if not file_path:
             return None
         base = os.path.splitext(os.path.basename(file_path))[0]
         return f"dbg/{base}_ls.dbg"
         
     def _parse_error_file(self, error_file_path: str) -> List[tuple]:
-        """Parse language server error file"""
         errors = []
         if not os.path.exists(error_file_path):
             return errors
@@ -3178,7 +3196,6 @@ class TwistLangEditor(QMainWindow):
         return errors
         
     def _check_file_errors(self, editor: CustomScintilla):
-        """Check single file for errors"""
         if not editor or not editor.filename:
             return
             
@@ -3192,16 +3209,12 @@ class TwistLangEditor(QMainWindow):
         self._update_status_labels()
         
     def check_current_file_errors(self):
-        """Manually check errors for current file (by F4)"""
         editor = self.current_editor()
         if editor and editor.filename:
             self._check_file_errors(editor)
-            self.show_status_message("Error check completed", 2000)
+            self.show_status_message(Strings.get("error_check_completed"), 2000)
         
-    # ===== Run operations =====
-    
     def run_current_file(self):
-        """Run current file in terminal"""
         editor = self.current_editor()
         if not editor:
             return
@@ -3210,8 +3223,8 @@ class TwistLangEditor(QMainWindow):
         if not filename:
             reply = QMessageBox.question(
                 self,
-                "Save File",
-                "File is not saved. Save before running?",
+                Strings.get("save_changes"),
+                Strings.get("save_before_run"),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
             if reply == QMessageBox.StandardButton.Yes:
@@ -3228,17 +3241,16 @@ class TwistLangEditor(QMainWindow):
             system = platform.system()
             if system == "Windows":
                 subprocess.Popen(f'start cmd /k bin\\twistc --file "{filename}"', shell=True)
-                self.status_bar.showMessage(f"Running {os.path.basename(filename)}...", 3000)
+                self.status_bar.showMessage(Strings.get("running_file").format(os.path.basename(filename)), 3000)
             elif system == "Linux":
                 self._run_on_linux(filename)
             else:
-                QMessageBox.information(self, "Not Supported",
-                                       f"Please run manually:\ntwistc --file {filename}")
+                QMessageBox.information(self, Strings.get("not_supported"),
+                                       Strings.get("run_manually").format(filename))
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to run: {e}")
+            QMessageBox.critical(self, Strings.get("file_not_found"), Strings.get("failed_to_run").format(e))
             
     def _run_on_linux(self, filename: str):
-        """Run file on Linux with terminal detection"""
         terminals = ['gnome-terminal', 'xterm', 'konsole', 'xfce4-terminal']
         term_cmd = next((term for term in terminals if shutil.which(term)), None)
         
@@ -3252,10 +3264,9 @@ class TwistLangEditor(QMainWindow):
         else:
             subprocess.Popen(['twistc', '--file', filename])
             
-        self.status_bar.showMessage(f"Running {os.path.basename(filename)}...", 3000)
+        self.status_bar.showMessage(Strings.get("running_file").format(os.path.basename(filename)), 3000)
         
     def open_include_file(self, path: str, line: int):
-        """Open include file from path"""
         if not path:
             return
             
@@ -3272,10 +3283,9 @@ class TwistLangEditor(QMainWindow):
         elif os.path.exists(path):
             self.open_file(path)
         else:
-            QMessageBox.warning(self, "File not found", f"Cannot find include file: {path}")
+            QMessageBox.warning(self, Strings.get("file_not_found"), Strings.get("cannot_find_include").format(path))
             
     def goto_include_under_cursor(self):
-        """Go to include file under cursor"""
         editor = self.current_editor()
         if not editor:
             return
@@ -3286,17 +3296,14 @@ class TwistLangEditor(QMainWindow):
             if path:
                 self.open_include_file(path, line)
             else:
-                self.show_status_message("No valid include path found", 2000)
+                self.show_status_message(Strings.get("no_valid_include_path"), 2000)
         else:
-            self.show_status_message("Not an include line", 2000)
+            self.show_status_message(Strings.get("not_include_line"), 2000)
             
-    # ===== Error navigation =====
-    
     def goto_next_error(self):
-        """Jump to next error in current file"""
         editor = self.current_editor()
         if not editor or not editor.errors:
-            self.show_status_message("No errors", 2000)
+            self.show_status_message(Strings.get("no_errors_status"), 2000)
             return
             
         current_line, current_col = editor.getCursorPosition()
@@ -3304,16 +3311,15 @@ class TwistLangEditor(QMainWindow):
             if error.line > current_line or (error.line == current_line and error.start_col > current_col):
                 editor.setCursorPosition(error.line, error.start_col)
                 editor.ensureLineVisible(error.line)
-                self.show_status_message(f"Error at line {error.line + 1}", 2000)
+                self.show_status_message(Strings.get("error_at_line").format(error.line + 1), 2000)
                 return
                 
-        self.show_status_message("No more errors", 2000)
+        self.show_status_message(Strings.get("no_more_errors"), 2000)
         
     def goto_prev_error(self):
-        """Jump to previous error in current file"""
         editor = self.current_editor()
         if not editor or not editor.errors:
-            self.show_status_message("No errors", 2000)
+            self.show_status_message(Strings.get("no_errors_status"), 2000)
             return
             
         current_line, current_col = editor.getCursorPosition()
@@ -3321,37 +3327,31 @@ class TwistLangEditor(QMainWindow):
             if error.line < current_line or (error.line == current_line and error.start_col < current_col):
                 editor.setCursorPosition(error.line, error.start_col)
                 editor.ensureLineVisible(error.line)
-                self.show_status_message(f"Error at line {error.line + 1}", 2000)
+                self.show_status_message(Strings.get("error_at_line").format(error.line + 1), 2000)
                 return
                 
-        self.show_status_message("No previous errors", 2000)
+        self.show_status_message(Strings.get("no_previous_errors"), 2000)
         
     def clear_all_errors(self):
-        """Clear all error highlights"""
         editor = self.current_editor()
         if editor:
             editor.clear_errors()
             self._update_status_labels()
-            self.show_status_message("Errors cleared", 2000)
+            self.show_status_message(Strings.get("errors_cleared"), 2000)
             
-    # ===== Zoom operations =====
-    
     def zoom_in(self):
-        """Increase font size"""
         if self.global_font_size < MAX_FONT_SIZE:
             self.global_font_size += 1
             self._apply_global_font_to_all_editors()
-            self.show_status_message(f"Font size: {self.global_font_size}pt", 2000)
+            self.show_status_message(Strings.get("font_size").format(self.global_font_size), 2000)
             
     def zoom_out(self):
-        """Decrease font size"""
         if self.global_font_size > MIN_FONT_SIZE:
             self.global_font_size -= 1
             self._apply_global_font_to_all_editors()
-            self.show_status_message(f"Font size: {self.global_font_size}pt", 2000)
+            self.show_status_message(Strings.get("font_size").format(self.global_font_size), 2000)
             
     def _apply_global_font_to_all_editors(self):
-        """Apply current font size to all editors"""
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla):
@@ -3365,33 +3365,26 @@ class TwistLangEditor(QMainWindow):
                     editor.recolor()
                     editor.repaint()
                     
-    # ===== Auto-save =====
-    
     def _toggle_autosave(self, checked: bool):
-        """Enable/disable autosave"""
         if checked:
             self.autosave_timer.start(self.autosave_interval)
-            self.show_status_message("Auto-save enabled", 2000)
-            # Update icon for autosave action
+            self.show_status_message(Strings.get("auto_save_enabled"), 2000)
             colors = THEMES[self.current_theme]["colors"]
             self.autosave_action.setIcon(self._create_check_icon(colors["fg"]))
         else:
             self.autosave_timer.stop()
-            self.show_status_message("Auto-save disabled", 2000)
-            # Remove icon when disabled
+            self.show_status_message(Strings.get("auto_save_disabled"), 2000)
             self.autosave_action.setIcon(QIcon())
         
         self._update_status_labels()
 
     def _set_autosave_interval(self, ms: int):
-        """Change autosave interval"""
         self.autosave_interval = ms
         if self.autosave_action.isChecked():
             self.autosave_timer.start(ms)
         
         self._update_status_labels()
         
-        # Update menu checkmarks and icons
         interval_menu = self.sender().parent()
         colors = THEMES[self.current_theme]["colors"]
         check_icon = self._create_check_icon(colors["fg"])
@@ -3404,17 +3397,15 @@ class TwistLangEditor(QMainWindow):
                 action.setChecked(False)
                 action.setIcon(QIcon())
         
-        # Update the interval_actions list to keep icons consistent
         for action in self.interval_actions:
             if action.data() == ms:
                 action.setIcon(check_icon)
             else:
                 action.setIcon(QIcon())
         
-        self.show_status_message(f"Auto-save interval set to {ms//1000} seconds", 2000)
+        self.show_status_message(Strings.get("auto_save_interval_set").format(ms//1000), 2000)
         
     def autosave_all_files(self, manual: bool = False):
-        """Auto-save all modified files"""
         if not self.autosave_action.isChecked() and not manual:
             return
             
@@ -3433,43 +3424,35 @@ class TwistLangEditor(QMainWindow):
         if saved_count > 0:
             self.autosave_count += 1
             if manual:
-                self.show_status_message(f"Manual save: {saved_count} file(s) saved", 2000)
+                self.show_status_message(Strings.get("manual_save").format(saved_count), 2000)
             else:
-                self.show_status_message(f"Auto-saved {saved_count} file(s) [{self.autosave_count}]", 1500)
+                self.show_status_message(Strings.get("auto_saved").format(saved_count, self.autosave_count), 1500)
                 colors = THEMES[self.current_theme]["colors"]
                 self.autosave_label.setStyleSheet(f"color: {colors['warning'].name()}; padding: 2px 5px;")
                 QTimer.singleShot(1000, self._update_status_labels)
         elif manual:
-            self.show_status_message("No files to save", 2000)
+            self.show_status_message(Strings.get("no_files_to_save"), 2000)
             
-    # ===== Status updates =====
-    
     def _update_status_labels(self):
-        """Update status bar labels with current state"""
         colors = THEMES[self.current_theme]["colors"]
         
-        # Используем светлый цвет для текста на основе фона статусбара
         status_bg = colors['status_bg']
         text_color = QColor(status_bg).lighter(300) if status_bg.lightness() < 128 else QColor(status_bg).darker(300)
         
-        # Autosave label
         if self.autosave_action.isChecked():
-            self.autosave_label.setText(f"Auto-save: ON ({self.autosave_interval/1000}s)")
+            self.autosave_label.setText(Strings.get("auto_save_on").format(self.autosave_interval/1000))
         else:
-            self.autosave_label.setText("Auto-save: OFF")
+            self.autosave_label.setText(Strings.get("auto_save_off"))
         
-        # Error label
         current = self.current_editor()
         if current and len(current.errors) > 0:
-            self.error_label.setText(f"✗ {len(current.errors)} error(s)")
+            self.error_label.setText(Strings.get("errors_count").format(len(current.errors)))
         else:
-            self.error_label.setText("✓ No errors")
+            self.error_label.setText(Strings.get("no_errors"))
         
-        # Language server label
         active_ls = sum(1 for proc in self.ls_processes.values() if proc.poll() is None)
-        self.ls_status_label.setText(f"LS: {active_ls} active")
+        self.ls_status_label.setText(Strings.get("ls_active").format(active_ls))
         
-        # Устанавливаем шрифт
         font = QFont("Consolas")
         font.setPointSize(9)
         
@@ -3482,9 +3465,7 @@ class TwistLangEditor(QMainWindow):
         self.error_label.setStyleSheet(unified_style)
         self.ls_status_label.setStyleSheet(unified_style)
 
-
     def _on_tab_changed(self, index: int):
-        """Handle tab change"""
         editor = self.tab_widget.widget(index)
         if not isinstance(editor, CustomScintilla):
             return
@@ -3495,8 +3476,6 @@ class TwistLangEditor(QMainWindow):
         if self.current_file:
             self._check_file_errors(editor)
             
-    # ===== Drag & drop =====
-    
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
@@ -3507,27 +3486,23 @@ class TwistLangEditor(QMainWindow):
             if os.path.isfile(file_path):
                 self.open_file(file_path)
         event.acceptProposedAction()
-        
-    # ===== Close event =====
-   
 
 
 # =============================================================================
 # MAIN ENTRY POINT
 # =============================================================================
+
 def main():
     """Application entry point"""
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
     app.setAttribute(Qt.ApplicationAttribute.AA_DontUseNativeMenuBar, True)
 
-    # Set default font
     default_font = QFont("Segoe UI", 10)
     if not default_font.exactMatch():
         default_font = QFont("Arial", 10)
     app.setFont(default_font)
     
-    # Apply initial theme palette
     colors = THEMES[DEFAULT_THEME]["colors"]
     palette = app.palette()
     palette.setColor(palette.ColorRole.Window, colors["bg"])
@@ -3545,11 +3520,9 @@ def main():
     palette.setColor(palette.ColorRole.HighlightedText, colors["selection_fg"])
     app.setPalette(palette)
     
-    # Create and show main window
     editor = TwistLangEditor()
     editor.show()
     
-    # Ensure all language servers are stopped when the application exits
     app.aboutToQuit.connect(editor.stop_all_language_servers)
     
     sys.exit(app.exec())

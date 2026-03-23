@@ -175,7 +175,7 @@ namespace ERROR_THROW {
     }
 
     Error AssertionFailed(const Token& start, const Token& end, string message) {
-        Error err = Error("Assertion failed : " + message, start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        Error err = Error("Assertion failed: " + message, start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         err.assertion = true;
         return err;
     }
