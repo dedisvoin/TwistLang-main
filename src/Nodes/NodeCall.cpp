@@ -85,7 +85,10 @@ struct NodeCall : public Node { NO_EXEC
             result = ((Node*)(lambda->expr))->eval_from(call_memory);
         }
         catch (Error err) {
-            throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err));
+            if (err.assertion) {
+                throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.assertion, err.message);
+            }
+            throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.assertion);
         }
 
         // Проверка типа возвращаемого значения (если задан)
@@ -249,7 +252,7 @@ struct NodeCall : public Node { NO_EXEC
             return NewNull();
         }
         catch (Error err) {
-            throw  ERROR_THROW::CallError(start_callable, end_callable, func->name, new Error(err));
+            throw ERROR_THROW::CallError(start_callable, end_callable, func->name, new Error(err), err.assertion);
         }
         catch (Return _value) {
             if (func->return_type) {

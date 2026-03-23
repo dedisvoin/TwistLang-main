@@ -115,7 +115,7 @@ void language_server(const std::string& file_path, std::string file_name) {
 
 int main(int argc, char** argv) {
     std::locale::global(std::locale("ru_RU.UTF-8"));
-    std::wcout.imbue(std::locale());
+    
     // Create and generate argparser for parse system arguments
     static ArgsParser args_parser = GenerateArgsParser(argc, argv);
 

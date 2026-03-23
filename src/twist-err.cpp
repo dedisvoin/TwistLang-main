@@ -129,9 +129,16 @@ namespace ERROR_THROW {
         return err;
     }
 
-    Error CallError(const Token& start, const Token& stop, string name, Error* sub_error) {
-        Error err = Error("Call error in function '" + name + "'", start.pif, stop.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+    Error CallError(const Token& start, const Token& stop, string name, Error* sub_error, bool is_warning = false, string message = "") {
+        Error err;
+        if (is_warning) {
+            err = Error(message, start.pif, stop.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        } else {
+            err = Error("Call error in function '" + name + "'", start.pif, stop.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        }
+        
         err.sub_error = sub_error;
+        err.assertion = is_warning;
         return err;
     }
 

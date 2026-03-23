@@ -1515,8 +1515,10 @@ Node* ASTGenerator::ParseIf() {
     walker.next();
 
     auto true_state = parse_statement();
-    Node* else_state = nullptr;
+    if (!true_state)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "statement");
 
+    Node* else_state = nullptr;
     if (walker.CheckValue("else")) {
         walker.next();
         else_state = parse_statement();

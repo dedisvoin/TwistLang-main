@@ -1,6 +1,6 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
 #include "../twist-namespace.cpp"
+#include "../twist-err.cpp"
 
 #pragma once
 
@@ -41,7 +41,7 @@ struct NodeNamespaceDeclaration : public Node { NO_EVAL
     // Проверяем, не было ли уже объявлено имя namespace
     if (_memory->check_literal(name)) {
         if (_memory->is_final(name)) {
-            ERROR::VariableAlreadyDefined(decl_token, name);
+            throw ERROR_THROW::VariableAlreadyDefined(decl_token);
         }
         _memory->delete_variable(name);
     }

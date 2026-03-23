@@ -480,7 +480,7 @@ class CustomTitleBar(QFrame):
         layout.addWidget(self.icon_label)
         
         self.title_label = QLabel("Lumen IDE")
-        self.title_label.setStyleSheet("font-size: 12px;")
+        self.title_label.setStyleSheet("font-size: 12px; font-family: Consolas;")
         layout.addWidget(self.title_label)
         
         return widget
@@ -628,6 +628,7 @@ class CustomTitleBar(QFrame):
             QLabel {{
                 color: {colors['title_fg'].name()};
                 background-color: transparent;
+                font-family: Consolas;
             }}
         """)
         
@@ -642,11 +643,12 @@ class CustomTitleBar(QFrame):
                         border: none;
                         padding: 8px 12px;
                         font-size: 12px;
-                        font: Consolas;
+                        font-family: Consolas;
                     }}
                     QToolButton:hover {{
                         background-color: {colors['title_bg_darker'].name()};
                         color: {colors['selection_fg'].name()};
+                        font-family: Consolas;
                     }}
                     QToolButton::menu-indicator {{
                         image: none;
@@ -678,6 +680,9 @@ class CustomTitleBar(QFrame):
                 btn.setStyleSheet("""
                     QToolButton::menu-indicator {
                         image: none;
+                    }
+                    QToolButton {
+                        font-family: Consolas;
                     }
                 """)
                 self.menu_layout.addWidget(btn)
@@ -870,8 +875,8 @@ class RoundedMenu(QMenu):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
         # Установка шрифта Consolas для меню
-        font = QFont("Consolas", 11)
-        self.setFont(font)
+        consolas_font = QFont("Consolas", 11)
+        self.setFont(consolas_font)
         
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -946,35 +951,44 @@ class EditorTabWidget(QTabWidget):
         btn = QToolButton(tab_bar)
         btn.setIcon(self._create_close_icon())
         btn.setIconSize(QSize(14, 14))
-        btn.setStyleSheet("""
-            QToolButton {
+        
+        # Get theme colors for styling
+        colors = self._get_theme_colors()
+        
+        btn.setStyleSheet(f"""
+            QToolButton {{
                 background-color: transparent;
                 border: none;
-                border-radius: 3px;
-                padding: 2px;
-            }
-            QToolButton:hover {
-                background-color: rgba(255, 255, 255, 30);
-            }
-            QToolButton:pressed {
-                background-color: rgba(255, 255, 255, 60);
-            }
+                border-radius: 4px;
+                padding: 0px;
+                margin-right: 4px;
+                font-family: Consolas;
+            }}
+            QToolButton:hover {{
+                background-color: {colors['selection_bg'].name()};
+                border-radius: 4px;
+            }}
+            QToolButton:pressed {{
+                background-color: {colors['title_border'].name()};
+            }}
         """)
         
         btn.clicked.connect(lambda checked, idx=index: self._on_close_clicked(idx))
         tab_bar.setTabButton(index, QTabBar.ButtonPosition.RightSide, btn)
         
     def _create_close_icon(self) -> QIcon:
-        """Create close icon with current theme color"""
+        """Create close icon with current theme's title_fg color"""
         pixmap = QPixmap(14, 14)
         pixmap.fill(Qt.GlobalColor.transparent)
         
         painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        #painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
+        # Get the current theme's title_fg color
         colors = self._get_theme_colors()
-        painter.setPen(QPen(colors["fg"], 1.5))
+        painter.setPen(QPen(colors["title_fg"], 1.5))
         
+        # Draw X
         painter.drawLine(4, 4, 10, 10)
         painter.drawLine(10, 4, 4, 10)
         painter.end()
@@ -982,10 +996,16 @@ class EditorTabWidget(QTabWidget):
         return QIcon(pixmap)
         
     def _get_theme_colors(self):
+        """Get current theme colors from main window"""
         window = self.window()
         if hasattr(window, 'current_theme'):
             return THEMES[window.current_theme]["colors"]
         return THEMES[DEFAULT_THEME]["colors"]
+        
+    def update_all_close_buttons(self):
+        """Update all close buttons when theme changes"""
+        for i in range(self.count()):
+            self._update_close_button(i)
         
     def _on_close_clicked(self, index):
         """Handle close button click"""
@@ -1037,7 +1057,6 @@ class EditorTabWidget(QTabWidget):
             main_window = self.window()
             if hasattr(main_window, '_update_content_display'):
                 main_window._update_content_display()
-
 
 # =============================================================================
 # LEXER
@@ -1818,6 +1837,7 @@ class TwistLangEditor(QMainWindow):
         
         self.ls_processes: Dict[str, subprocess.Popen] = {}
         self.theme_actions: List[QAction] = []
+        self.interval_actions: List[QAction] = []  # Store interval actions for updating icons
         
         self.resizing = False
         self.resize_direction = None
@@ -1830,6 +1850,11 @@ class TwistLangEditor(QMainWindow):
         self._setup_timers()
         
         self.apply_theme(self.current_theme)
+        
+        # Initialize checkmark for current theme
+        QTimer.singleShot(100, self._initialize_theme_checkmark)
+        # Initialize interval menu icons
+        QTimer.singleShot(200, self._initialize_interval_icons)
         
     # ===== Setup methods =====
     
@@ -1929,9 +1954,10 @@ class TwistLangEditor(QMainWindow):
         self.status_bar.addPermanentWidget(toggle_container)  # Add container instead of direct toggle
         
         # Menu
-        # Установка шрифта для менюбара
         menubar = self.menuBar()
-        menubar.setFont(QFont("Consolas", 11))
+        # Устанавливаем шрифт Consolas для менюбара
+        consolas_font = QFont("Consolas", 11)
+        menubar.setFont(consolas_font)
         self._create_menu()
         self.title_bar.add_menu(menubar)
         
@@ -1943,6 +1969,40 @@ class TwistLangEditor(QMainWindow):
         
         # Initially show welcome widget
         self._update_content_display()
+        
+    def _initialize_theme_checkmark(self):
+        """Initialize checkmark for current theme"""
+        # Create icon with current color
+        colors = THEMES[self.current_theme]["colors"]
+        self.check_icon = self._create_check_icon(colors["fg"])
+        
+        # Set icon for current theme
+        for action in self.theme_actions:
+            if action.text() == self.current_theme:
+                action.setChecked(True)
+                action.setIcon(self.check_icon)
+                break
+        
+        # Set icon for autosave action
+        if hasattr(self, 'autosave_action'):
+            if self.autosave_action.isChecked():
+                self.autosave_action.setIcon(self.check_icon)
+            else:
+                self.autosave_action.setIcon(QIcon())
+    
+    def _initialize_interval_icons(self):
+        """Initialize checkmark icons for interval menu"""
+        colors = THEMES[self.current_theme]["colors"]
+        check_icon = self._create_check_icon(colors["fg"])
+        
+        # Update interval actions
+        for action in self.interval_actions:
+            if action.data() == self.autosave_interval:
+                action.setChecked(True)
+                action.setIcon(check_icon)
+            else:
+                action.setChecked(False)
+                action.setIcon(QIcon())
 
     def _toggle_folding_handler(self, enabled: bool):
         """Переключает сворачивание во всех открытых вкладках"""
@@ -1997,6 +2057,10 @@ class TwistLangEditor(QMainWindow):
         self.autosave_action.triggered.connect(self._toggle_autosave)
         autosave_menu.addAction(self.autosave_action)
         
+        # Add checkmark icon for autosave action (will be updated in apply_theme)
+        colors = THEMES[self.current_theme]["colors"]
+        self.autosave_action.setIcon(self._create_check_icon(colors["fg"]))
+        
         autosave_menu.addSeparator()
         
         interval_menu = RoundedMenu("Interval", self)
@@ -2010,8 +2074,11 @@ class TwistLangEditor(QMainWindow):
             action.setFont(consolas_font)
             if ms == self.autosave_interval:
                 action.setChecked(True)
+                colors = THEMES[self.current_theme]["colors"]
+                action.setIcon(self._create_check_icon(colors["fg"]))
             action.triggered.connect(lambda checked, ms=ms: self._set_autosave_interval(ms))
             interval_menu.addAction(action)
+            self.interval_actions.append(action)
             
         autosave_menu.addSeparator()
         
@@ -2065,7 +2132,6 @@ class TwistLangEditor(QMainWindow):
             theme_action.setFont(consolas_font)
             if theme_name == self.current_theme:
                 theme_action.setChecked(True)
-                # НЕ УСТАНАВЛИВАЕМ ИКОНКУ ЗДЕСЬ
             theme_action.triggered.connect(lambda checked, tn=theme_name: self.select_theme(tn))
             theme_menu.addAction(theme_action)
             self.theme_actions.append(theme_action)
@@ -2086,6 +2152,11 @@ class TwistLangEditor(QMainWindow):
         run_menu.addAction(go_to_action)
         
         run_menu.addSeparator()
+
+        restart_ls_action = self._create_action("Restart Language Server", "Ctrl+Shift+R", self.restart_language_server)
+        run_menu.addAction(restart_ls_action)
+
+        run_menu.addSeparator()
         
         clear_errors_action = self._create_action("Clear Errors", "Ctrl+E", self.clear_all_errors)
         run_menu.addAction(clear_errors_action)
@@ -2100,6 +2171,7 @@ class TwistLangEditor(QMainWindow):
         if shortcut:
             action.setShortcut(QKeySequence(shortcut))
         action.triggered.connect(slot)
+        # Устанавливаем шрифт Consolas для действий
         action.setFont(QFont("Consolas", 10))
         return action
     
@@ -2115,6 +2187,26 @@ class TwistLangEditor(QMainWindow):
         """Setup keyboard shortcuts not in menus"""
         QShortcut(QKeySequence("F8"), self).activated.connect(self.goto_next_error)
         QShortcut(QKeySequence("Shift+F8"), self).activated.connect(self.goto_prev_error)
+
+    def _create_check_icon(self, color: QColor) -> QIcon:
+        """Create checkmark icon with specified color"""
+        try:
+            svg_path = r"data\check.svg"
+            if os.path.exists(svg_path):
+                return create_svg_icon(svg_path, color)
+        except Exception as e:
+            print(f"Error creating check icon: {e}")
+        
+        # Fallback: create a simple pixmap checkmark
+        pixmap = QPixmap(16, 16)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(color, 2))
+        painter.drawLine(3, 8, 7, 12)
+        painter.drawLine(7, 12, 13, 4)
+        painter.end()
+        return QIcon(pixmap)
         
     def _setup_timers(self):
         """Setup timers for autosave and error checking"""
@@ -2170,6 +2262,23 @@ class TwistLangEditor(QMainWindow):
         """Apply theme to all components"""
         self.current_theme = theme_name
         colors = THEMES[theme_name]["colors"]
+        
+        # Update check icon for current theme
+        self.check_icon = self._create_check_icon(colors["fg"])
+        
+        # Update autosave action icon based on its state
+        if hasattr(self, 'autosave_action'):
+            if self.autosave_action.isChecked():
+                self.autosave_action.setIcon(self.check_icon)
+            else:
+                self.autosave_action.setIcon(QIcon())
+        
+        # Update interval menu items icons
+        for action in self.interval_actions:
+            if action.data() == self.autosave_interval:
+                action.setIcon(self.check_icon)
+            else:
+                action.setIcon(QIcon())
 
         bg = colors["bg"].name()
         fg = colors["fg"].name()
@@ -2186,11 +2295,16 @@ class TwistLangEditor(QMainWindow):
         
 
         self.separator.setStyleSheet(f"""
-                    QFrame {{
-                        background-color: {colors['status_border'].name()};
-                        margin: 3px 0px;
-                    }}
-                """)
+            QFrame {{
+                background-color: {colors['status_border'].name()};
+                margin: 3px 0px;
+            }}
+        """)
+        
+        # Создаем иконку галочки с текущим цветом текста
+        self.check_icon = self._create_check_icon(colors["fg"])
+        
+        
         
         # Update window icon
         icon = create_svg_icon(r"data\app_icon.svg", colors['title_fg'])
@@ -2264,7 +2378,7 @@ class TwistLangEditor(QMainWindow):
             }}
         """
         
-        # Стили для меню
+        # Стили для меню с явным указанием шрифта Consolas
         menu_style = f"""
             QMenu {{
                 background-color: {colors['bg'].name()};
@@ -2285,9 +2399,11 @@ class TwistLangEditor(QMainWindow):
                 color: {colors['selection_fg'].name()};
                 border-radius: 7px;
                 margin: 0px 4px;
+                font-family: Consolas;
             }}
             QMenu::item:disabled {{
                 color: {colors['comment'].name()};
+                font-family: Consolas;
             }}
             QMenu::separator {{
                 height: 2px;
@@ -2295,11 +2411,7 @@ class TwistLangEditor(QMainWindow):
                 margin: 3px 12px;
             }}
             QMenu::indicator {{
-                width: 16px;
-                height: 16px;
-                left: 12;
-
-                position: absolute;
+                width: 0px
             }}
             QMenu::indicator:checked {{
                 image: url(data/check.svg);
@@ -2325,9 +2437,11 @@ class TwistLangEditor(QMainWindow):
             QMenuBar::item:selected {{
                 background-color: {colors['title_bg_darker'].name()};
                 border-radius: 4px;
+                font-family: Consolas;
             }}
             QMenuBar::item:pressed {{
                 background-color: {colors['selection_bg'].name()};
+                font-family: Consolas;
             }}
         """
         
@@ -2355,6 +2469,7 @@ class TwistLangEditor(QMainWindow):
                 min-width: 16ex;
                 padding: 5px;
                 margin-left: 2px;
+                font-family: Consolas;
             }}
             QTabBar::tab:selected {{
                 background-color: {colors['bg'].name()};
@@ -2367,6 +2482,7 @@ class TwistLangEditor(QMainWindow):
                 background-color: {colors['margin_bg'].name()};
                 border: 1px solid {colors['status_border'].name()};
                 border-radius: 3px;
+                font-family: Consolas;
             }}
             QTabBar QToolButton:hover {{
                 background-color: {colors['selection_bg'].name()};
@@ -2377,6 +2493,24 @@ class TwistLangEditor(QMainWindow):
         self._update_all_editor_themes()
         self._update_status_labels()
         self._update_application_palette()
+        self.tab_widget.update_all_close_buttons()
+
+        # Обновляем фон центрального виджета (скруглённые углы)
+        self.centralWidget().setStyleSheet(f"""
+            QWidget#centralWidget {{
+                background-color: {colors['bg'].name()};
+                border-radius: 10px;
+            }}
+        """)
+        self.centralWidget().update()
+
+        # Опционально — обновляем фон стека контента
+        self.content_stack.setStyleSheet(f"""
+            QStackedWidget#contentStack {{
+                background-color: {colors['bg'].name()};
+            }}
+        """)
+        self.content_stack.update()
         
         # Принудительно обновляем все виджеты
         self.repaint()
@@ -2390,16 +2524,36 @@ class TwistLangEditor(QMainWindow):
         
     def select_theme(self, theme_name: str):
         """Select theme from menu"""
+        # First apply the theme
         self.apply_theme(theme_name)
         
+        # Create new icon for the new color
+        colors = THEMES[theme_name]["colors"]
+        self.check_icon = self._create_check_icon(colors["fg"])
+        
+        # Update icons for all actions in theme menu
         for action in self.theme_actions:
             if action.text() == theme_name:
                 action.setChecked(True)
-                # НЕ УСТАНАВЛИВАЕМ ИКОНКУ ЗДЕСЬ
+                action.setIcon(self.check_icon)
             else:
                 action.setChecked(False)
-                # НЕ УСТАНАВЛИВАЕМ ИКОНКУ ЗДЕСЬ
-            
+                action.setIcon(QIcon())  # Remove icon for others
+        
+        # Update autosave action icon based on its state
+        if hasattr(self, 'autosave_action'):
+            if self.autosave_action.isChecked():
+                self.autosave_action.setIcon(self.check_icon)
+            else:
+                self.autosave_action.setIcon(QIcon())
+        
+        # Update interval actions icons
+        for action in self.interval_actions:
+            if action.data() == self.autosave_interval:
+                action.setIcon(self.check_icon)
+            else:
+                action.setIcon(QIcon())
+                
         self.show_status_message(f"Theme switched to {theme_name}", 2000)
         
     def _update_all_editor_themes(self):
@@ -2439,18 +2593,16 @@ class TwistLangEditor(QMainWindow):
         editor.setSelectionForegroundColor(colors["selection_fg"])
         
         # Настройка подсветки парных скобок через индикаторы
-        editor.setBraceMatching(QsciScintilla.BraceMatch.NoBraceMatch)  # Отключаем встроенную подсветку
+        editor.setBraceMatching(QsciScintilla.BraceMatch.NoBraceMatch)
         
         # Устанавливаем цвета для парных скобок через индикаторы
-        # Индикатор 1 - для выделения скобок
         editor.SendScintilla(editor.SCI_INDICSETFORE, 1, colors["brace_fg"])
         editor.SendScintilla(editor.SCI_INDICSETSTYLE, 1, QsciScintilla.INDIC_FULLBOX)
-        editor.SendScintilla(editor.SCI_INDICSETALPHA, 1, 30)  # Прозрачность
+        editor.SendScintilla(editor.SCI_INDICSETALPHA, 1, 30)
         
-        # Индикатор 2 - для подсветки фона
         editor.SendScintilla(editor.SCI_INDICSETFORE, 2, colors["brace_bg"])
         editor.SendScintilla(editor.SCI_INDICSETSTYLE, 2, QsciScintilla.INDIC_FULLBOX)
-        editor.SendScintilla(editor.SCI_INDICSETALPHA, 2, 30)  # Прозрачность
+        editor.SendScintilla(editor.SCI_INDICSETALPHA, 2, 30)
         
         editor.setIndicatorForegroundColor(colors["error"], CustomScintilla.INDICATOR_ERROR)
         editor.setIndicatorForegroundColor(colors["warning"], CustomScintilla.WARNING_ERROR)
@@ -2467,13 +2619,33 @@ class TwistLangEditor(QMainWindow):
         self._update_margin_width(editor)
         self._setup_autocompletion_icons(editor, new_lexer)
 
-        editor.setFoldMarginColors(colors["margin_bg"], colors["margin_bg"])
-
+        # Установка цветов для folding margin
+        margin_bg = colors["margin_bg"]
+        margin_rgb = (margin_bg.red() << 16) | (margin_bg.green() << 8) | margin_bg.blue()
         
-    
+        # Устанавливаем цвет фона folding margin
+        editor.setFoldMarginColors(colors["margin_bg"], colors["margin_bg"])
+        
         
         editor.repaint()
+
+    def restart_language_server(self):
+        """Restart language server for current file"""
+        editor = self.current_editor()
+        if not editor or not editor.filename:
+            self.show_status_message("No file open to restart language server", 2000)
+            return
+            
+        filename = editor.filename
         
+        # Останавливаем текущий сервер
+        self.stop_language_server(filename)
+        
+        # Запускаем новый сервер
+        self.start_language_server(filename)
+        
+        self.show_status_message(f"Language server restarted for {os.path.basename(filename)}", 2000)
+            
     def _update_application_palette(self):
         """Update global application palette"""
         app = QApplication.instance()
@@ -3155,28 +3327,45 @@ class TwistLangEditor(QMainWindow):
         if checked:
             self.autosave_timer.start(self.autosave_interval)
             self.show_status_message("Auto-save enabled", 2000)
+            # Update icon for autosave action
+            colors = THEMES[self.current_theme]["colors"]
+            self.autosave_action.setIcon(self._create_check_icon(colors["fg"]))
         else:
             self.autosave_timer.stop()
             self.show_status_message("Auto-save disabled", 2000)
-            
-        self._update_status_labels()
+            # Remove icon when disabled
+            self.autosave_action.setIcon(QIcon())
         
+        self._update_status_labels()
+
     def _set_autosave_interval(self, ms: int):
         """Change autosave interval"""
         self.autosave_interval = ms
         if self.autosave_action.isChecked():
             self.autosave_timer.start(ms)
-            
+        
         self._update_status_labels()
         
-        # Update menu checkmarks
+        # Update menu checkmarks and icons
         interval_menu = self.sender().parent()
+        colors = THEMES[self.current_theme]["colors"]
+        check_icon = self._create_check_icon(colors["fg"])
+        
         for action in interval_menu.actions():
             if action.data() == ms:
                 action.setChecked(True)
+                action.setIcon(check_icon)
             elif action.data() is not None:
                 action.setChecked(False)
-                
+                action.setIcon(QIcon())
+        
+        # Update the interval_actions list to keep icons consistent
+        for action in self.interval_actions:
+            if action.data() == ms:
+                action.setIcon(check_icon)
+            else:
+                action.setIcon(QIcon())
+        
         self.show_status_message(f"Auto-save interval set to {ms//1000} seconds", 2000)
         
     def autosave_all_files(self, manual: bool = False):
@@ -3214,9 +3403,9 @@ class TwistLangEditor(QMainWindow):
         """Update status bar labels with current state"""
         colors = THEMES[self.current_theme]["colors"]
         
-        # Используем светлый цвет для текста
+        # Используем светлый цвет для текста на основе фона статусбара
         status_bg = colors['status_bg']
-        text_color = QColor(status_bg).lighter(300)  # Осветляем на 300%
+        text_color = QColor(status_bg).lighter(300) if status_bg.lightness() < 128 else QColor(status_bg).darker(300)
         
         # Autosave label
         if self.autosave_action.isChecked():
@@ -3235,17 +3424,15 @@ class TwistLangEditor(QMainWindow):
         active_ls = sum(1 for proc in self.ls_processes.values() if proc.poll() is None)
         self.ls_status_label.setText(f"LS: {active_ls} active")
         
-        # Применяем нормальный системный шрифт
+        # Устанавливаем шрифт
         font = QFont("Consolas")
-        font.setPointSize(10)  # Нормальный размер
+        font.setPointSize(10)
         
-        # Устанавливаем шрифт для всех лейблов
         self.autosave_label.setFont(font)
         self.error_label.setFont(font)
         self.ls_status_label.setFont(font)
         
-        # Apply unified light text color to all labels
-        unified_style = f"color: {text_color.name()}; padding: 2px 5px;"
+        unified_style = f"color: {text_color.name()}; padding: 2px 5px; font-family: Consolas;"
         self.autosave_label.setStyleSheet(unified_style)
         self.error_label.setStyleSheet(unified_style)
         self.ls_status_label.setStyleSheet(unified_style)

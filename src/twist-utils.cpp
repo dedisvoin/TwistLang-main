@@ -273,21 +273,6 @@ void middleTimeIt(string name, function<void()> func, int count) {
 
 
 /*
-    Opens a file and returns its content as a single string.
-*/
-string OpenFile(string file_name) {
-    ifstream stream(file_name);
-    string result;
-    string line;
-
-    while (getline(stream, line)) {
-        result += line + "\n";
-    }
-    return result;
-}
-
-
-/*
     Saves content to a file. Returns true if successful, false otherwise.
 */
 bool SaveFile(string file_name, string content) {
@@ -298,6 +283,51 @@ bool SaveFile(string file_name, string content) {
     stream << content;
     stream.close();
     return true;
+}
+
+
+// Добавьте эти функции в конец файла twist-utils.cpp
+
+// Check if string starts with UTF-8 BOM
+bool HasUTF8BOM(const string& str) {
+    if (str.length() >= 3) {
+        unsigned char b1 = static_cast<unsigned char>(str[0]);
+        unsigned char b2 = static_cast<unsigned char>(str[1]);
+        unsigned char b3 = static_cast<unsigned char>(str[2]);
+        return (b1 == 0xEF && b2 == 0xBB && b3 == 0xBF);
+    }
+    return false;
+}
+
+// Remove UTF-8 BOM if present
+string RemoveUTF8BOM(const string& str) {
+    if (HasUTF8BOM(str)) {
+        return str.substr(3);
+    }
+    return str;
+}
+
+// Improved OpenFile with UTF-8 support
+string OpenFile(string file_name) {
+    ifstream stream(file_name, ios::binary);
+    if (!stream.is_open()) {
+        return "";
+    }
+    
+    // Get file size
+    stream.seekg(0, ios::end);
+    size_t size = stream.tellg();
+    stream.seekg(0, ios::beg);
+    
+    // Read file
+    string content(size, '\0');
+    stream.read(&content[0], size);
+    stream.close();
+    
+    // Remove BOM if present
+    content = RemoveUTF8BOM(content);
+    
+    return content;
 }
 
 /*
