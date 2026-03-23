@@ -2,6 +2,7 @@
 Lumen IDE - Integrated Development Environment for TwistLang
 """
 
+from socket import timeout
 import sys
 import os
 import subprocess
@@ -23,6 +24,7 @@ from PyQt6.QtWidgets import (
     QFileDialog, QMessageBox, QToolTip, QWidget, QHBoxLayout,
     QVBoxLayout, QFrame, QStackedWidget, QCheckBox
 )
+from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, Qt
 from PyQt6.QtGui import (
     QColor, QFont, QAction, QKeySequence, QShortcut,
     QPainter, QPen, QIcon, QPixmap, QMouseEvent,
@@ -1418,6 +1420,8 @@ class ErrorInfo:
     type: ErrorType
 
 
+SCI_SETYOFFSET = 2397
+SCI_GETYOFFSET = 2398
 class CustomScintilla(QsciScintilla):
     """
     Enhanced Scintilla editor with:
@@ -1455,6 +1459,10 @@ class CustomScintilla(QsciScintilla):
         self._setup_error_highlighting()
         self.cursorPositionChanged.connect(self.highlightMatchingBrace)
         self.textChanged.connect(self._on_text_changed)
+
+        self.scroll_animation = QPropertyAnimation(self.verticalScrollBar(), b"value")
+        self.scroll_animation.setDuration(250)  # Длительность анимации в мс
+        self.scroll_animation.setEasingCurve(QEasingCurve.Type.OutCubic) # Плавное замедление в конце
         
     # Внутри класса CodeEditor в editor.py
 
@@ -1733,7 +1741,28 @@ class CustomScintilla(QsciScintilla):
                 self.main_window.zoom_out()
             event.accept()
         else:
-            super().wheelEvent(event)
+            delta = event.angleDelta().y()
+    
+            # Получаем текущее и целевое значения
+            current_value = self.verticalScrollBar().value()
+            
+            # Рассчитываем шаг (например, прокрутка на 3 строки за один шаг колесика)
+            # Можно подстроить множитель (здесь 3), чтобы изменить скорость
+            scroll_step = 10
+            
+            if delta > 0:
+                target_value = current_value - scroll_step
+            else:
+                target_value = current_value + scroll_step
+
+            # Ограничиваем значения пределами скроллбара
+            target_value = max(0, min(target_value, self.verticalScrollBar().maximum()))
+
+            # Запускаем анимацию
+            self.scroll_animation.stop()
+            self.scroll_animation.setStartValue(current_value)
+            self.scroll_animation.setEndValue(target_value)
+            self.scroll_animation.start()
             
     def paintEvent(self, event):
         """Custom paint for error messages inline"""
@@ -1850,7 +1879,11 @@ class TwistLangEditor(QMainWindow):
         self._setup_timers()
         
         self.apply_theme(self.current_theme)
+
         
+        
+
+       
         # Initialize checkmark for current theme
         QTimer.singleShot(100, self._initialize_theme_checkmark)
         # Initialize interval menu icons
@@ -2231,31 +2264,7 @@ class TwistLangEditor(QMainWindow):
     # ===== Theme management =====
 
     def show_status_message(self, message: str, timeout: int = 2000):
-        """Show message in status bar with consistent styling"""
-        colors = THEMES[self.current_theme]["colors"]
-        status_bg = colors['status_bg']
-        text_color = QColor(status_bg).lighter(300)  # Осветляем на 300%
-        self.status_bar.setFont(QFont("Consolas"))
-        
-        self.status_bar.setStyleSheet(f"""
-            QStatusBar#statusBar {{
-                background-color: {colors['status_bg'].name()};
-                border-top: 1px solid {colors['status_border'].name()};
-                border-bottom-left-radius: 7px;
-                border-bottom-right-radius: 7px;
-                color: {text_color.name()};
-            }}
-            QStatusBar::item {{
-                border: none;
-            }}
-            QStatusBar QLabel {{
-                color: {text_color.name()};
-                padding: 2px 5px;
-                font-family: Consolas;
-                font-size: 10pt;
-            }}
-        """)
-        
+        """Показывает сообщение с уже настроенным в теме стилем"""
         self.status_bar.showMessage(message, timeout)
     
     def apply_theme(self, theme_name: str):
@@ -2280,10 +2289,8 @@ class TwistLangEditor(QMainWindow):
             else:
                 action.setIcon(QIcon())
 
-        bg = colors["bg"].name()
-        fg = colors["fg"].name()
-        accent = colors["autosave_on"]# Используем цвет функций для акцента
-        border = colors["status_border"].name()
+
+        accent = colors["autosave_on"] 
 
         self.folding_toggle.bg_color = colors.get("bg", QColor("#333"))
         self.folding_toggle.active_color = accent
@@ -2331,17 +2338,41 @@ class TwistLangEditor(QMainWindow):
             }}
         """)
 
-        # Update status bar
+        # Цвет текста для статус-бара (чуть светлее фона)
+        status_text_color = QColor(colors['status_bg']).lighter(300).name()
+        
+        # Единый шрифт для статус-бара
+        status_font_family = "Consolas"
+        status_font_size = "10pt"
+
         self.status_bar.setStyleSheet(f"""
             QStatusBar#statusBar {{
                 background-color: {colors['status_bg'].name()};
                 border-top: 1px solid {colors['status_border'].name()};
                 border-bottom-left-radius: 7px;
                 border-bottom-right-radius: 7px;
+                color: {status_text_color};
+                font-family: {status_font_family};
+                font-size: {status_font_size};
             }}
+            /* Убираем рамки вокруг элементов */
             QStatusBar::item {{
                 border: none;
             }}
+            /* Стилизуем все надписи (Labels) внутри статус-бара одинаково */
+            QStatusBar QLabel {{
+                color: {status_text_color};
+                font-family: {status_font_family};
+                font-size: {status_font_size};
+                padding: 0px 10px;  /* Одинаковые отступы слева и справа */
+            }}
+        """)
+        
+        # Также обновим разделитель, чтобы он не выбивался
+        if hasattr(self, 'separator'):
+            self.separator.setStyleSheet(f"""
+                background-color: {colors['status_border'].name()}; 
+                margin: 4px 0px;
         """)
         
         # Обновляем стили для полос прокрутки и других элементов
@@ -3057,24 +3088,38 @@ class TwistLangEditor(QMainWindow):
             print(f"Failed to start LS for {file_path}: {e}")
             
     def stop_language_server(self, file_path: str):
-        """Stop language server for a file"""
+        """Остановить языковой сервер для файла (блокирующий вызов)"""
         if file_path not in self.ls_processes:
             return
-            
+
         try:
             process = self.ls_processes[file_path]
-            if process.poll() is None:
-                process.terminate()
+            if process.poll() is None:  # процесс ещё жив
+                process.terminate()     # пытаемся завершить корректно
                 try:
-                    process.wait(timeout=2)
+                    process.wait(timeout=2)  # ждём до 2 секунд
                 except subprocess.TimeoutExpired:
-                    process.kill()
-                    
+                    process.kill()      # принудительно убиваем
+                    process.wait()      # ждём завершения (теперь должно быть быстро)
             print(f"Stopped LS for {os.path.basename(file_path)}")
-            del self.ls_processes[file_path]
-            self._update_status_labels()
         except Exception as e:
             print(f"Failed to stop LS for {file_path}: {e}")
+        finally:
+            # Удаляем из словаря в любом случае
+            if file_path in self.ls_processes:
+                del self.ls_processes[file_path]
+            self._update_status_labels()
+
+    def closeEvent(self, event):
+        """Закрытие приложения с принудительной остановкой всех серверов"""
+        # Останавливаем все языковые серверы, дожидаясь их завершения
+        for file_path in list(self.ls_processes.keys()):
+            self.stop_language_server(file_path)
+
+        # Даём Qt завершить события (если нужно)
+        QApplication.processEvents()
+
+        super().closeEvent(event)
             
     def stop_all_language_servers(self):
         """Stop all running language servers"""
@@ -3426,7 +3471,7 @@ class TwistLangEditor(QMainWindow):
         
         # Устанавливаем шрифт
         font = QFont("Consolas")
-        font.setPointSize(10)
+        font.setPointSize(9)
         
         self.autosave_label.setFont(font)
         self.error_label.setFont(font)
@@ -3464,23 +3509,18 @@ class TwistLangEditor(QMainWindow):
         event.acceptProposedAction()
         
     # ===== Close event =====
-    
-    def closeEvent(self, event):
-        """Clean up on close"""
-        self.stop_all_language_servers()
-        super().closeEvent(event)
+   
 
 
 # =============================================================================
 # MAIN ENTRY POINT
 # =============================================================================
-
 def main():
     """Application entry point"""
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
     app.setAttribute(Qt.ApplicationAttribute.AA_DontUseNativeMenuBar, True)
-    
+
     # Set default font
     default_font = QFont("Segoe UI", 10)
     if not default_font.exactMatch():
@@ -3509,8 +3549,10 @@ def main():
     editor = TwistLangEditor()
     editor.show()
     
+    # Ensure all language servers are stopped when the application exits
+    app.aboutToQuit.connect(editor.stop_all_language_servers)
+    
     sys.exit(app.exec())
-
 
 if __name__ == "__main__":
     main()

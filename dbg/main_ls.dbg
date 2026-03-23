@@ -1,3 +1,0 @@
-pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.twist':10:10:9:0 message: Call error in function 'anonymous-lambda'
-pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.twist':2:8:6:0 message: Unsupported binary operator '==' for `Int` and `Char` types
-
