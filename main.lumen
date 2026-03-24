@@ -1,0 +1,25 @@
+struct Person {
+    static global {
+        let name: String?;
+        let age: Int?;
+    }
+
+    let create = lambda(global name_: String, global age_: Int) -> typeof(Person) :
+        namespace {
+            let person = Person();
+            person.name = name_;
+            person.age = age_;
+        }::person;
+
+    let print = lambda() -> auto : namespace {
+        outln "Name: ", name, ", age: ", age;
+    };
+}
+
+let p1 = Person.create("Ivan", 19);
+let p2 = Person.create("Mike", 28);
+
+p1.print();
+p2.print();
+
+
