@@ -43,6 +43,8 @@ from themes import *
 MAX_FONT_SIZE = 30
 MIN_FONT_SIZE = 8
 
+APP_ICON_PATH = r"data\app_icon.svg"
+
 DEFAULT_THEME = "Lumen Classic"
 WINDOW_MIN_WIDTH = 400
 WINDOW_MIN_HEIGHT = 300
@@ -56,6 +58,8 @@ AUTOSAVE_INTERVALS = [
     ("2 minutes", 120000),
     ("5 minutes", 300000)
 ]
+
+VERSION = "1.05b"
 
 
 class Language(Enum):
@@ -180,7 +184,7 @@ class Strings:
         "welcome_title": "Lumen IDE",
         "welcome_subtitle": "Integrated development environment for Lumen",
         "author_text": "By Pavlov Ivan Alexeevich",
-        "version": "Version 1.0",
+        "version": f"Version {VERSION}",
         
         # Tooltips
         "toggle_folding": "Toggle code folding (show/hide fold margins)\n[This function in beta test]"
@@ -277,7 +281,7 @@ class Strings:
         "welcome_title": "Lumen IDE",
         "welcome_subtitle": "Интегрированная среда разработки для Lumen",
         "author_text": "Автор: Павлов Иван Алексеевич",
-        "version": "Версия 1.0",
+        "version": f"Версия {VERSION}",
         
         # Tooltips
         "toggle_folding": "Переключить сворачивание кода (показать/скрыть поля сворачивания)\n[Функция в бета-тестировании]"
@@ -303,7 +307,7 @@ class Strings:
 # UTILITY FUNCTIONS
 # =============================================================================
 
-def create_svg_icon(svg_path: str, color: QColor) -> Optional[QIcon]:
+def create_svg_icon(svg_path: str, color: QColor, size = 32) -> Optional[QIcon]:
     """
     Create an icon from SVG file with specified color.
     
@@ -331,7 +335,7 @@ def create_svg_icon(svg_path: str, color: QColor) -> Optional[QIcon]:
         if not renderer.isValid():
             return None
         
-        pixmap = QPixmap(32, 32)
+        pixmap = QPixmap(size, size)
         pixmap.fill(Qt.GlobalColor.transparent)
         
         painter = QPainter(pixmap)
@@ -460,6 +464,21 @@ class WelcomeWidget(QWidget):
         painter.setOpacity(1.0)
         painter.setPen(QPen(colors['fg'], 1))
         
+        # Load icon
+        icon = create_svg_icon(APP_ICON_PATH, colors['fg'], 300)
+        
+        # Draw icon shadow (multiple layers with offset)
+        icon_size = 140
+        icon_x = (self.width() - 500) // 2 - 150
+        icon_y = (self.height() - 100) // 2 - 30
+        
+        
+            # Draw main icon on top
+        painter.setOpacity(1.0)
+        icon_rect = QRect(icon_x, icon_y, icon_size, icon_size)
+        painter.drawPixmap(icon_rect, icon.pixmap(icon_size, icon_size))
+        
+        # Draw title with shadow
         font = QFont("Segoe UI", 100, QFont.Weight.Light)
         font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 110)
         painter.setFont(font)
@@ -469,19 +488,23 @@ class WelcomeWidget(QWidget):
         text_width = metrics.horizontalAdvance(text)
         text_height = metrics.height()
         
-        x = (self.width() - text_width) // 2
+        # Position text to the right of the icon
+        x = (self.width() - text_width) // 2 + 80
         y = (self.height() - text_height) // 2 + metrics.ascent()
         
+        # Draw title shadow
         for i in range(5):
             offset = i * 2
             painter.setOpacity(0.1 * (5 - i))
             painter.setPen(QPen(colors['title_fg'], 1))
             painter.drawText(x + offset, y + offset, text)
         
+        # Draw main title
         painter.setOpacity(1.0)
         painter.setPen(QPen(colors['title_fg'], 1))
         painter.drawText(x, y, text)
         
+        # Draw subtitle
         painter.setPen(QPen(colors['title_fg'], 1))
         subtitle_font = QFont("Consolas", 14)
         painter.setFont(subtitle_font)
@@ -495,18 +518,10 @@ class WelcomeWidget(QWidget):
         
         painter.drawText(subtitle_x, subtitle_y, subtitle)
         
-        author_font = QFont("Consolas", 11)
-        painter.setFont(author_font)
-        painter.setPen(QPen(colors['title_fg'], 1))
-        painter.setOpacity(0.8)
         
-        author_text = Strings.get("author_text")
-        metrics = painter.fontMetrics()
-        author_x = 10
-        author_y = self.height() - 10
         
         painter.end()
-        
+            
     def _get_theme_colors(self):
         window = self.window()
         if hasattr(window, 'current_theme'):
@@ -2419,7 +2434,7 @@ class TwistLangEditor(QMainWindow):
         
         self.check_icon = self._create_check_icon(colors["fg"])
         
-        icon = create_svg_icon(r"data\app_icon.svg", colors['title_fg'])
+        icon = create_svg_icon(APP_ICON_PATH, colors['title_fg'])
         if icon and not icon.isNull():
             self.setWindowIcon(icon)
             self.title_bar.update_icon(icon)

@@ -79,45 +79,6 @@ THEMES = {
         }
     },
     
-    "Solarized Dark": {
-        "type": "dark",
-        "colors": {
-            "bg": QColor("#002b36"),
-            "fg": QColor("#839496"),
-            "title_bg": QColor("#073642"),
-            "title_bg_darker": QColor("#032f39"),
-            "title_fg": QColor("#fdf6e3"),
-            "title_border": QColor("#586e75"),
-            "keyword": QColor("#859900"),
-            "type": QColor("#b58900"),
-            "comment": QColor("#586e75"),
-            "string": QColor("#2aa198"),
-            "number": QColor("#d33682"),
-            "operator": QColor("#657b83"),
-            "function": QColor("#268bd2"),
-            "modifier": QColor("#6c71c4"),
-            "directive": QColor("#cb4b16"),
-            "literal": QColor("#dc322f"),
-            "namespace": QColor("#268bd2"),
-            "special": QColor("#d33682"),
-            "object": QColor("#b58900"),
-            "caret": QColor("#ffffff"),
-            "caret_line": QColor("#073642"),
-            "margin_bg": QColor("#073642"),
-            "margin_fg": QColor("#586e75"),
-            "selection_bg": QColor("#586e75"),
-            "selection_fg": QColor("#fdf6e3"),
-            "brace_bg": QColor("#85990055"),
-            "brace_fg": QColor("#859900"),
-            "error": QColor("#dc322f"),
-            "warning": QColor("#b58900"),
-            "autosave_on": QColor("#2aa198"),
-            "autosave_off": QColor("#dc322f"),
-            "status_bg": QColor("#073642"),
-            "status_border": QColor("#586e75"),
-        }
-    },
-    
     "Solarized Light": {
         "type": "light",
         "colors": {

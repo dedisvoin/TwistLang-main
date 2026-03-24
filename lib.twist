@@ -1,6 +1,4 @@
 
-// Простейшее макро выражение
-#macro max(a, b) = if (a > b) {a} else {b}
 
 global let Number = Int | Double;
 let my_eq = lambda(global a: Number | String, global b: Number | String) -> Bool : namespace {
