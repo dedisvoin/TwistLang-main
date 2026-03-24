@@ -937,7 +937,7 @@ Node* ASTGenerator::ParseNew() {
     return new NodeNew(expr, type_expr, is_static, is_const, start_type, end_type);
 }
 
-
+// PASS (NO FINAL)
 Node* ASTGenerator::ParseCall(Node* expr, Token start, Token end) {
     walker.next(); // pass '(' token
 
@@ -962,7 +962,7 @@ Node* ASTGenerator::ParseCall(Node* expr, Token start, Token end) {
     return new NodeCall(expr, arguments, start, end);
 }
 
-
+// PASS (NO FINAL)
 Node* ASTGenerator::ParseLambda() {
     walker.next(); // pass 'lambda' token
     Token start_args_token = *walker.get();
@@ -1098,13 +1098,37 @@ Node* ASTGenerator::ParseAssert() {
     return new NodeAssert(expr, message_expr, start_token, end_token, start_message, end_message);
 }
 
-
+// PASS
 Node* ASTGenerator::ParseNamespace() {
     walker.next(); // pass "namespace" token
     auto namespace_node = new NodeNamespace(nullptr);
 
-    auto block = parse_statement();
-    namespace_node->statement = block;
+    auto body = parse_statement();
+    if (!body)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "namespace body");
+    namespace_node->statement = body;
+
+    return namespace_node;
+}
+
+// PASS
+Node* ASTGenerator::ParseNameSpaceDecl() {
+    walker.next(); // pass 'namespace' token
+
+    if (!walker.CheckType(TokenType::LITERAL))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "namespace identifier");
+
+    Token decl_token = *walker.get();
+    string namespace_name = walker.get()->value;
+    walker.next();
+
+    // Создаем namespace
+    auto namespace_node = new NodeNamespaceDeclaration(nullptr, namespace_name, decl_token);
+
+    auto body = parse_statement();
+    if (!body)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "namespace body");
+    namespace_node->statement = body;
 
     return namespace_node;
 }
@@ -1432,25 +1456,7 @@ Node* ASTGenerator::ParseNameResolution(Node* expression) {
 }
 
 
-Node* ASTGenerator::ParseNameSpaceDecl() {
-    walker.next(); // pass 'namespace' token
-
-    if (!walker.CheckType(TokenType::LITERAL))
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "namespace identifier");
-    Token decl_token = *walker.get();
-    string namespace_name = walker.get()->value;
-    walker.next();
-
-    // Создаем namespace
-    auto namespace_node = new NodeNamespaceDeclaration(nullptr, namespace_name, decl_token);
-
-    auto block = parse_statement();
-    namespace_node->statement = block;
-
-    return namespace_node;
-}
-
-
+// PASS
 Node* ASTGenerator::ParseIfExpr() {
     walker.next(); // pass 'if' token
 
@@ -1482,7 +1488,7 @@ Node* ASTGenerator::ParseIfExpr() {
     if (walker.CheckValue("else")) {
         walker.next();
         if (!walker.CheckType(TokenType::L_CURVE_BRACKET))
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "{");
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "else expression: {expr}");
         walker.next();
         else_expr = parse_expression();
 
@@ -1497,7 +1503,7 @@ Node* ASTGenerator::ParseIfExpr() {
     return new NodeIfExpr(eq_expr, true_expr, else_expr);
 }
 
-
+// PASS
 Node* ASTGenerator::ParseIf() {
     walker.next(); // pass 'if' token
 

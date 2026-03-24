@@ -2,17 +2,15 @@
 Lumen IDE - Integrated Development Environment for TwistLang
 """
 
-from socket import timeout
+
 import sys
 import os
 import subprocess
 import platform
 import shutil
 import re
-import random
-import math
 from datetime import datetime
-from typing import Optional, Dict, List, Tuple, Set, Any
+from typing import Optional, Dict, List, Tuple, Set
 from dataclasses import dataclass
 from enum import Enum
 
@@ -22,7 +20,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMenu, QStatusBar,
     QLabel, QTabWidget, QTabBar, QToolButton,
     QFileDialog, QMessageBox, QToolTip, QWidget, QHBoxLayout,
-    QVBoxLayout, QFrame, QStackedWidget, QCheckBox
+    QVBoxLayout, QFrame, QStackedWidget
 )
 from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, Qt
 from PyQt6.QtGui import (
@@ -1255,7 +1253,7 @@ class TwistLangLexer(QsciLexerCustom):
                       'Namespace', 'Func', 'Lambda', 'auto', "Type"}
         self.literals = {'true', 'false', 'null', 'self'}
         self.directives = {'#define', '#macro', '#include'}
-        self.special_keywords = {'new', 'del', 'typeof', 'sizeof', 'out', 'outln', 'input'}
+        self.special_keywords = {'new', 'del', 'typeof', 'sizeof', 'out', 'outln', 'input', 'exit'}
         
         self.setup_styles()
         
@@ -2911,7 +2909,7 @@ class TwistLangEditor(QMainWindow):
         
     def open_file_dialog(self):
         filename, _ = QFileDialog.getOpenFileName(
-            self, Strings.get("open"), "", "TwistLang Files (*.twist);;All Files (*.*)"
+            self, Strings.get("open"), "", "TwistLang Files (*.lumen);;All Files (*.*)"
         )
         if filename:
             self.open_file(filename)
@@ -2953,11 +2951,11 @@ class TwistLangEditor(QMainWindow):
         
     def save_editor_as(self, editor: CustomScintilla):
         filename, _ = QFileDialog.getSaveFileName(
-            self, Strings.get("save_as"), "", "TwistLang Files (*.twist);;All Files (*.*)"
+            self, Strings.get("save_as"), "", "Lumen Files (*.lumen);;All Files (*.*)"
         )
         if filename:
-            if not filename.endswith('.twist'):
-                filename += '.twist'
+            if not filename.endswith('.lumen'):
+                filename += '.lumen'
             self.save_editor(editor, filename)
             editor.filename = filename
             index = self.tab_widget.indexOf(editor)
@@ -3107,7 +3105,7 @@ class TwistLangEditor(QMainWindow):
             
         try:
             creationflags = subprocess.CREATE_NO_WINDOW if platform.system() == "Windows" else 0
-            ls_path = os.path.join('bin', 'twist-ls')
+            ls_path = os.path.join('bin', 'lumen-ls')
             if platform.system() == "Windows" and not os.path.exists(ls_path):
                 ls_path += '.exe'
                 
@@ -3255,32 +3253,14 @@ class TwistLangEditor(QMainWindow):
         try:
             system = platform.system()
             if system == "Windows":
-                subprocess.Popen(f'start cmd /k bin\\twistc --file "{filename}"', shell=True)
+                subprocess.Popen(f'start cmd /k bin\\lumenc --file "{filename}"', shell=True)
                 self.status_bar.showMessage(Strings.get("running_file").format(os.path.basename(filename)), 3000)
-            elif system == "Linux":
-                self._run_on_linux(filename)
             else:
                 QMessageBox.information(self, Strings.get("not_supported"),
                                        Strings.get("run_manually").format(filename))
         except Exception as e:
             QMessageBox.critical(self, Strings.get("file_not_found"), Strings.get("failed_to_run").format(e))
             
-    def _run_on_linux(self, filename: str):
-        terminals = ['gnome-terminal', 'xterm', 'konsole', 'xfce4-terminal']
-        term_cmd = next((term for term in terminals if shutil.which(term)), None)
-        
-        if term_cmd:
-            if term_cmd == 'gnome-terminal':
-                subprocess.Popen([term_cmd, '--', 'bash', '-c', 
-                                 f'twistc --file "{filename}"; read -p "Press enter..."'])
-            else:
-                subprocess.Popen([term_cmd, '-e', 
-                                 f'twistc --file "{filename}"; read -p "Press enter..."'])
-        else:
-            subprocess.Popen(['twistc', '--file', filename])
-            
-        self.status_bar.showMessage(Strings.get("running_file").format(os.path.basename(filename)), 3000)
-        
     def open_include_file(self, path: str, line: int):
         if not path:
             return

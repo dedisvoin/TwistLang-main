@@ -121,7 +121,7 @@ void _FILE_NOT_SETTED() {
 /* Program file has invalid specifier */
 void _FILE_INVALID_SPECIFIER(string file_name, string specifier) {
     cout << MT::ERROR + "In file '" + file_name + "' Invalid specifier '" + specifier + "'" + "\n" +\
-           MT::INFO + "File specifier must be '.twist' or '.tw'." << endl;
+           MT::INFO + "File specifier must be '.lumen' or '.lm'." << endl;
 }
 
 /* Preprocessed file saved */
@@ -391,7 +391,7 @@ bool CheckFileSpecifier(string file_name) {
         return false;
     }
     string specifier = file_name.substr(dot_pos);
-    return (specifier == ".twist" || specifier == ".tw");
+    return (specifier == ".lumen" || specifier == ".lm");
 }
 
 /*

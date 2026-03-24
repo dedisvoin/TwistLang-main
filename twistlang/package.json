@@ -1,8 +1,8 @@
 {
-  "name": "twistlang",
-  "displayName": "TwistLang",
-  "description": "twist support",
-  "version": "0.0.1",
+  "name": "luman",
+  "displayName": "Lumen",
+  "description": "lumen support",
+  "version": "0.0.8",
   "engines": {
     "vscode": "^1.108.1"
   },
@@ -11,15 +11,15 @@
   ],
   "contributes": {
     "languages": [{
-      "id": "twist",
-      "aliases": ["Twist", "twist"],
+      "id": "lumen",
+      "aliases": ["Lumen", "lumen"],
       "extensions": [".twist"],
       "configuration": "./language-configuration.json"
     }],
     "grammars": [{
-      "language": "twist",
-      "scopeName": "source.twist",
-      "path": "./syntaxes/twist.tmLanguage.json"
+      "language": "lumen",
+      "scopeName": "source.lumen",
+      "path": "./syntaxes/lumen.tmLanguage.json"
     }]
   }
 }

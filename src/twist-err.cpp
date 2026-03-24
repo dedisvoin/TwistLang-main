@@ -174,6 +174,12 @@ namespace ERROR_THROW {
         return err;
     }
 
+    Error ExitWarning(const Token& start, const Token& end, int code) {
+        Error err = Error("Program exited with code " + to_string(code), start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+        err.assertion = true;
+        return err;
+    }
+
     Error AssertionFailed(const Token& start, const Token& end, string message) {
         Error err = Error("Assertion failed: " + message, start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         err.assertion = true;
