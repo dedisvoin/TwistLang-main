@@ -11,6 +11,9 @@
 pair<Memory*, string> resolveTargetMemory(Node* node, Memory* current_memory) {
     if (node->NODE_TYPE == NodeTypes::NODE_LITERAL) {
         NodeLiteral* lit = static_cast<NodeLiteral*>(node);
+
+        if (!current_memory->check_literal(lit->name))
+            throw ERROR_THROW::VariableUndefined(lit->token);
         
         return {current_memory, lit->name};
     }
@@ -30,6 +33,8 @@ pair<Memory*, string> resolveTargetMemory(Node* node, Memory* current_memory) {
             ERROR::InvalidAccessorType(resolution->start, resolution->end, ns_value.type.pool);
         }
         auto ns = any_cast<Namespace*>(ns_value.data);
+        if (!ns->memory->check_literal(resolution->name)) 
+            throw ERROR_THROW::VariableUndefined(resolution->end);
         return {ns->memory, resolution->name};
     }
     else {

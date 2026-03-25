@@ -29,7 +29,7 @@ void run_with(vector<Node*>* nodes, Memory* g_memory) {
 
 
 void write_error_to_file(std::ostream& out, const Error& err) {
-    out << "pif: " << err.pif << ":" << err.pif.lenght << ":" << err.assertion
+    out << "pif: " << err.pif << ":" << err.pif.lenght << ":" << err.message_type
         << " message: " << err.message << "\n";
     if (err.sub_error)
         write_error_to_file(out, *err.sub_error);
@@ -41,7 +41,7 @@ vector<Error> run_with_collect(vector<Node*>& nodes, Memory* mem) {
         try {
             nodes[i]->exec_from(mem);
         } catch (const Error& err) {
-            if (err.assertion) {
+            if (err.message_type == 1 || err.message_type == 2) {
                 // Assert – сохраняем и продолжаем
                 collected.push_back(err);
             } else {

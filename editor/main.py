@@ -70,6 +70,7 @@ class ErrorType(Enum):
     """Error severity levels"""
     ERROR = 0
     WARNING = 1
+    ECHO = 2
 
 
 class ResizeDirection(Enum):
@@ -1244,7 +1245,7 @@ class TwistLangLexer(QsciLexerCustom):
         self.font_size = font_size
         
         self.keywords = {
-            'if', 'else', 'for', 'while', 'let', 'in', 'and', 'or',
+            'if', 'else', 'for', 'while', 'let', 'in', 'and', 'or', 'echo',
             'ret', 'assert', 'lambda', 'do',
             'struct', 'namespace', 'func', 'continue;', 'break;'
         }
@@ -1451,6 +1452,29 @@ class TwistLangLexer(QsciLexerCustom):
             if ch in '+-*/%=&|^!<>~?.:;(){}[]':
                 expecting_namespace = False
                 j = pos + ch_len
+                
+                # СПЕЦИАЛЬНАЯ ПРОВЕРКА ДЛЯ *auto
+                if ch == '*' and j < end:
+                    # Проверяем, идет ли следом слово auto
+                    temp_j = j
+                    # Пропускаем возможные пробелы между * и auto (если ваш язык это позволяет)
+                    while temp_j < end:
+                        c, l = self._get_char_at(text_bytes, temp_j, total_bytes)
+                        if c.isspace():
+                            temp_j += l
+                        else:
+                            break
+                    
+                    # Если нашли auto после *, красим всё это как STYLE_TYPE
+                    if text_bytes[temp_j:temp_j+4].decode('utf-8', errors='ignore') == "auto":
+                        # Проверяем, что это именно слово auto, а не начало другого слова (например, automatic)
+                        next_c, next_l = self._get_char_at(text_bytes, temp_j+4, total_bytes)
+                        if not next_c.isalnum() and next_c != '_':
+                            self.setStyling((temp_j + 4) - pos, self.STYLE_TYPE)
+                            pos = temp_j + 4
+                            continue
+
+                # Стандартная обработка операторов (ваш исходный код)
                 if j < end:
                     next_ch, next_len = self._get_char_at(text_bytes, j, total_bytes)
                     if (ch == ':' and next_ch == ':') or \
@@ -1563,8 +1587,10 @@ class CustomScintilla(QsciScintilla):
     
     INDICATOR_ERROR = 8
     WARNING_ERROR = 9
+
     ERROR_LINE_MARKER = 10
     WARNING_LINE_MARKER = 11
+    ECHO_LINE_MARKER = 12
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -1611,8 +1637,13 @@ class CustomScintilla(QsciScintilla):
         self.SendScintilla(self.SCI_SETINDICATORCURRENT, 2)
         self.SendScintilla(self.SCI_INDICATORCLEARRANGE, 0, self.length())
         
-        char = chr(self.SendScintilla(self.SCI_GETCHARAT, pos)) if pos < self.length() else ''
-        
+        try:
+            byte_val = self.SendScintilla(self.SCI_GETCHARAT, pos)
+            # Если значение отрицательное или вне диапазона ASCII, это часть Unicode символа
+            # Нас интересуют только скобки, которые всегда находятся в диапазоне 0-127
+            char = chr(byte_val) if 0 <= byte_val < 128 else ''
+        except (ValueError, OverflowError):
+            char = ''
         braces = {'(': ')', ')': '(', '[': ']', ']': '[', '{': '}', '}': '{', '<': '>', '>': '<'}
         
         if char in braces:
@@ -1662,6 +1693,7 @@ class CustomScintilla(QsciScintilla):
         
         self.markerDefine(QsciScintilla.MarkerSymbol.Background, self.ERROR_LINE_MARKER)
         self.markerDefine(QsciScintilla.MarkerSymbol.Background, self.WARNING_LINE_MARKER)
+        self.markerDefine(QsciScintilla.MarkerSymbol.Background, self.ECHO_LINE_MARKER)
         
     def set_main_window(self, window):
         self.main_window = window
@@ -1675,8 +1707,10 @@ class CustomScintilla(QsciScintilla):
     def clear_errors(self):
         self.clearIndicatorRange(0, 0, self.lines(), 0, self.INDICATOR_ERROR)
         self.clearIndicatorRange(0, 0, self.lines(), 0, self.WARNING_ERROR)
+
         self.markerDeleteAll(self.ERROR_LINE_MARKER)
         self.markerDeleteAll(self.WARNING_LINE_MARKER)
+        self.markerDeleteAll(self.ECHO_LINE_MARKER)
         
         self.errors.clear()
         self.error_lines.clear()
@@ -1689,16 +1723,20 @@ class CustomScintilla(QsciScintilla):
         
         if not isinstance(message, str):
             message = str(message)
-            
-        self.fillIndicatorRange(line, start_col, line, end_col,
-                               self.INDICATOR_ERROR if error_type == 0 else self.WARNING_ERROR)
         
+        if (error_type in [0, 1]):
+            self.fillIndicatorRange(line, start_col, line, end_col,
+                                self.INDICATOR_ERROR if error_type == 0 else self.WARNING_ERROR)
+            
         if error_type == 0:
             self.markerAdd(line, self.ERROR_LINE_MARKER)
             self.error_messages[line] = f"Error: {message}"
-        else:
+        elif error_type == 1:
             self.markerAdd(line, self.WARNING_LINE_MARKER)
             self.error_messages[line] = f"Warning: {message}"
+        elif error_type == 2:
+            self.markerAdd(line, self.ECHO_LINE_MARKER)
+            self.error_messages[line] = f"{message}"
             
         self.error_lines.add(line)
         self.errors.append(ErrorInfo(line, start_col, end_col, message, ErrorType(error_type)))
@@ -1886,8 +1924,13 @@ class CustomScintilla(QsciScintilla):
                     error_type = err.type.value
                     break
                     
-            text_color = colors["error"] if error_type == 0 else colors["warning"]
+            text_color = colors['error']
             
+            if (error_type == 1):
+                text_color = colors['warning']
+            elif (error_type == 2):
+                text_color = colors['echo']
+                
             error_text = self.error_messages[line]
             
             font = QFont("Consolas", 9)
@@ -1955,6 +1998,10 @@ class TwistLangEditor(QMainWindow):
         
         QTimer.singleShot(100, self._initialize_theme_checkmark)
         QTimer.singleShot(200, self._initialize_interval_icons)
+
+        self.error_timer = QTimer()
+        self.error_timer.timeout.connect(self.check_current_file_errors)
+        self.error_timer.start(100)  # 100 миллисекунд
         
     def _setup_window(self):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
@@ -2728,13 +2775,17 @@ class TwistLangEditor(QMainWindow):
         warning_bg = QColor(colors["warning"])
         warning_bg.setAlpha(40)
         editor.setMarkerBackgroundColor(warning_bg, CustomScintilla.WARNING_LINE_MARKER)
+
+        echo_bg = QColor(colors["echo"])
+        echo_bg.setAlpha(40)
+        editor.setMarkerBackgroundColor(echo_bg, CustomScintilla.ECHO_LINE_MARKER)
         
         editor.setMarginsFont(new_lexer.font(new_lexer.STYLE_DEFAULT))
         self._update_margin_width(editor)
         self._setup_autocompletion_icons(editor, new_lexer)
 
         margin_bg = colors["margin_bg"]
-        margin_rgb = (margin_bg.red() << 16) | (margin_bg.green() << 8) | margin_bg.blue()
+ 
         
         editor.setFoldMarginColors(colors["margin_bg"], colors["margin_bg"])
         
@@ -2978,7 +3029,7 @@ class TwistLangEditor(QMainWindow):
             
             editor = self._find_editor_by_filename(filename)
             if editor:
-                QTimer.singleShot(100, lambda: self._check_file_errors(editor))
+                ...
                 
         except Exception as e:
             QMessageBox.critical(self, Strings.get("file_not_found"), Strings.get("could_not_save").format(e))

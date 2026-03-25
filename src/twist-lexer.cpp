@@ -200,7 +200,7 @@ public:
     }
 };
 
-vector<string> KEYWORDS = { "if", "else", "for", "while", 
+vector<string> KEYWORDS = { "if", "else", "for", "while", "echo",
     "do", "break", "continue", "let", 
     "static", "final", "const", "global", "typeof", "sizeof",
      "del", "new" ,"true", "false", "null", "ret", "struct",
@@ -353,10 +353,9 @@ struct Lexer {
             .lenght = char_count,
         };
         
-        // Convert to lowercase for keyword checking
-        string lowerV = UTF8Helper::toLower(V);
+    
         
-        if (InVector(KEYWORDS, lowerV)) 
+        if (InVector(KEYWORDS, V)) 
             this->add_token(V, TokenType::KEYWORD, PIF);
         else 
             this->add_token(V, TokenType::LITERAL, PIF);
@@ -478,7 +477,7 @@ struct Lexer {
             .line = SL,
             .global_line = global_line,
             .index = PL,
-            .lenght = char_count
+            .lenght = char_count + 2
         };
         
         TokenType T = (V.length() == 1) ? TokenType::CHAR : TokenType::STRING;

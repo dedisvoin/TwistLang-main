@@ -56,7 +56,8 @@
     _(NODE_GET_BY_INDEX) \
     _(NODE_ARRAY_PUSH) \
     _(NODE_OBJECT_RESOLUTION) \
-    _(NODE_STRUCT_DECLARATION)
+    _(NODE_STRUCT_DECLARATION) \
+    _(NODE_ECHO)
 
 // Enum
 enum NodeTypes {

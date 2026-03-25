@@ -1,5 +1,5 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 
 #include "../twist-structs.cpp"
 
@@ -25,10 +25,10 @@ struct NodeDereference : public Node { NO_EXEC
         if (value.type == STANDART_TYPE::TYPE) {
             return NewType(MakePointerType(any_cast<Type>(value.data)));
         }
-        if (!STANDART_TYPE::TYPES.is_sub_type(value.type)) {
+        if (!value.type.is_sub_type(STANDART_TYPE::TYPES)) {
             Type T = MakePointerType(any_cast<Struct>(value.data).type);
             return Value(STANDART_TYPE::TYPE, T);
         }
-        ERROR::InvalidDereferenceValue(start, end, value.type);
+        throw ERROR_THROW::UndereferencableValue(start, end, value.type);
     }
 };

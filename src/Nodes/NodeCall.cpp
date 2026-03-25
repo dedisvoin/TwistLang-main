@@ -85,10 +85,14 @@ struct NodeCall : public Node { NO_EXEC
             result = ((Node*)(lambda->expr))->eval_from(call_memory);
         }
         catch (Error err) {
-            if (err.assertion) {
-                throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.assertion, err.message);
+            if (err.message_type == 1) {
+                throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.message_type, err.message);
+            } else if (err.message_type == 2) {
+                string saved_message = err.message;
+                err.message = "";
+                throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.message_type, saved_message);
             }
-            throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.assertion);
+            throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.message_type);
         }
 
         // Проверка типа возвращаемого значения (если задан)
@@ -252,7 +256,7 @@ struct NodeCall : public Node { NO_EXEC
             return NewNull();
         }
         catch (Error err) {
-            throw ERROR_THROW::CallError(start_callable, end_callable, func->name, new Error(err), err.assertion);
+            throw ERROR_THROW::CallError(start_callable, end_callable, func->name, new Error(err), err.message_type);
         }
         catch (Return _value) {
             if (func->return_type) {

@@ -1,6 +1,6 @@
 #include "../twist-nodetemp.cpp"
 #include "../twist-err.cpp"
-
+#include "NodeDereference.cpp"
 #include "TargetResolver.cpp"
 
 
@@ -25,6 +25,41 @@ struct NodeVariableEqual : public Node { NO_EVAL
 
     void exec_from(Memory* _memory) override {
         auto right_value = expression->eval_from(_memory);
+        
+        
+        
+        if (variable->NODE_TYPE == NODE_DEREFERENCE) {
+            auto left_value = ((NodeDereference*)variable)->expr->eval_from(_memory);
+            auto address = any_cast<int>(left_value.data);
+
+            if (!STATIC_MEMORY.is_registered(address)){
+                cout << "ERROR ADDR " << address << endl;
+                exit(-1);
+            }
+    
+            auto object = STATIC_MEMORY.get_by_address(address);
+            auto modifiers = object->modifiers;
+            
+            // Проверяем константность
+            if (modifiers.is_const) 
+                throw ERROR_THROW::PointerToConstRedefinition(start_left_value_token, end_left_value_token);
+            
+
+            // Проверяем типизацию для статических переменных
+            if (modifiers.is_static) {
+                auto wait_type = object->wait_type;
+                auto value_type = right_value.type;
+                if (!IsTypeCompatible(wait_type, value_type)) {
+                    throw ERROR_THROW::VariableStaticTypesMisMatch(start_left_value_token, end_value_token, wait_type, value_type);
+                }
+            }
+
+            // Выполняем присваивание
+            if (STATIC_MEMORY.is_registered(address)) {
+                STATIC_MEMORY.set_object_value(address, right_value);
+            }
+            return;
+        }
 
         pair<Memory*, string> target = resolveTargetMemory(variable, _memory);
 

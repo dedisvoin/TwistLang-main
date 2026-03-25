@@ -354,15 +354,15 @@ vector<TypePtr> Type::get_union_components() const {
 #include <type_traits> // нужно добавить в начало файла
 
 bool Type::is_sub_type_impl(const Type& other, const UnionType* other_union) const {
-    // Если other - union, проверяем, является ли this подтипом любого компонента
+    // 1. Если other - union, проверяем, является ли this подтипом любого компонента
     if (other_union) {
         for (const auto& comp : other_union->components) {
-            if (is_sub_type_impl(*comp, nullptr)) return true;
+            if (this->is_sub_type_impl(*comp, nullptr)) return true;
         }
         return false;
     }
 
-    // Если this - union
+    // 2. Если this - union
     if (is_union_type()) {
         const auto& this_union = get<UnionType>(m_data);
         for (const auto& comp : this_union.components) {
@@ -371,22 +371,30 @@ bool Type::is_sub_type_impl(const Type& other, const UnionType* other_union) con
         return true;
     }
 
-    // Оба не union
+    // 3. ПРИОРИТЕТНАЯ ПРОВЕРКА AUTO (Ваше условие)
+    // Проверяем принадлежность к *auto
+    if (holds_alternative<PointerAutoType>(other.m_data)) {
+        return this->is_pointer(); // true, если это любой указатель
+    }
+    // Проверяем принадлежность к просто auto
+    if (holds_alternative<AutoType>(other.m_data)) {
+        // Если текущий тип - указатель, возвращаем false по вашему требованию
+        if (this->is_pointer()) return false; 
+        return true; 
+    }
+
+    // 4. Проверка на полное равенство индексов или типов
     if (m_data.index() != other.m_data.index()) {
-        // Проверка на auto
-        if (holds_alternative<AutoType>(other.m_data)) return true;
-        if (holds_alternative<PointerAutoType>(other.m_data) && is_pointer()) return true;
         return false;
     }
 
+    // 5. Рекурсивная проверка структурных типов
     bool result = false;
     std::visit([&](const auto& lhs, const auto& rhs) {
         using L = std::decay_t<decltype(lhs)>;
         using R = std::decay_t<decltype(rhs)>;
 
-        if constexpr (!std::is_same_v<L, R>) {
-            result = false;
-        } else {
+        if constexpr (std::is_same_v<L, R>) {
             if constexpr (std::is_same_v<L, PrimitiveType>) {
                 result = (lhs.name == rhs.name);
             }
@@ -398,28 +406,22 @@ bool Type::is_sub_type_impl(const Type& other, const UnionType* other_union) con
             }
             else if constexpr (std::is_same_v<L, FunctionType>) {
                 if (lhs.arg_types.size() != rhs.arg_types.size()) {
-                    result = false;
-                    return;
+                    result = false; return;
                 }
                 for (size_t i = 0; i < lhs.arg_types.size(); ++i) {
-                    // Контравариантность: rhs.arg_types[i] должен быть подтипом lhs.arg_types[i]
                     if (!rhs.arg_types[i]->is_sub_type(*lhs.arg_types[i])) {
-                        result = false;
-                        return;
+                        result = false; return;
                     }
                 }
-                // Обработка возвращаемого типа (может быть nullptr)
                 if (lhs.return_type && rhs.return_type) {
                     result = lhs.return_type->is_sub_type(*rhs.return_type);
                 } else {
                     result = (!lhs.return_type && !rhs.return_type);
                 }
             }
-            else {
-                result = false; // Не должно произойти
-            }
         }
     }, m_data, other.m_data);
+
     return result;
 }
 

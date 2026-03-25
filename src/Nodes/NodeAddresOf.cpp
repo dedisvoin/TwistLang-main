@@ -6,8 +6,9 @@
 
 struct NodeAddressOf : public Node { NO_EXEC
     Node* expr;
+    Token start, end;
 
-    NodeAddressOf(Node* expr) : expr(expr) {
+    NodeAddressOf(Node* expr, Token start, Token end) : expr(expr), start(start), end(end) {
         this->NODE_TYPE = NodeTypes::NODE_ADDRESS_OF;
     }
 
@@ -16,25 +17,23 @@ struct NodeAddressOf : public Node { NO_EXEC
         // Сначала вычислим выражение, чтобы получить его тип (нужен для указателя)
         Value val = expr->eval_from(_memory);
 
-        // Раскрываем скобки, если они есть
-        Node* effective = expr;
-        while (effective->NODE_TYPE == NodeTypes::NODE_SCOPES) {
-            effective = static_cast<NodeScopes*>(effective)->expression;
+        while (expr->NODE_TYPE == NodeTypes::NODE_SCOPES) {
+            expr = static_cast<NodeScopes*>(expr)->expression;
         }
 
         // Обрабатываем литерал (простая переменная)
-        if (effective->NODE_TYPE == NodeTypes::NODE_LITERAL) {
-            NodeLiteral* lit = static_cast<NodeLiteral*>(effective);
+        if (expr->NODE_TYPE == NodeTypes::NODE_LITERAL) {
+            NodeLiteral* lit = static_cast<NodeLiteral*>(expr);
             int addr = _memory->get_variable(lit->name)->address;
             return NewPointer(addr, val.type);
         }
         // Обрабатываем разрешение имени (namespace::var)
-        else if (effective->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
-            auto [mem, var_name] = resolveTargetMemory(effective, _memory);
+        else if (expr->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
+            auto [mem, var_name] = resolveTargetMemory(expr, _memory);
             int addr = mem->get_variable(var_name)->address;
             return NewPointer(addr, val.type);
         }
 
-        
+        throw ERROR_THROW::CanNotGetAddress(start, end, expr->NODE_TYPE);
     }
 };

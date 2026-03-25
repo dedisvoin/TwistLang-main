@@ -58,13 +58,14 @@
 #include "Nodes/NodeAddresOf.cpp"
 #include "Nodes/NodeDereference.cpp"
 #include "Nodes/NodeDelete.cpp"
-#include "Nodes/NodeLeftDereference.cpp"
 #include "Nodes/NodeCall.cpp"
 #include "Nodes/NodeFunctionType.cpp"
 #include "Nodes/NodeArrayType.cpp"
 #include "Nodes/NodeArray.cpp"
 #include "Nodes/NodeGetIndex.cpp"
 #include "Nodes/NodeArrayPush.cpp"
+
+#include "Nodes/NodeEcho.cpp"
 
 #include <vcruntime_startup.h>
 #include <string>
@@ -167,6 +168,8 @@ struct ASTGenerator {
 
     // Structs
     Node* ParseStructDecl();
+
+    Node* ParseEcho();
 
     Memory GLOBAL_MEMORY;
 
@@ -460,28 +463,11 @@ struct ASTGenerator {
             return ParseContinue();
         }
 
-        // Обработка выражения, которое может начинаться с '*' (разыменование)
-        // Проверяем, является ли это присваиванием через разыменование
-        if (current.value == "*") {
-            TokenWalker snapshot = walker; // Сохраняем состояние для отката
-            walker.next(); // Пропускаем '*'
-
-            // Парсим выражение, которое разыменовывается
-            auto expr = parse_expression();
-
-            // Проверяем, что идет дальше
-            if (walker.CheckValue("=")) {
-                // Это присваивание через разыменование (*expr = ...)
-                // Возвращаемся и вызываем ParseLeftDereference
-                walker = snapshot;
-                return ParseLeftDereference();
-            } else {
-                // Это не присваивание, возможно выражение с <- или просто выражение
-                // Возвращаемся и парсим как обычное выражение
-                walker = snapshot;
-            }
+        if (current.type == TokenType::KEYWORD && current.value == "echo") {
+            return ParseEcho();
         }
 
+        
         // Общий случай: выражение, которое может быть присваиванием или expression statement
         auto start_left_value_token = *walker.get();
         
@@ -614,7 +600,18 @@ void GenerateStandartTypes(Memory* g_memory, string g_file_name) {
     STATIC_MEMORY.register_object(__TWIST_ADDR__);
 }
 
-
+Node* ASTGenerator::ParseEcho() {
+    walker.next(); // pass 'echo'
+    Token start = *walker.get();
+    auto expr = parse_expression();
+    Token end = *walker.get(-1);
+    if (!expr)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+    if (!walker.CheckType(TokenType::DAC))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
+    walker.next();
+    return new NodeEcho(expr, start, end);
+}
 
 // PASS
 Node* ASTGenerator::ParseReturn() {
@@ -1153,36 +1150,6 @@ Node* ASTGenerator::ParseInput() {
 }
 
 
-Node* ASTGenerator::ParseLeftDereference() {
-    walker.next(); // pass '*' token
-
-    auto start_left_value_token = *walker.get(-1);
-    auto left_expr = parse_expression();
-
-    if (!left_expr)
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
-
-
-    auto end_left_value_token = *walker.get(-1);
-
-    if (!walker.CheckValue("="))
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "'='");
-    walker.next();
-    auto start_value_token = *walker.get();
-    auto expr = parse_expression();
-
-    if (!expr)
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
-
-
-    if (!walker.CheckValue(";"))
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
-    auto end_value_token = *walker.get();
-    walker.next();
-
-    return new NodeLeftDereference(left_expr, expr, start_left_value_token, end_left_value_token, start_value_token, end_value_token);
-}
-
 // PASS
 Node* ASTGenerator::ParseTypeof() {
     walker.next(); // pass 'typeof' token
@@ -1211,35 +1178,28 @@ Node* ASTGenerator::ParseSizeof() {
     return new NodeSizeof(expr, expr_token);
 }
 
-
+// PASS (NO FINAL)
 Node* ASTGenerator::ParseAddressOf() {
+    Token start = *walker.get();
     walker.next(); // pass '&' token
     auto expr = parse_primary_expression();
-    return new NodeAddressOf(expr);
+    Token end = *walker.get(-1);
+    if (!expr)
+        throw ERROR_THROW::WaitedAddresGettebleExpr(*walker.get());
+    return new NodeAddressOf(expr, start, end);
 }
 
 
 Node* ASTGenerator::ParseDereference() {
     walker.next(); // pass '*' token
-    if (walker.CheckValue("(")) {
-        Token start_token = *walker.get();
-        walker.next();
-        auto expr = parse_expression();
-        if (!expr)
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
-        if (!walker.CheckValue(")"))
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
-        Token end_token = *walker.get();
-        walker.next();
-        return new NodeDereference(expr, start_token, end_token);
-    } else {
-        Token start_token = *walker.get();
-        auto expr = parse_expression();
-        if (!expr)
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "primary expression or (expression)");
-        Token end_token = *walker.get(-1);
-        return new NodeDereference(expr, start_token, end_token);
-    }
+    
+    Token start_token = *walker.get();
+    auto expr = parse_expression();
+    if (!expr)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+    Token end_token = *walker.get(-1);
+    return new NodeDereference(expr, start_token, end_token);
+    
 }
 
 

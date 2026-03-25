@@ -33,6 +33,7 @@ THEMES = {
             "brace_fg": QColor("#f5c2e7"),
             "error": QColor("#f35815"),
             "warning": QColor("#ffc413"),
+            "echo": QColor("#a6adc8"),  # светлее фона, но темнее основного текста
             "autosave_on": QColor("#a6e3a1"),
             "autosave_off": QColor("#f38ba8"),
             "status_bg": QColor("#181825"),
@@ -72,6 +73,7 @@ THEMES = {
             "brace_fg": QColor("#8839ef"),
             "error": QColor("#f35815"),
             "warning": QColor("#ffc413"),
+            "echo": QColor("#9ca0b0"),  # серее основного текста
             "autosave_on": QColor("#a6e3a1"),
             "autosave_off": QColor("#f38ba8"),
             "status_bg": QColor("#2d2d3a"),
@@ -111,6 +113,7 @@ THEMES = {
             "brace_fg": QColor("#859900"),
             "error": QColor("#dc322f"),
             "warning": QColor("#b58900"),
+            "echo": QColor("#93a1a1"),  # цвет комментария
             "autosave_on": QColor("#2aa198"),
             "autosave_off": QColor("#dc322f"),
             "status_bg": QColor("#073642"),
@@ -150,6 +153,7 @@ THEMES = {
             "brace_fg": QColor("#81a1c1"),
             "error": QColor("#bf616a"),
             "warning": QColor("#ebcb8b"),
+            "echo": QColor("#a5abb6"),  # светлее фона
             "autosave_on": QColor("#a3be8c"),
             "autosave_off": QColor("#bf616a"),
             "status_bg": QColor("#3b4252"),
@@ -189,6 +193,7 @@ THEMES = {
             "brace_fg": QColor("#5e81ac"),
             "error": QColor("#bf616a"),
             "warning": QColor("#ebcb8b"),
+            "echo": QColor("#6e7a8e"),  # серее основного текста
             "autosave_on": QColor("#a3be8c"),
             "autosave_off": QColor("#bf616a"),
             "status_bg": QColor("#3b4252"),
@@ -228,6 +233,7 @@ THEMES = {
             "brace_fg": QColor("#0078d7"),
             "error": QColor("#ff0000"),
             "warning": QColor("#ff8c00"),
+            "echo": QColor("#6a6a6a"),  # серее основного текста
             "autosave_on": QColor("#107c10"),
             "autosave_off": QColor("#d73a49"),
             "status_bg": QColor("#2d2d2d"),
@@ -243,7 +249,7 @@ THEMES = {
         "title_bg": QColor("#1a1f29"),
         "title_bg_darker": QColor("#0f141e"),
         "title_fg": QColor("#e6e1cf"),
-        "title_border": QColor("#4c6a83"),  # изменённый цвет для яркого наведения
+        "title_border": QColor("#4c6a83"),
         "keyword": QColor("#ff8f40"),
         "type": QColor("#39bae6"),
         "comment": QColor("#626a73"),
@@ -267,6 +273,7 @@ THEMES = {
         "brace_fg": QColor("#ff8f40"),
         "error": QColor("#f07178"),
         "warning": QColor("#ffb454"),
+        "echo": QColor("#8a8d93"),  # светлее фона, темнее основного текста
         "autosave_on": QColor("#c2d94c"),
         "autosave_off": QColor("#f07178"),
         "status_bg": QColor("#0d1017"),
@@ -306,6 +313,7 @@ THEMES = {
             "brace_fg": QColor("#fa8d3e"),
             "error": QColor("#f07171"),
             "warning": QColor("#f2ae49"),
+            "echo": QColor("#9a9ea3"),  # серее основного текста
             "autosave_on": QColor("#86b300"),
             "autosave_off": QColor("#f07171"),
             "status_bg": QColor("#2d3c4d"),
@@ -345,6 +353,7 @@ THEMES = {
             "brace_fg": QColor("#e6986c"),
             "error": QColor("#e67e80"),
             "warning": QColor("#e6986c"),
+            "echo": QColor("#9eaf9a"),  # светлее фона
             "autosave_on": QColor("#a7c080"),
             "autosave_off": QColor("#e67e80"),
             "status_bg": QColor("#26323f"),
@@ -384,6 +393,7 @@ THEMES = {
             "brace_fg": QColor("#f57b5c"),
             "error": QColor("#e65e5e"),
             "warning": QColor("#f57b5c"),
+            "echo": QColor("#8c9690"),  # серее основного текста
             "autosave_on": QColor("#8da101"),
             "autosave_off": QColor("#e65e5e"),
             "status_bg": QColor("#3a4a5a"),
@@ -405,7 +415,7 @@ THEMES = {
             "comment": QColor("#6e6a86"),
             "string": QColor("#f6c177"),
             "number": QColor("#c4a7e7"),
-            "operator": QColor("#e0def4"),
+            "operator": QColor("#6e6a86"),
             "function": QColor("#ebbcba"),
             "modifier": QColor("#c4a7e7"),
             "directive": QColor("#eb6f92"),
@@ -423,6 +433,7 @@ THEMES = {
             "brace_fg": QColor("#ebbcba"),
             "error": QColor("#eb6f92"),
             "warning": QColor("#f6c177"),
+            "echo": QColor("#908caa"),  # светлее фона, темнее основного текста
             "autosave_on": QColor("#9ccfd8"),
             "autosave_off": QColor("#eb6f92"),
             "status_bg": QColor("#1f1d2e"),

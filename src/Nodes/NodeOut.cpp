@@ -119,6 +119,7 @@ struct NodeBaseOutLn : public Node { NO_EVAL
                 if (i != lambda->arguments.size() - 1) buf << ", ";
             }
             buf << ")";
+            
         } else if (value.type.is_pointer()) {
             buf << value.type.pool << "[0x" << any_cast<int>(value.data) << "]";
         } else if (value.type.is_func()) {

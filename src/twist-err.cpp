@@ -1,3 +1,4 @@
+#include "twist-nodetemp.cpp"
 #include "twist-tokens.cpp"
 #include "twist-utils.cpp"
 #include "twist-values.cpp"
@@ -10,6 +11,7 @@ namespace ErrorTypes {
     const string SYNTAX      = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::YELLOW + "syntax" + TERMINAL_COLORS::RESET;
     const string EXECUTION   = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::MAGENTA + "exec" + TERMINAL_COLORS::RESET;
     const string SEMANTIC    = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::CYAN + "semantic" + TERMINAL_COLORS::RESET;
+    const string ECHO    = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::BLUE + "echo" + TERMINAL_COLORS::RESET;
 }
 
 typedef string ErrorType;
@@ -22,7 +24,7 @@ struct Error {
     PosInFile pif;
     ErrorType type;
     string code;
-    bool assertion = false;
+    int message_type = 0;
 
     Error* sub_error = nullptr;
 
@@ -36,7 +38,7 @@ struct Error {
     }
 
     void write_error_to_file(std::ostream& out, const Error& err) const {
-        out << "pif: " << err.pif << ":" << err.pif.lenght << ":" << err.assertion
+        out << "pif: " << err.pif << ":" << err.pif.lenght << ":" << err.message_type
             << " message: " << err.message << "\n";
         if (err.sub_error)
             write_error_to_file(out, *err.sub_error);
@@ -83,7 +85,7 @@ struct Error {
 
         auto color = TM::RED;
         auto err = MT::ERROR;
-        if (assertion) {
+        if (message_type == 1) {
             color = TM::YELLOW;
             err = MT::WARNING;
         }
@@ -129,7 +131,7 @@ namespace ERROR_THROW {
         return err;
     }
 
-    Error CallError(const Token& start, const Token& stop, string name, Error* sub_error, bool is_warning = false, string message = "") {
+    Error CallError(const Token& start, const Token& stop, string name, Error* sub_error, int is_warning = 0, string message = "") {
         Error err;
         if (is_warning) {
             err = Error(message, start.pif, stop.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
@@ -138,7 +140,7 @@ namespace ERROR_THROW {
         }
         
         err.sub_error = sub_error;
-        err.assertion = is_warning;
+        err.message_type = is_warning;
         return err;
     }
 
@@ -164,25 +166,31 @@ namespace ERROR_THROW {
 
     Error AssertionFailed(const Token& start, const Token& end) {
         Error err = Error("Assertion failed", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
-        err.assertion = true;
+        err.message_type = 1;
         return err;
     }
 
     Error InputWarning(const Token& start, const Token& end) {
         Error err = Error("Input is run time instruction. Default return - ''", start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
-        err.assertion = true;
+        err.message_type = 1;
         return err;
     }
 
     Error ExitWarning(const Token& start, const Token& end, int code) {
         Error err = Error("Program exited with code " + to_string(code), start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
-        err.assertion = true;
+        err.message_type = 1;
+        return err;
+    }
+
+    Error Echo(const Token& start, const Token& end, string value) {
+        Error err = Error(value, start.pif, end.pif, ErrorTypes::ECHO, PREPROCESSOR_OUTPUT);
+        err.message_type = 2;
         return err;
     }
 
     Error AssertionFailed(const Token& start, const Token& end, string message) {
         Error err = Error("Assertion failed: " + message, start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
-        err.assertion = true;
+        err.message_type = 1;
         return err;
     }
 
@@ -209,6 +217,11 @@ namespace ERROR_THROW {
     
     Error VariableConstRedefinition(const Token& start, const Token& end, string name) {
         Error err = Error("Cannot assign to const variable '" + name + "'", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error PointerToConstRedefinition(const Token& start, const Token& end) {
+        Error err = Error("The pointer points to a constant object", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
 
@@ -292,6 +305,21 @@ namespace ERROR_THROW {
 
     Error InvalidNumber(const Token& token) {
         Error err = Error(" Invalid number format: '" + token.value + "'", token.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error WaitedAddresGettebleExpr(const Token& token) {
+        Error err = Error(" Exprected addres (&) getteble expression", token.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error CanNotGetAddress(const Token& start, const Token& end, NodeTypes node) {
+        Error err = Error(" It is not possible to get an address from this node type: " + string(get_node_type_name(node)), start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error UndereferencableValue(const Token& start, const Token& end, Type type) {
+        Error err = Error(" Invalid dereference value, waited pointer type but found `" + type.pool + "` type", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
 }
