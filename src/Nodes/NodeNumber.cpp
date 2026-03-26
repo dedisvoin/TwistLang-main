@@ -24,6 +24,7 @@ struct NodeNumber : public Node { NO_EXEC
 
     NodeNumber(int value) : value(NewInt(value)) { this->NODE_TYPE = NodeTypes::NODE_NUMBER; }
 
+
     NodeNumber(Token& token) {
         this->NODE_TYPE = NodeTypes::NODE_NUMBER;
 

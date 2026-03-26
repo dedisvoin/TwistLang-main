@@ -1,2 +1,2 @@
-pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':876:0:1:0 message: Expected ';', but found 'END_OF_FILE'
+pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':5:5:1:2 message: 10
 

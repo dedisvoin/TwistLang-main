@@ -17,6 +17,7 @@ struct NodeEcho : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_ECHO;
     }
 
+
     void exec_from(Memory* _memory) override {
         #ifdef SERVER
         auto value = expr->eval_from(_memory);

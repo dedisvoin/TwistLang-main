@@ -1443,7 +1443,7 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
                 
-            if ch in '+-*/%=&|^!<>~?.:;(){}[]':
+            if ch in '+-*/%=&|^!<>~,?.:;(){}[]':
                 expecting_namespace = False
                 j = pos + ch_len
                 
@@ -1462,11 +1462,13 @@ class TwistLangLexer(QsciLexerCustom):
                     if text_bytes[temp_j:temp_j+4].decode('utf-8', errors='ignore') == "auto":
                         # Проверяем, что это именно слово auto (не autograph)
                         next_c, next_l = self._get_char_at(text_bytes, temp_j+4, total_bytes)
-                        if not next_c.isalnum() and next_c != '_':
-                            # Красим всё от первой звездочки до конца auto в цвет типа
-                            self.setStyling((temp_j + 4) - pos, self.STYLE_TYPE)
-                            pos = temp_j + 4
-                            continue
+                        try:
+                            if not next_c.isalnum() and next_c != '_':
+                                # Красим всё от первой звездочки до конца auto в цвет типа
+                                self.setStyling((temp_j + 4) - pos, self.STYLE_TYPE)
+                                pos = temp_j + 4
+                                continue
+                        except: ...
 
                 if j < end:
                     next_ch, next_len = self._get_char_at(text_bytes, j, total_bytes)
@@ -3138,16 +3140,16 @@ class TwistLangEditor(QMainWindow):
                 del self.ls_processes[file_path]
             
         try:
-            creationflags = subprocess.CREATE_NO_WINDOW if platform.system() == "Windows" else 0
+            #creationflags = subprocess.CREATE_NO_WINDOW if platform.system() == "Windows" else 0
             ls_path = os.path.join('bin', 'lumen-ls')
             if platform.system() == "Windows" and not os.path.exists(ls_path):
                 ls_path += '.exe'
                 
             process = subprocess.Popen(
                 [ls_path, '--file', file_path, '-d'],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                creationflags=creationflags
+                #stdout=subprocess.DEVNULL,
+                #stderr=subprocess.DEVNULL,
+                #creationflags=creationflags
             )
             
             self.ls_processes[file_path] = process

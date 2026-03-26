@@ -20,6 +20,7 @@ struct NodeBlock : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_BLOCK_OF_NODES;
     }
 
+
     void exec_from(Memory* _memory) override {
         for (int i = 0; i < nodes_array.size(); i++) {
             nodes_array[i]->exec_from(_memory);

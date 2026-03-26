@@ -440,4 +440,121 @@ THEMES = {
             "status_border": QColor("#403d52"),
         }
     },
+    "Gruvbox Dark": {
+    "type": "dark",
+    "colors": {
+        "bg": QColor("#282828"),
+        "fg": QColor("#ebdbb2"),
+        "title_bg": QColor("#3c3836"),
+        "title_bg_darker": QColor("#2e2a29"),
+        "title_fg": QColor("#fbf1c7"),
+        "title_border": QColor("#504945"),
+        "keyword": QColor("#fb4934"),
+        "type": QColor("#8ec07c"),
+        "comment": QColor("#928374"),
+        "string": QColor("#b8bb26"),
+        "number": QColor("#d3869b"),
+        "operator": QColor("#fe8019"),
+        "function": QColor("#fabd2f"),
+        "modifier": QColor("#fe8019"),
+        "directive": QColor("#d65d0e"),
+        "literal": QColor("#d3869b"),
+        "namespace": QColor("#83a598"),
+        "special": QColor("#d65d0e"),
+        "object": QColor("#8ec07c"),
+        "caret": QColor("#fbf1c7"),
+        "caret_line": QColor("#3c3836"),
+        "margin_bg": QColor("#1d2021"),
+        "margin_fg": QColor("#928374"),
+        "selection_bg": QColor("#504945"),
+        "selection_fg": QColor("#fbf1c7"),
+        "brace_bg": QColor("#fb493455"),
+        "brace_fg": QColor("#fb4934"),
+        "error": QColor("#cc241d"),
+        "warning": QColor("#d79921"),
+        "echo": QColor("#a89984"),
+        "autosave_on": QColor("#b8bb26"),
+        "autosave_off": QColor("#cc241d"),
+        "status_bg": QColor("#1d2021"),
+        "status_border": QColor("#3c3836"),
+    }
+},
+"Moonlight": {
+    "type": "dark",
+    "colors": {
+        "bg": QColor("#1e2a3a"),
+        "fg": QColor("#d9e0ee"),
+        "title_bg": QColor("#2a3a4a"),
+        "title_bg_darker": QColor("#22303e"),
+        "title_fg": QColor("#d9e0ee"),
+        "title_border": QColor("#3a4a5a"),
+        "keyword": QColor("#ff8c42"),
+        "type": QColor("#70c9f0"),
+        "comment": QColor("#5a6e7a"),
+        "string": QColor("#b3d46b"),
+        "number": QColor("#ffb86c"),
+        "operator": QColor("#7b8c74"),      # darker muted green, slightly darker than literal
+        "function": QColor("#ff6b6b"),
+        "modifier": QColor("#ff8c42"),
+        "directive": QColor("#ffb86c"),
+        "literal": QColor("#b3d46b"),
+        "namespace": QColor("#70c9f0"),
+        "special": QColor("#ff6b6b"),
+        "object": QColor("#70c9f0"),
+        "caret": QColor("#d9e0ee"),
+        "caret_line": QColor("#2a3a4a"),
+        "margin_bg": QColor("#15222e"),
+        "margin_fg": QColor("#5a6e7a"),
+        "selection_bg": QColor("#3a4a5a"),
+        "selection_fg": QColor("#d9e0ee"),
+        "brace_bg": QColor("#ff8c4255"),
+        "brace_fg": QColor("#ff8c42"),
+        "error": QColor("#ff6b6b"),
+        "warning": QColor("#ffb86c"),
+        "echo": QColor("#8a9ba8"),
+        "autosave_on": QColor("#b3d46b"),
+        "autosave_off": QColor("#ff6b6b"),
+        "status_bg": QColor("#15222e"),
+        "status_border": QColor("#2a3a4a"),
+    }
+},
+"Emerald Forest": {
+    "type": "dark",
+    "colors": {
+        "bg": QColor("#1e241e"),           # почти чёрный с лёгким зелёным оттенком
+        "fg": QColor("#cfddcf"),           # светлый серо-зелёный (основной текст)
+        "title_bg": QColor("#2a302a"),
+        "title_bg_darker": QColor("#212621"),
+        "title_fg": QColor("#dfecdf"),
+        "title_border": QColor("#3a403a"),
+        "keyword": QColor("#c6a0f6"),      # мягкий сиреневый
+        "type": QColor("#7dc4e4"),         # светло-голубой (циан)
+        "comment": QColor("#6a746a"),      # приглушённый серо-зелёный
+        "string": QColor("#f5b88c"),       # тёплый персиковый
+        "number": QColor("#e2bf7a"),       # золотистый
+        "operator": QColor("#8a988a"),     # нейтральный серо-зелёный, темнее литералов
+        "function": QColor("#c8d96c"),     # мягкий жёлто-зелёный
+        "modifier": QColor("#b0a5f0"),     # лавандовый
+        "directive": QColor("#d99e6e"),    # терракотовый
+        "literal": QColor("#f5aa8c"),      # светло-коралловый (отличается от строк)
+        "namespace": QColor("#6cc8b4"),    # бирюзовый
+        "special": QColor("#e68c8c"),      # мягкий красный
+        "object": QColor("#9acc8c"),       # приглушённая мята
+        "caret": QColor("#f0f8f0"),
+        "caret_line": QColor("#2a302a"),
+        "margin_bg": QColor("#182018"),
+        "margin_fg": QColor("#6a746a"),
+        "selection_bg": QColor("#3a443a"),
+        "selection_fg": QColor("#dfecdf"),
+        "brace_bg": QColor("#c6a0f655"),
+        "brace_fg": QColor("#c6a0f6"),
+        "error": QColor("#e68c8c"),
+        "warning": QColor("#e2bf7a"),
+        "echo": QColor("#9aae9a"),
+        "autosave_on": QColor("#c8d96c"),
+        "autosave_off": QColor("#e68c8c"),
+        "status_bg": QColor("#182018"),
+        "status_border": QColor("#2a302a"),
+    }
+},
 }

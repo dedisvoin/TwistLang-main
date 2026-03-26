@@ -16,6 +16,7 @@
 struct NodeLiteral : public Node { NO_EXEC
     string name;
     Token& token;
+   
 
     NodeLiteral(Token& token) : token(token) {
         name = token.value;

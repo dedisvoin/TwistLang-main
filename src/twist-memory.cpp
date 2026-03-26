@@ -94,11 +94,7 @@ struct Memory {
                               bool is_const = false, bool is_static = false, bool is_final = false,
                               bool is_global = false, bool is_private = false);
     
-    ~Memory() {
-        for (auto object : string_pool) {
-            delete  object.second;
-        }
-    }
+    
 
     inline MemoryObject* get_variable(const std::string& literal) {
         auto it = string_pool.find(literal);
@@ -183,6 +179,12 @@ struct GlobalMemory {
 
     Modifiers get_modifiers(int address) {
         return get_by_address(address)->modifiers;
+    }
+
+    static void clear() {
+        // НЕ удаляем объекты здесь, только очищаем карту
+        // Объекты уже удалены деструктором Memory
+        all_objects.clear();
     }
 };
 

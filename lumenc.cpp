@@ -40,6 +40,7 @@ vector<Error> run_with_collect(vector<Node*>& nodes, Memory* mem) {
     for (size_t i = 0; i < nodes.size(); ++i) {
         try {
             nodes[i]->exec_from(mem);
+
         } catch (const Error& err) {
             if (err.message_type == 1 || err.message_type == 2) {
                 // Assert – сохраняем и продолжаем
@@ -50,6 +51,10 @@ vector<Error> run_with_collect(vector<Node*>& nodes, Memory* mem) {
             }
         }
     }
+    for (auto node: nodes) {
+        delete node;
+    }
+    
     return collected;
 }
 
@@ -58,8 +63,11 @@ void language_server(const std::string& file_path, std::string file_name) {
     Preprocessor preprocessor;
 
     while (true) {
-        Error::ClearBuffer(); // Очищаем буфер для ошибок
-        Memory* g_memory = new Memory();
+        Error::ClearBuffer();
+        
+        // Используем unique_ptr для автоматического управления памятью
+        std::unique_ptr<Memory> g_memory = std::make_unique<Memory>();
+        
         try {
             std::string source = OpenFile(file_path);
 
@@ -68,22 +76,18 @@ void language_server(const std::string& file_path, std::string file_name) {
 
             std::string preprocessed = preprocessor.process(source, file_path);
 
-            // 2. Лексический анализ
             Lexer lexer(file_path, preprocessed);
             lexer.run();
 
-            // 3. Синтаксический анализ
             TokenWalker walker(&lexer.tokens);
             ASTGenerator parser(walker, file_path);
-            parser.parse();  // если здесь ошибка – будет исключение
+            parser.parse();
 
-            // 4. Подготовка памяти и выполнение
             auto nodes = std::move(parser.nodes);
 
-            GenerateStandartTypes(g_memory, file_path);
+            GenerateStandartTypes(g_memory.get(), file_path);
 
-            // Выполняем с накоплением assert'ов
-            auto assert_errors = run_with_collect(nodes, g_memory);
+            auto assert_errors = run_with_collect(nodes, g_memory.get());
 
             if (!assert_errors.empty()) {
                 for (const auto& err : assert_errors) {
@@ -92,21 +96,23 @@ void language_server(const std::string& file_path, std::string file_name) {
             }
 
         } catch (const Error& err) {
-            // Фатальная ошибка (не assertion) – собираем в буфер
             err.Write();
         } catch (const std::exception& e) {
-            // Непредвиденная ошибка – можно проигнорировать или записать
+            // Логируем исключение если нужно
         }
 
-        // В конце цикла записываем буфер в файл (если не пустой)
-
+        // Запись лога
         std::ofstream log(string("dbg/") + file_name + "_ls.dbg", std::ios::trunc);
         log << Error::GetBuffer();
         log.close();
 
-
+        // Очистка глобальной памяти перед следующей итерацией
+        GlobalMemory::all_objects.clear();  // ← ВАЖНО: очищаем глобальный кэш
+        
         std::this_thread::sleep_for(0.1s);
-        delete g_memory;
+        
+        // unique_ptr автоматически вызовет delete
+        // AddressManager::reset() лучше вызывать после удаления памяти
         AddressManager::reset();
     }
 }
