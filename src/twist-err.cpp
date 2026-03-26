@@ -322,4 +322,14 @@ namespace ERROR_THROW {
         Error err = Error(" Invalid dereference value, waited pointer type but found `" + type.pool + "` type", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
+
+    Error InvalidNewModifier(const Token& start) {
+        Error err = Error(" Unsupport modifier", start.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidNewInstruction(const Token& start, const Token& end) {
+        Error err = Error(" Invalid new instruction", start.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
 }

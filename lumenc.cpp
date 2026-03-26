@@ -62,7 +62,7 @@ void language_server(const std::string& file_path, std::string file_name) {
         Memory* g_memory = new Memory();
         try {
             std::string source = OpenFile(file_path);
-            
+
             ERROR::PREPROCESSOR_OUTPUT = source;
             ERROR_THROW::PREPROCESSOR_OUTPUT = source;
 
@@ -79,7 +79,7 @@ void language_server(const std::string& file_path, std::string file_name) {
 
             // 4. Подготовка памяти и выполнение
             auto nodes = std::move(parser.nodes);
-            
+
             GenerateStandartTypes(g_memory, file_path);
 
             // Выполняем с накоплением assert'ов
@@ -99,14 +99,15 @@ void language_server(const std::string& file_path, std::string file_name) {
         }
 
         // В конце цикла записываем буфер в файл (если не пустой)
-        
+
         std::ofstream log(string("dbg/") + file_name + "_ls.dbg", std::ios::trunc);
         log << Error::GetBuffer();
         log.close();
-        
+
 
         std::this_thread::sleep_for(0.1s);
         delete g_memory;
+        AddressManager::reset();
     }
 }
 
@@ -115,7 +116,7 @@ void language_server(const std::string& file_path, std::string file_name) {
 
 int main(int argc, char** argv) {
     std::locale::global(std::locale("ru_RU.UTF-8"));
-    
+
     // Create and generate argparser for parse system arguments
     static ArgsParser args_parser = GenerateArgsParser(argc, argv);
 

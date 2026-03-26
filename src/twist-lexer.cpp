@@ -13,8 +13,8 @@ namespace ALPHABET {
     CH CHAR = "abcdefghijklmnopqrstuvwxyz" + ToUpper("abcdefghijklmnopqrstuvwxyz") + "абвгдеёжхийклмнопрстуфхцчщшьъэюя" + ToUpper("абвгдеёжхийклмнопрстуфхцчщшьъэюя");
     CH RU_CHAR = "абвгдеёжхийклмнопрстуфхцчщшьъэюя" + ToUpper("абвгдеёжхийклмнопрстуфхцчщшьъэюя");
     CH NUMS = "0123456789";
-    CH OPER = "+-=&/@^%!|~,.<>?";
-    CH BRAC = "{[()]}";
+    CH OPER = "+-=&/@^%!|~,.?";
+    CH BRAC = "{[(<>)]}";
     CH SEPP = ":;";
 }
 #define APT ALPHABET
@@ -585,6 +585,8 @@ struct Lexer {
         else if (C == "]") T = TokenType::R_RECT_BRACKET;
         else if (C == "{") T = TokenType::L_CURVE_BRACKET;
         else if (C == "}") T = TokenType::R_CURVE_BRACKET;
+        else if (C == "<") T = TokenType::L_TRIANGLE_BRACKET;
+        else if (C == ">") T = TokenType::R_TRIANGLE_BRACKET;
         else T = TokenType::DUMMY;
         
         this->next(static_cast<int>(C.length()));

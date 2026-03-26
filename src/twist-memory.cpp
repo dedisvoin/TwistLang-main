@@ -93,6 +93,12 @@ struct Memory {
     bool add_object_in_struct(const std::string& literal, Value& value,
                               bool is_const = false, bool is_static = false, bool is_final = false,
                               bool is_global = false, bool is_private = false);
+    
+    ~Memory() {
+        for (auto object : string_pool) {
+            delete  object.second;
+        }
+    }
 
     inline MemoryObject* get_variable(const std::string& literal) {
         auto it = string_pool.find(literal);

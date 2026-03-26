@@ -7,7 +7,6 @@ import sys
 import os
 import subprocess
 import platform
-import shutil
 import re
 from datetime import datetime
 from typing import Optional, Dict, List, Tuple, Set
@@ -363,7 +362,6 @@ def get_safe_monospace_font(preferred_font: str, size: int) -> QFont:
     if font.exactMatch():
         return font
     
-    
     fallbacks = ["Consolas"]
     for font_name in fallbacks:
         font = QFont(font_name, size)
@@ -471,8 +469,7 @@ class WelcomeWidget(QWidget):
         icon_x = (self.width() - 500) // 2 - 150
         icon_y = (self.height() - 100) // 2 - 30
         
-        
-            # Draw main icon on top
+        # Draw main icon on top
         painter.setOpacity(1.0)
         icon_rect = QRect(icon_x, icon_y, icon_size, icon_size)
         painter.drawPixmap(icon_rect, icon.pixmap(icon_size, icon_size))
@@ -516,8 +513,6 @@ class WelcomeWidget(QWidget):
         subtitle_y = y + text_height // 2 - 50
         
         painter.drawText(subtitle_x, subtitle_y, subtitle)
-        
-        
         
         painter.end()
             
@@ -1030,7 +1025,6 @@ class AboutDialog(QWidget):
         if self.parent_window and hasattr(self.parent_window, 'current_theme'):
             return THEMES[self.parent_window.current_theme]["colors"]
         return THEMES[DEFAULT_THEME]["colors"]
-        
 
 
 class RoundedMenu(QMenu):
@@ -1453,28 +1447,27 @@ class TwistLangLexer(QsciLexerCustom):
                 expecting_namespace = False
                 j = pos + ch_len
                 
-                # СПЕЦИАЛЬНАЯ ПРОВЕРКА ДЛЯ *auto
-                if ch == '*' and j < end:
-                    # Проверяем, идет ли следом слово auto
-                    temp_j = j
-                    # Пропускаем возможные пробелы между * и auto (если ваш язык это позволяет)
+                # Измененный блок для обработки указателей перед auto
+                if ch == '*' and j <= end:
+                    temp_j = pos
+                    # 1. Собираем все звездочки и пробелы между ними
                     while temp_j < end:
                         c, l = self._get_char_at(text_bytes, temp_j, total_bytes)
-                        if c.isspace():
+                        if c == '*' or c.isspace():
                             temp_j += l
                         else:
                             break
                     
-                    # Если нашли auto после *, красим всё это как STYLE_TYPE
+                    # 2. Проверяем, идет ли после них 'auto'
                     if text_bytes[temp_j:temp_j+4].decode('utf-8', errors='ignore') == "auto":
-                        # Проверяем, что это именно слово auto, а не начало другого слова (например, automatic)
+                        # Проверяем, что это именно слово auto (не autograph)
                         next_c, next_l = self._get_char_at(text_bytes, temp_j+4, total_bytes)
                         if not next_c.isalnum() and next_c != '_':
+                            # Красим всё от первой звездочки до конца auto в цвет типа
                             self.setStyling((temp_j + 4) - pos, self.STYLE_TYPE)
                             pos = temp_j + 4
                             continue
 
-                # Стандартная обработка операторов (ваш исходный код)
                 if j < end:
                     next_ch, next_len = self._get_char_at(text_bytes, j, total_bytes)
                     if (ch == ':' and next_ch == ':') or \
@@ -1574,16 +1567,12 @@ class ErrorInfo:
     type: ErrorType
 
 
-SCI_SETYOFFSET = 2397
-SCI_GETYOFFSET = 2398
-
 class CustomScintilla(QsciScintilla):
     """
     Enhanced Scintilla editor.
     """
     
     goto_definition_requested = pyqtSignal(str, int)
-    content_changed = pyqtSignal()
     
     INDICATOR_ERROR = 8
     WARNING_ERROR = 9
@@ -1639,8 +1628,6 @@ class CustomScintilla(QsciScintilla):
         
         try:
             byte_val = self.SendScintilla(self.SCI_GETCHARAT, pos)
-            # Если значение отрицательное или вне диапазона ASCII, это часть Unicode символа
-            # Нас интересуют только скобки, которые всегда находятся в диапазоне 0-127
             char = chr(byte_val) if 0 <= byte_val < 128 else ''
         except (ValueError, OverflowError):
             char = ''
@@ -1982,7 +1969,7 @@ class TwistLangEditor(QMainWindow):
         self.ls_processes: Dict[str, subprocess.Popen] = {}
         self.theme_actions: List[QAction] = []
         self.interval_actions: List[QAction] = []
-        self.language_actions: List[QAction] = []  # Store language actions
+        self.language_actions: List[QAction] = []
         
         self.resizing = False
         self.resize_direction = None
@@ -2001,7 +1988,7 @@ class TwistLangEditor(QMainWindow):
 
         self.error_timer = QTimer()
         self.error_timer.timeout.connect(self.check_current_file_errors)
-        self.error_timer.start(100)  # 100 миллисекунд
+        self.error_timer.start(100)
         
     def _setup_window(self):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
@@ -3027,10 +3014,6 @@ class TwistLangEditor(QMainWindow):
             editor.last_save_time = datetime.now()
             self.show_status_message(Strings.get("saved_file").format(filename), 2000)
             
-            editor = self._find_editor_by_filename(filename)
-            if editor:
-                ...
-                
         except Exception as e:
             QMessageBox.critical(self, Strings.get("file_not_found"), Strings.get("could_not_save").format(e))
             

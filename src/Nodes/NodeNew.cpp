@@ -1,5 +1,5 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 
 #define sum2(a, b) (a + b)
 
@@ -25,11 +25,11 @@ struct NodeNew : public Node { NO_EXEC
             auto result = expr->eval_from(_memory);
             auto super_type_value = type_expr->eval_from(_memory);
             if (!result.type.is_sub_type(any_cast<Type>(super_type_value.data))) {
-                ERROR::StaticTypesMisMatch(start_type, end_type, any_cast<Type>(super_type_value.data), result.type);
+                throw ERROR_THROW::VariableStaticTypesMisMatch(start_type, end_type, any_cast<Type>(super_type_value.data), result.type);
             }
 
-            auto object = CreateMemoryObject(result, any_cast<Type>(super_type_value.data), nullptr, is_const, is_static, false, false, false);
-            auto addres = NewPointer(object->address, any_cast<Type>(super_type_value.data), true);
+            auto object = CreateMemoryObject(result, any_cast<Type>(result.type), nullptr, is_const, is_static, false, false, false);
+            auto addres = NewPointer(object->address, any_cast<Type>(result.type), true);
             STATIC_MEMORY.register_object(object);
             return addres;
         } else if (type_expr && !expr) {
@@ -53,7 +53,7 @@ struct NodeNew : public Node { NO_EXEC
             return addres;
 
         } else {
-            ERROR::InvalidNewInstruction(start_type, end_type);
+            throw ERROR_THROW::InvalidNewInstruction(start_type, end_type);
         }
 
     }

@@ -1,7 +1,7 @@
 #include "twist-nodetemp.cpp"
 #include "twist-tokenwalker.cpp"
 #include "twist-tokens.cpp"
-#include "twist-errors.cpp"
+
 #include "twist-err.cpp"
 #include "twist-values.cpp"
 #include "twist-memory.cpp"
@@ -289,9 +289,42 @@ struct ASTGenerator {
             string op;
 
             for (const auto& candidate : operators) {
-                if ((walker.CheckType(TokenType::OPERATOR) || walker.CheckType(TokenType::DEREFERENCE)) && walker.CheckValue(candidate)) {
+                if ((walker.CheckType(TokenType::L_TRIANGLE_BRACKET) && walker.CheckType(TokenType::L_TRIANGLE_BRACKET, 1))) {
+                    found_operator = true;
+                    op = "<<";
+                    walker.next();
+                    walker.next();
+                    break;
+                }
+
+                if ((walker.CheckType(TokenType::R_TRIANGLE_BRACKET) && walker.CheckType(TokenType::R_TRIANGLE_BRACKET, 1))) {
+                    found_operator = true;
+                    op = ">>";
+                    walker.next();
+                    walker.next();
+                    break;
+                }
+
+                if ((walker.CheckType(TokenType::R_TRIANGLE_BRACKET) && walker.CheckType(TokenType::OPERATOR, 1) && walker.CheckValue("=", 1))) {
+                    found_operator = true;
+                    op = ">=";
+                    walker.next();
+                    walker.next();
+                    break;
+                }
+
+                if ((walker.CheckType(TokenType::L_TRIANGLE_BRACKET) && walker.CheckType(TokenType::OPERATOR, 1) && walker.CheckValue("=", 1))) {
+                    found_operator = true;
+                    op = "<=";
+                    walker.next();
+                    walker.next();
+                    break;
+                }
+                
+                if ((walker.CheckType(TokenType::OPERATOR) || walker.CheckType(TokenType::L_TRIANGLE_BRACKET) || walker.CheckType(TokenType::R_TRIANGLE_BRACKET) || walker.CheckType(TokenType::DEREFERENCE)) && walker.CheckValue(candidate)) {
                     found_operator = true;
                     op = candidate;
+                    walker.next();
                     break;
                 }
             }
@@ -299,7 +332,6 @@ struct ASTGenerator {
             if (!found_operator) break;
 
             Token& op_token = *walker.get();
-            walker.next(); // pass operator
 
             auto right = (this->*parseHigherLevel)();
             if (!right)
@@ -892,44 +924,55 @@ Node* ASTGenerator::ParseNew() {
     bool is_const = false;
     Node* type_expr = nullptr;
 
-    Token start_type = *walker.get();
-    Token end_type = *walker.get();
+    Token start_type;
+    Token end_type;
 
-    if (walker.CheckValue("<")) {
+    if (walker.CheckType(TokenType::L_TRIANGLE_BRACKET)) {
         walker.next();
-        while (!walker.CheckValue(">")) {
-            auto m = walker.get()->value;
-            if (m == "const") {is_const = true; walker.next();}
-            else if (m == "static") {
-                is_static = true;
-                walker.next();
-                if (walker.CheckValue("(")) {
+        
+        while (true) {
+            if (walker.CheckType(TokenType::KEYWORD) | walker.CheckType(LITERAL)) {
+                if (walker.CheckValue("const")) {
+                    is_const = true;
+                    walker.next();
+                    continue;
+                } else if (walker.CheckValue("static")) {
+                    is_static = true;
+                    walker.next();
+                    if (!walker.CheckType(TokenType::L_BRACKET))
+                        throw ERROR_THROW::UnexpectedToken(*walker.get(), "(type expression)");
                     walker.next();
                     start_type = *walker.get();
                     type_expr = parse_expression();
-                    if (!type_expr)
-                        ERROR::UnexpectedToken(*walker.get(), "type expression");
                     end_type = *walker.get(-1);
-                    if (!walker.CheckValue(")"))
+                    if (!type_expr)
+                        throw ERROR_THROW::UnexpectedToken(*walker.get(), "type expression");
+                    
+                    if (!walker.CheckType(TokenType::R_BRACKET))
                         throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
-                    walker.next();
-                }
-            }
-            else throw ERROR_THROW::UnexpectedToken(*walker.get(), "modifiers ('const', 'static')");
-
-            if (walker.CheckValue(",") || walker.CheckValue(">")) {
-                if (walker.CheckValue(",")) {
                     walker.next();
                     continue;
                 }
-                else if (walker.CheckValue(">")) break;
+                throw ERROR_THROW::InvalidNewModifier(*walker.get());
             }
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "',' or '>'");
+            if (walker.CheckType(TokenType::OPERATOR) && walker.CheckValue(",")) {
+                walker.next();
+                continue;
+            }
+            if (walker.CheckType(TokenType::R_TRIANGLE_BRACKET) && 
+                walker.CheckType(TokenType::OPERATOR, -1) && walker.CheckValue(",", -1)) {
+                throw ERROR_THROW::UnexpectedToken(*walker.get(), "modifier (static, const)");
+            }
+            break;
         }
-        walker.next(); // pass ")" token
+        if (!walker.CheckType(TokenType::R_TRIANGLE_BRACKET))
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "'>'");
+        walker.next();
     }
-
+    
     auto expr = parse_expression();
+    if (!expr)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression or null");
 
     return new NodeNew(expr, type_expr, is_static, is_const, start_type, end_type);
 }
@@ -1038,8 +1081,12 @@ Node* ASTGenerator::ParseLambda() {
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // Парсинг возвращаемого типа
     //////////////////////////////////////////////////////////////////////////////////////////////////////
-    if (!(walker.CheckValue("->") && walker.CheckType(TokenType::OPERATOR)))
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "return type (syntax: -> type expression)");
+    
+    if (!(walker.CheckValue("-") && walker.CheckType(TokenType::OPERATOR)))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "syntax: -> type expression");
+    walker.next();
+    if (!(walker.CheckType(TokenType::R_TRIANGLE_BRACKET)))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "syntax: -> type expression");
     walker.next();
 
     Token return_type_start_token = *walker.get();

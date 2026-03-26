@@ -1,9 +1,895 @@
-let echo_type = lambda(global value: auto | *auto) -> Namespace : namespace {
-    echo typeof(value);
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
 };
 
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
 
-let a = 10;
-let ptr = &a;
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
 
-echo_type(ptr);
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+let auto_echo = lambda(global value : auto | (*auto) | **auto) -> auto : namespace {
+    if (typeof(value) >> auto) {
+        echo value;
+    } else if (typeof(value) >> *auto) {
+        echo *value;
+    } else {
+        echo "Error!";
+    }
+};
+
+let a = 100;
+let a_ptr = &a;
+let a_ptr_ptr = &a_ptr;
+
+auto_echo(a);
+auto_echo(a_ptr);
+auto_echo(a_ptr_ptr);
+
+
+del a;
+del a_ptr;
+del a_ptr_ptr;
+del auto_echo;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -2,11 +2,10 @@
 #include "../twist-err.cpp"
 #include <any>
 
-#include "../twist-functions.cpp"
 #include "../twist-namespace.cpp"
 #include "../twist-nodetemp.cpp"
 #include "../twist-lambda.cpp"
-#include "../twist-array.cpp"
+
 
 struct NodeEcho : public Node { NO_EVAL
     Node* expr;
@@ -19,9 +18,7 @@ struct NodeEcho : public Node { NO_EVAL
     }
 
     void exec_from(Memory* _memory) override {
-        
-        
-        
+        #ifdef SERVER
         auto value = expr->eval_from(_memory);
         string echo_message;
         if (value.type == STANDART_TYPE::TYPE)
@@ -58,8 +55,10 @@ struct NodeEcho : public Node { NO_EVAL
             }
             echo_message = echo_message + ") -> ";
             echo_message = echo_message + any_cast<Type>(lambda->return_type->eval_from(_memory).data).pool;
+        } else if (value.type.is_pointer()) {
+            echo_message = value.type.pool + "[0x" + to_string(any_cast<int>(value.data)) + "]";
         }
         throw ERROR_THROW::Echo(start_token, end_token, echo_message);
-        
+        #endif
     }
 };
