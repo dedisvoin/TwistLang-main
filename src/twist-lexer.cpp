@@ -11,7 +11,8 @@ using namespace std;
 // Full twist alphabet
 namespace ALPHABET {
     CH CHAR = "abcdefghijklmnopqrstuvwxyz" + ToUpper("abcdefghijklmnopqrstuvwxyz") + "абвгдеёжхийклмнопрстуфхцчщшьъэюя" + ToUpper("абвгдеёжхийклмнопрстуфхцчщшьъэюя");
-    CH RU_CHAR = "абвгдеёжхийклмнопрстуфхцчщшьъэюя" + ToUpper("абвгдеёжхийклмнопрстуфхцчщшьъэюя");
+    CH RU_CHAR = "абвгдеёжзхийклмнопрстуфхцчщшьъэюя";
+    CH RU_UP_CHAR = ToUpper("абвгдеёжзийклмнопрстуфхцчщшьъэюя");
     CH NUMS = "0123456789";
     CH OPER = "+-=&/@^%!|~,.?";
     CH BRAC = "{[(<>)]}";
@@ -410,6 +411,10 @@ struct Lexer {
         
         this->next(static_cast<int>(quote.length()));
         this->next_in_line();
+
+        int special = 0;
+        int ru_count = 0;
+        int ru_up_count = 0;
         
         while (this->pos < this->main_file_size) {
             string current_char = this->get_char();
@@ -434,23 +439,11 @@ struct Lexer {
                 else if (escaped == "\"") V += '"';
                 else if (escaped == "'") V += '\'';
                 else if (escaped == "0") V += '\0';
-                else if (escaped == "x") {
-                    // Hex escape: \xHH
-                    this->next(1);
-                    this->next_in_line();
-                    string hex1 = this->get_char();
-                    this->next(1);
-                    this->next_in_line();
-                    string hex2 = this->get_char();
-                    
-                    string hexStr = hex1 + hex2;
-                    int hexVal = stoi(hexStr, nullptr, 16);
-                    V += (char)hexVal;
-                }
                 else {
                     V += '\\';
                     V += escaped;
                 }
+                special++;
                 
                 this->next(static_cast<int>(escaped.length()));
                 this->next_in_line();
@@ -460,10 +453,24 @@ struct Lexer {
                 V += current_char;
                 this->next(1);
                 this->next_line();
+                special++;
             }
             else {
                 V += current_char;
-                this->next(static_cast<int>(current_char.length()));
+                for (auto ch : ALPHABET::RU_CHAR) {
+                    if (ch == current_char[0]) {
+                        ru_count++;
+                        break;
+                    }
+                }
+                for (auto ch : ALPHABET::RU_UP_CHAR) {
+                    if (ch == current_char[0]) {
+                        
+                        
+                        break;
+                    }
+                }
+                this->next(1);
                 this->next_in_line();
             }
         }
@@ -477,7 +484,7 @@ struct Lexer {
             .line = SL,
             .global_line = global_line,
             .index = PL,
-            .lenght = char_count + 2
+            .lenght = char_count + 2 + special - ru_count
         };
         
         TokenType T = (V.length() == 1) ? TokenType::CHAR : TokenType::STRING;

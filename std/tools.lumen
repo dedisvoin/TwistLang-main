@@ -1,0 +1,10 @@
+global namespace std {
+    let echo_type = lambda(global value: auto | *auto | *auto) -> Null {
+        namespace {
+            let _ = null;
+            echo typeof(value);
+        }::_
+    };
+
+    let to_string = lambda(value: auto) -> String {String(value)};
+}

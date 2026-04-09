@@ -144,6 +144,18 @@ namespace ERROR_THROW {
         return err;
     }
 
+    Error CallError(const Token& start, const Token& stop, string name, int is_warning = 0, string message = "") {
+        Error err;
+        if (is_warning) {
+            err = Error(message, start.pif, stop.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        } else {
+            err = Error("Call error in function '" + name + "'", start.pif, stop.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        }
+        
+        err.message_type = is_warning;
+        return err;
+    }
+
     Error UncallableType(const Token& start, const Token& stop, Type type) {
         Error err = Error("Uncallable type `" + type.pool + "`", start.pif, stop.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
@@ -330,6 +342,11 @@ namespace ERROR_THROW {
 
     Error InvalidNewInstruction(const Token& start, const Token& end) {
         Error err = Error(" Invalid new instruction", start.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidStringArgumentCount(const Token& start_args, const Token& end_args, size_t found) {
+        Error err = Error("'String' expected 1 argument, but found " + to_string(found), start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
 }

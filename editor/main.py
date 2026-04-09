@@ -42,7 +42,7 @@ MIN_FONT_SIZE = 8
 
 APP_ICON_PATH = r"data\app_icon.svg"
 
-DEFAULT_THEME = "Lumen Classic"
+DEFAULT_THEME = "Kanagawa Light"
 WINDOW_MIN_WIDTH = 400
 WINDOW_MIN_HEIGHT = 300
 TITLE_BAR_HEIGHT = 32
@@ -135,6 +135,14 @@ class Strings:
         "restart_ls": "Restart Language Server",
         "clear_errors": "Clear Errors",
         "check_errors": "Check Errors",
+        
+        # Context menu
+        "context_cut": "Cut",
+        "context_copy": "Copy",
+        "context_paste": "Paste",
+        "context_select_all": "Select All",
+        "context_go_to_include": "Go to Include",
+        "context_clear_errors": "Clear Errors",
         
         # Status bar
         "auto_save_on": "Auto-save: ON ({}s)",
@@ -233,6 +241,14 @@ class Strings:
         "clear_errors": "Очистить ошибки",
         "check_errors": "Проверить ошибки",
         
+        # Context menu
+        "context_cut": "Вырезать",
+        "context_copy": "Копировать",
+        "context_paste": "Вставить",
+        "context_select_all": "Выделить всё",
+        "context_go_to_include": "Перейти к include",
+        "context_clear_errors": "Очистить ошибки",
+        
         # Status bar
         "auto_save_on": "Автосохранение: ВКЛ ({}с)",
         "auto_save_off": "Автосохранение: ВЫКЛ",
@@ -285,7 +301,7 @@ class Strings:
         "toggle_folding": "Переключить сворачивание кода (показать/скрыть поля сворачивания)\n[Функция в бета-тестировании]"
     }
     
-    current_language = Language.ENGLISH
+    current_language = Language.RUSSIAN
     
     @classmethod
     def set_language(cls, lang: Language):
@@ -1049,13 +1065,20 @@ class RoundedMenu(QMenu):
         colors = self._get_theme_colors()
         rect = self.rect()
         
+        # Заливка фона
         painter.setBrush(QColor(colors['bg']))
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawRoundedRect(rect, 8, 8)
+        painter.drawRoundedRect(rect.adjusted(1, 1, -1, -1), 8, 8)
         
-        painter.setPen(QPen(QColor(colors['status_border']), 1))
+        # Граница: отключаем сглаживание, чтобы линия была чёткой
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+        painter.setPen(QPen(QColor(colors['status_border']), 1, 
+                            Qt.PenStyle.SolidLine, 
+                            Qt.PenCapStyle.RoundCap, 
+                            Qt.PenJoinStyle.RoundJoin))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawRoundedRect(rect.adjusted(1, 1, -1, -1), 7, 7)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         
         super().paintEvent(event)
         
@@ -1232,6 +1255,7 @@ class TwistLangLexer(QsciLexerCustom):
     STYLE_NAMESPACE_ID = 11
     STYLE_SPECIAL = 12
     STYLE_OBJECT = 13
+    STYLE_ESCAPE = 14          # NEW: for escape sequences inside strings
     
     def __init__(self, parent=None, theme_name: str = DEFAULT_THEME, font_size: int = DEFAULT_FONT_SIZE):
         super().__init__(parent)
@@ -1273,7 +1297,8 @@ class TwistLangLexer(QsciLexerCustom):
             self.STYLE_LITERAL: "Literal",
             self.STYLE_NAMESPACE_ID: "Namespace",
             self.STYLE_SPECIAL: "Special",
-            self.STYLE_OBJECT: "Object"
+            self.STYLE_OBJECT: "Object",
+            self.STYLE_ESCAPE: "Escape sequence"
         }
         return descriptions.get(style, "")
         
@@ -1309,6 +1334,7 @@ class TwistLangLexer(QsciLexerCustom):
             self.STYLE_NAMESPACE_ID: colors["namespace"],
             self.STYLE_SPECIAL: colors["special"],
             self.STYLE_OBJECT: colors["object"],
+            self.STYLE_ESCAPE: colors["function"],   # use "special" color for escapes
         }
         
         for style, color in style_colors.items():
@@ -1365,22 +1391,54 @@ class TwistLangLexer(QsciLexerCustom):
                     pos = j
                     continue
                     
+            # MODIFIED STRING HANDLING with escape sequence highlighting
             if ch in ('"', "'"):
-                expecting_namespace = False
-                quote = ch
+                start_pos = pos
+                quote_char = ch
+                # find the end of the string (closing quote)
                 j = pos + ch_len
                 escaped = False
                 while j < end:
                     c, l = self._get_char_at(text_bytes, j, total_bytes)
                     if c == '\\':
                         escaped = not escaped
-                    elif c == quote and not escaped:
+                    elif c == quote_char and not escaped:
                         j += l
                         break
                     else:
                         escaped = False
                     j += l
-                self.setStyling(j - pos, self.STYLE_STRING)
+                # j is now after the closing quote
+                # style the opening quote as STRING
+                self.startStyling(start_pos)
+                self.setStyling(ch_len, self.STYLE_STRING)
+                # process the interior of the string
+                interior_start = start_pos + ch_len
+                interior_end = j - l  # position of the closing quote (exclude it)
+                i = interior_start
+                while i < interior_end:
+                    c, lc = self._get_char_at(text_bytes, i, total_bytes)
+                    if c == '\\' and i + lc < interior_end:
+                        # found a backslash, treat it and the next character as an escape sequence
+                        next_i = i + lc
+                        if next_i < interior_end:
+                            # style the backslash and the following character
+                            self.startStyling(i)
+                            # We could check if the next character is a valid escape, but for simplicity we style both
+                            self.setStyling(lc + (self._get_char_at(text_bytes, next_i, total_bytes)[1]), self.STYLE_ESCAPE)
+                            i = next_i + (self._get_char_at(text_bytes, next_i, total_bytes)[1])
+                        else:
+                            # backslash at the end of string (should not happen normally), treat as normal
+                            self.startStyling(i)
+                            self.setStyling(lc, self.STYLE_STRING)
+                            i += lc
+                    else:
+                        self.startStyling(i)
+                        self.setStyling(lc, self.STYLE_STRING)
+                        i += lc
+                # style the closing quote as STRING
+                self.startStyling(j - l)
+                self.setStyling(l, self.STYLE_STRING)
                 pos = j
                 continue
                 
@@ -1605,6 +1663,54 @@ class CustomScintilla(QsciScintilla):
         self.scroll_animation = QPropertyAnimation(self.verticalScrollBar(), b"value")
         self.scroll_animation.setDuration(250)
         self.scroll_animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        
+        # Setup context menu
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._show_context_menu)
+        
+    def _show_context_menu(self, pos: QPoint):
+        """Show localized context menu"""
+        menu = RoundedMenu(parent=self)
+        
+        # Cut action
+        cut_action = menu.addAction(Strings.get("context_cut"))
+        cut_action.triggered.connect(self.cut)
+        cut_action.setEnabled(self.hasSelectedText())
+        
+        # Copy action
+        copy_action = menu.addAction(Strings.get("context_copy"))
+        copy_action.triggered.connect(self.copy)
+        copy_action.setEnabled(self.hasSelectedText())
+        
+        # Paste action
+        paste_action = menu.addAction(Strings.get("context_paste"))
+        paste_action.triggered.connect(self.paste)
+        
+        menu.addSeparator()
+        
+        # Select All action - исправлено: используем лямбду
+        select_all_action = menu.addAction(Strings.get("context_select_all"))
+        select_all_action.triggered.connect(lambda: self.selectAll())
+        
+        menu.addSeparator()
+        
+        # Go to Include action (if on include line)
+        line, _ = self.lineIndexFromPosition(self.SendScintilla(self.SCI_POSITIONFROMPOINT, pos.x(), pos.y()))
+        if line >= 0 and self.is_include_line(line):
+            go_to_action = menu.addAction(Strings.get("context_go_to_include"))
+            go_to_action.triggered.connect(lambda: self._goto_include_at_line(line))
+        
+        # Clear Errors action
+        clear_errors_action = menu.addAction(Strings.get("context_clear_errors"))
+        clear_errors_action.triggered.connect(self.clear_errors)
+        
+        menu.exec(self.mapToGlobal(pos))
+        
+    def _goto_include_at_line(self, line: int):
+        """Handle go to include from context menu"""
+        path = self.extract_include_path(line)
+        if path:
+            self.goto_definition_requested.emit(path, line)
         
     def set_folding_visible(self, visible: bool):
         if visible:
@@ -1991,6 +2097,8 @@ class TwistLangEditor(QMainWindow):
         self.error_timer = QTimer()
         self.error_timer.timeout.connect(self.check_current_file_errors)
         self.error_timer.start(100)
+
+    
         
     def _setup_window(self):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
@@ -2226,7 +2334,6 @@ class TwistLangEditor(QMainWindow):
     def _setup_ui(self):
         central_widget = QWidget()
         central_widget.setObjectName("centralWidget")
-        central_widget.setStyleSheet("QWidget#centralWidget { border-radius: 10px; }")
         self.setCentralWidget(central_widget)
         
         main_layout = QVBoxLayout(central_widget)
@@ -2665,14 +2772,6 @@ class TwistLangEditor(QMainWindow):
         self._update_status_labels()
         self._update_application_palette()
         self.tab_widget.update_all_close_buttons()
-
-        self.centralWidget().setStyleSheet(f"""
-            QWidget#centralWidget {{
-                background-color: {colors['bg'].name()};
-                border-radius: 10px;
-            }}
-        """)
-        self.centralWidget().update()
 
         self.content_stack.setStyleSheet(f"""
             QStackedWidget#contentStack {{

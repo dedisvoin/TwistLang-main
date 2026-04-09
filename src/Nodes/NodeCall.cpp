@@ -5,6 +5,7 @@
 #include "../twist-err.cpp"
 #include "../twist-lambda.cpp"
 #include "../twist-array.cpp"
+#include "../twist-namespace.cpp"
 
 #include "NodeReturn.cpp"
 #include <any>
@@ -85,15 +86,21 @@ struct NodeCall : public Node { NO_EXEC
             result = ((Node*)(lambda->expr))->eval_from(call_memory);
         }
         catch (Error err) {
+            
             if (err.message_type == 1) {
-                throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.message_type, err.message);
+                string saved_message = err.message;
+                err.message = "...";
+                throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.message_type, saved_message);
             } else if (err.message_type == 2) {
                 string saved_message = err.message;
-                err.message = "";
-                throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.message_type, saved_message);
+                err.message = "...";
+                throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", err.message_type, saved_message);
+                
             }
-            throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.message_type);
+            throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda",new Error(err), err.message_type);
         }
+
+        
 
         // Проверка типа возвращаемого значения (если задан)
         if (lambda->return_type) {
@@ -249,13 +256,22 @@ struct NodeCall : public Node { NO_EXEC
                 func->start_args_token, func->end_args_token,
                 arg_idx, args.size());
         }
-
-        // Выполняем тело функции
+        
         try {
             ((Node*)(func->body))->exec_from(func->memory);
             return NewNull();
         }
         catch (Error err) {
+            if (err.message_type == 1) {
+                string saved_message = err.message;
+                err.message = "...";
+                throw ERROR_THROW::CallError(start_callable, end_callable, func->name, new Error(err), err.message_type, saved_message);
+            } else if (err.message_type == 2) {
+                string saved_message = err.message;
+                err.message = "...";
+                throw ERROR_THROW::CallError(start_callable, end_callable, func->name, new Error(err), err.message_type, saved_message);
+                
+            }
             throw ERROR_THROW::CallError(start_callable, end_callable, func->name, new Error(err), err.message_type);
         }
         catch (Return _value) {
@@ -299,6 +315,53 @@ struct NodeCall : public Node { NO_EXEC
         return new_struct;
     }
 
+    Value call_string(Value &value_, Memory* _memory) {
+        if (args.size() != 1)
+            throw ERROR_THROW::InvalidStringArgumentCount(start_callable, end_callable, args.size());
+
+        string new_string;
+        auto value = args[0]->eval_from(_memory);
+        if (value.type == STANDART_TYPE::TYPE)
+            new_string = any_cast<Type&>(value.data).pool;
+        else if (value.type == STANDART_TYPE::STRING)
+            new_string = any_cast<string&>(value.data);
+        else if (value.type == STANDART_TYPE::CHAR)
+            new_string = any_cast<char>(value.data);
+        else if (value.type == STANDART_TYPE::BOOL) {
+            if (any_cast<bool>(value.data)) {
+                new_string = "true";
+            } else {
+                new_string = "false";
+            }
+        }
+        else if (value.type == STANDART_TYPE::INT) {
+            new_string = to_string(any_cast<int64_t>(value.data));
+        } 
+        else if (value.type == STANDART_TYPE::DOUBLE) {
+            new_string = to_string(any_cast<NUMBER_ACCURACY>(value.data));
+        }
+        else if (value.type == STANDART_TYPE::NULL_T) {
+            new_string = "null";
+        }
+        else if (value.type == STANDART_TYPE::NAMESPACE) {
+            new_string = "namespace " + any_cast<Namespace>(value.data).name;
+        }
+        else if (value.type == STANDART_TYPE::LAMBDA) {
+            new_string = "Lambda(";
+            auto lambda = any_cast<Lambda*>(value.data);
+            for (int i = 0; i < lambda->arguments.size(); i++) {
+                new_string = new_string + any_cast<Type>(lambda->arguments[i]->type_expr->eval_from(_memory).data).pool;
+                if (i != lambda->arguments.size() - 1) new_string = new_string + ", ";
+            }
+            new_string = new_string + ") -> ";
+            new_string = new_string + any_cast<Type>(lambda->return_type->eval_from(_memory).data).pool;
+        } else if (value.type.is_pointer()) {
+            new_string = value.type.pool + "[0x" + to_string(any_cast<int>(value.data)) + "]";
+        }
+
+        return NewString(new_string);
+    }
+
     Value eval_from(Memory* _memory) override {
 
         auto value = callable->eval_from(_memory);
@@ -318,6 +381,9 @@ struct NodeCall : public Node { NO_EXEC
         
         if (value.type == STANDART_TYPE::LAMBDA) {
             return call_lambda(value, _memory);
+        }
+        if (value.type == STANDART_TYPE::TYPE && any_cast<Type>(value.data).pool == "String") {
+            return call_string(value, _memory);
         }
         else if (value.type.is_func()) {
             return call_function(value, _memory);

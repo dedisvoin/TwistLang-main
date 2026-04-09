@@ -211,8 +211,11 @@ struct ASTGenerator {
         if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("input"))
             return ParseInput();
 
-        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("lambda"))
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("lambda")) {
             return ParseLambda();
+
+        }
+
 
         if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("typeof") && walker.CheckValue("(", 1)) {
             return ParseTypeof();
@@ -634,15 +637,36 @@ void GenerateStandartTypes(Memory* g_memory, string g_file_name) {
 
 Node* ASTGenerator::ParseEcho() {
     walker.next(); // pass 'echo'
-    Token start = *walker.get();
-    auto expr = parse_expression();
+    vector<Node*> expressions;
+    Token start = *walker.get(-1);
+
+    while (true) {
+        auto expr = parse_expression();
+        if (!expr)
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+        else {
+            expressions.push_back(expr);
+        }
+        if (walker.CheckType(TokenType::OPERATOR) && walker.CheckValue(",")) {
+            walker.next();
+            continue;
+        }
+        else {
+        
+           if (!walker.CheckType(TokenType::DAC)) {
+                throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
+           } else {
+                walker.next();
+                break;
+           }
+        }
+        break;
+    }
+    
+    
     Token end = *walker.get(-1);
-    if (!expr)
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
-    if (!walker.CheckType(TokenType::DAC))
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
-    walker.next();
-    return new NodeEcho(expr, start, end);
+   
+    return new NodeEcho(expressions, start, end);
 }
 
 // PASS
@@ -817,13 +841,20 @@ Node* ASTGenerator::ParseFuncDecl() {
     Token end_args_token = *walker.get(-1);
     Token start_return_token = *walker.get();
     Node* return_type_expr = nullptr;
-    if (walker.CheckValue("->")) {
+
+    if (walker.CheckValue("-")) {
         walker.next();
-        start_return_token = *walker.get();
-        return_type_expr = parse_expression();
-        if (!return_type_expr)
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "return type expression");
+        if (walker.CheckValue(">")) {
+            walker.next(); // pass "->" token
+            start_return_token = *walker.get();
+            return_type_expr = parse_expression();
+            if (!return_type_expr)
+                throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+        } else {
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "syntax: -> type expression");
+        }
     }
+
     Token end_return_token = *walker.get(-1);
     auto statement = parse_statement();
 
@@ -900,13 +931,19 @@ Node* ASTGenerator::ParseNewFunctionType() {
     Token start_token_return;
     Token end_token_return;
 
-    if (walker.CheckValue("->")) {
-        walker.next(); // pass "->" token
-        start_token_return = *walker.get();
-        return_type_expr = parse_expression();
-        end_token_return = *walker.get(-1);
-        if (!return_type_expr)
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+
+    if (walker.CheckValue("-")) {
+        walker.next();
+        if (walker.CheckValue(">")) {
+            walker.next(); // pass "->" token
+            start_token_return = *walker.get();
+            return_type_expr = parse_expression();
+            end_token_return = *walker.get(-1);
+            if (!return_type_expr)
+                throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+        } else {
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "syntax: -> type expression");
+        }
     }
 
     return new NodeNewFuncType(
@@ -917,7 +954,7 @@ Node* ASTGenerator::ParseNewFunctionType() {
     );
 }
 
-
+// PASS
 Node* ASTGenerator::ParseNew() {
     walker.next(); // pass 'new' token
     bool is_static = false;
@@ -1096,10 +1133,6 @@ Node* ASTGenerator::ParseLambda() {
     if (!return_type)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "return type expression");
     
-
-    if (!walker.CheckValue(":"))
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "':'");
-    walker.next();
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -1108,10 +1141,18 @@ Node* ASTGenerator::ParseLambda() {
         start_args_token, end_args_token, return_type_start_token, return_type_end_token);
     lambda_node->name = name;
 
+    if (!walker.CheckValue("{"))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "'{'");
+    walker.next();
+
     // парсим тело
     auto body = parse_expression();
     if (!body)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "lambda body");
+
+    if (!walker.CheckValue("}"))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "'}'");
+    walker.next();
 
     lambda_node->body = body;
 

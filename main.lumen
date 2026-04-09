@@ -1,5 +1,16 @@
-for (let i = 0; i < 10; i = i + 1;) {
-    
-}
+#include "std/tools.lumen"
 
-echo i;
+let sum = lambda(a: auto, b: auto) -> auto {a + b};
+
+
+let caller = lambda(any_call: *Lambda) -> auto {
+    (*any_call)(10, 20)
+};
+
+
+
+let a = 10;
+let b = 20;
+
+echo String(sum);
+echo caller(&sum);

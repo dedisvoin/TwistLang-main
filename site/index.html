@@ -2,12 +2,11 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
     <meta name="description" content="Lumen — современный компилируемый язык программирования с гибридной типизацией для обучения школьников. Сочетает скорость C++ и простоту Python. Lumen IDE — мощная среда разработки для Windows 64-bit.">
     <meta name="keywords" content="Lumen, язык программирования, Lumen IDE, обучение программированию, гибридная типизация, компилируемый язык, PyQt6, умные указатели">
     <meta name="author" content="Lumen Team">
     <title>Lumen — язык будущего для обучения | Lumen IDE для Windows</title>
-    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -19,15 +18,41 @@
 
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: #eff1f5;
-            color: #4c4f69;
+            background-color: #1e1e2e;
+            color: #cdd6f4;
             line-height: 1.5;
             scroll-behavior: smooth;
             position: relative;
             overflow-x: hidden;
         }
 
-        /* Динамические blur-элементы на заднем фоне */
+        .arabesque-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            background-image: 
+                repeating-linear-gradient(45deg, rgba(137, 180, 250, 0.03) 0px, rgba(137, 180, 250, 0.03) 2px, transparent 2px, transparent 8px),
+                repeating-linear-gradient(135deg, rgba(203, 166, 247, 0.03) 0px, rgba(203, 166, 247, 0.03) 2px, transparent 2px, transparent 8px);
+            opacity: 0.5;
+        }
+        .arabesque-bg::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><path fill="none" stroke="%2389b4fa" stroke-width="0.6" d="M50,10 L60,25 L50,40 L40,25 Z M50,10 L40,25 L30,40 L40,55 L50,70 L60,55 L70,40 L60,25 Z M50,40 L60,55 L50,70 L40,55 Z M30,40 L40,55 L30,70 L20,55 Z M70,40 L60,55 L70,70 L80,55 Z M50,70 L60,85 L50,100 L40,85 Z M50,70 L40,85 L30,100 L40,115 L50,130 L60,115 L70,100 L60,85 Z"/></svg>');
+            background-repeat: repeat;
+            background-size: 60px 60px;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
         .blur-bg {
             position: fixed;
             top: 0;
@@ -43,50 +68,43 @@
             position: absolute;
             border-radius: 50%;
             filter: blur(80px);
-            will-change: transform, width, height, opacity;
-            transition: none;
+            will-change: transform;
         }
+        .blur-circle-1 { background: radial-gradient(circle, #cba6f7, #89b4fa); opacity: 0.2; }
+        .blur-circle-2 { background: radial-gradient(circle, #f5c2e7, #b4befe); opacity: 0.18; }
+        .blur-circle-3 { background: radial-gradient(circle, #94e2d5, #f9e2af); opacity: 0.15; }
+        .blur-circle-4 { background: radial-gradient(circle, #f38ba8, #a6e3a1); opacity: 0.12; }
+        .blur-circle-5 { background: radial-gradient(circle, #89b4fa, #cba6f7); opacity: 0.1; }
 
-        .blur-circle-1 {
-            background: radial-gradient(circle, #859900, #6c71c4);
+        #networkCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: -1;
+            pointer-events: none;
             opacity: 0.45;
         }
 
-        .blur-circle-2 {
-            background: radial-gradient(circle, #268bd2, #b58900);
-            opacity: 0.4;
+        @media (max-width: 768px) {
+            #networkCanvas {
+                display: none;
+            }
         }
 
-        .blur-circle-3 {
-            background: radial-gradient(circle, #d33682, #2aa198);
-            opacity: 0.35;
-        }
-
-        .blur-circle-4 {
-            background: radial-gradient(circle, #cb4b16, #859900);
-            opacity: 0.3;
-        }
-
-        .blur-circle-5 {
-            background: radial-gradient(circle, #6c71c4, #268bd2);
-            opacity: 0.25;
-        }
-
-        /* Lumen Classic CSS variables */
         :root {
-            --bg-primary: #eff1f5;
-            --bg-secondary: #e6e9ef;
-            --bg-code: #1e1e2f;
-            --accent: #859900;
-            --accent-dark: #6c7c1f;
-            --accent-purple: #6c71c4;
-            --accent-soft: #e6e9ef;
-            --text-primary: #4c4f69;
-            --text-secondary: #6c6f85;
-            --border-light: #bcc0cc;
-            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            --bg-primary: #1e1e2e;
+            --bg-secondary: #181825;
+            --accent: #89b4fa;
+            --accent-dark: #6c96d4;
+            --accent-purple: #cba6f7;
+            --text-primary: #cdd6f4;
+            --text-secondary: #a6adc8;
+            --border-light: #45475a;
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
             --radius-card: 1rem;
             --transition: all 0.2s ease;
         }
@@ -102,126 +120,247 @@
         section {
             padding: 5rem 0;
             position: relative;
-            backdrop-filter: blur(2px);
-            transition: backdrop-filter 0.3s ease;
         }
 
-        /* Эффект стекла для карточек */
-        .card, .download-card, .tabs-container, .step, .badge-tech, .resource-link, .specs-card {
-            backdrop-filter: blur(4px);
-            background: rgba(239, 241, 245, 0.85);
-            transition: all 0.3s ease;
-        }
-
-        .card:hover, .download-card:hover, .step:hover, .specs-card:hover {
-            backdrop-filter: blur(8px);
-            background: rgba(239, 241, 245, 0.95);
-            transform: translateY(-4px);
-        }
-
-        .navbar {
-            backdrop-filter: blur(16px);
-            background: rgba(220, 224, 232, 0.85);
-            border-bottom: 1px solid rgba(188, 192, 204, 0.6);
-        }
-
-        h1, h2, h3 {
-            font-weight: 700;
-            letter-spacing: -0.02em;
-        }
-
-        h2 {
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
-            color: #4c4f69;
-        }
-
-        @media (min-width: 768px) {
+        @media (max-width: 768px) {
+            section {
+                padding: 3rem 0;
+            }
+            .container {
+                padding: 0 1.2rem;
+            }
+            h1 {
+                font-size: 2rem !important;
+                line-height: 1.3 !important;
+            }
             h2 {
+                font-size: 1.6rem;
+            }
+            h3 {
+                font-size: 1.3rem;
+            }
+            .hero-stats {
+                gap: 0.8rem;
+            }
+            .stat-badge {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+
+        /* Flip-карты: десктопное поведение (hover) */
+        .flip-card {
+            background-color: transparent;
+            width: 100%;
+            height: 100%;
+            perspective: 1500px;
+            cursor: pointer;
+            min-height: 280px;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            transform-style: preserve-3d;
+            border-radius: var(--radius-card);
+            transform: rotateY(180deg);
+        }
+        .flip-card:hover .flip-card-inner {
+            transform: rotateY(0deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: var(--radius-card);
+            padding: 1.5rem;
+            backdrop-filter: blur(8px);
+            background: rgba(30, 30, 46, 0.85);
+            border: 1px solid rgba(69, 71, 90, 0.5);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .flip-card-front {
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, rgba(30, 30, 46, 0.9), rgba(49, 50, 68, 0.85));
+            border-color: rgba(137, 180, 250, 0.4);
+            text-align: center;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .flip-card-front i {
+            font-size: 3rem;
+            color: var(--accent);
+        }
+        .flip-card-front h4 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #89b4fa, #cba6f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .flip-card-front p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .flip-card-back {
+            transform: rotateY(0deg);
+            background: rgba(30, 30, 46, 0.94);
+            border-color: rgba(137, 180, 250, 0.3);
+            text-align: left;
+            justify-content: center;
+        }
+        .card-icon {
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+        .card-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        .card-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.3;
+            margin-bottom: 0.5rem;
+        }
+        .card-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Мобильное поведение: переворот при скролле (класс .flipped) */
+        @media (max-width: 768px) {
+            .flip-card:hover .flip-card-inner {
+                transform: rotateY(180deg); /* отключаем hover */
+            }
+            .flip-card.flipped .flip-card-inner {
+                transform: rotateY(0deg);
+            }
+        }
+
+        .features-grid, .ide-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 640px) {
+            .features-grid, .ide-grid {
+                gap: 1.5rem;
+            }
+            .flip-card {
+                min-height: 260px;
+            }
+            .flip-card-front, .flip-card-back {
+                padding: 1rem;
+            }
+            .flip-card-front i {
                 font-size: 2.5rem;
+            }
+            .flip-card-front h4 {
+                font-size: 1.1rem;
+            }
+            .card-value {
+                font-size: 1rem;
+            }
+            .card-desc {
+                font-size: 0.8rem;
             }
         }
 
         .navbar {
+            backdrop-filter: blur(16px);
+            background: rgba(24, 24, 37, 0.9);
+            border-bottom: 1px solid rgba(69, 71, 90, 0.8);
             position: sticky;
             top: 0;
             z-index: 100;
-            transition: var(--transition);
         }
-
         .nav-container {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 1.5rem;
+            padding: 0.8rem 1.5rem;
             max-width: 1280px;
             margin: 0 auto;
         }
-
         .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 1.6rem;
+            gap: 8px;
+            font-size: 1.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #859900, #6c71c4);
+            background: linear-gradient(135deg, #89b4fa, #cba6f7);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
-        
         .logo-icon {
-            font-size: 1.6rem;
-            background: linear-gradient(135deg, #859900, #6c71c4);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+            font-size: 1.5rem;
         }
-
         .nav-links {
             display: flex;
             gap: 2rem;
             align-items: center;
         }
-
         .nav-links a {
             text-decoration: none;
-            color: #4c4f69;
+            color: #cdd6f4;
             font-weight: 500;
             transition: var(--transition);
+            font-size: 0.95rem;
         }
-
         .nav-links a:hover {
-            color: #859900;
+            color: #89b4fa;
         }
-
         .menu-icon {
             display: none;
             font-size: 1.6rem;
             cursor: pointer;
-            color: #4c4f69;
+            color: #cdd6f4;
         }
-
         @media (max-width: 768px) {
+            .nav-container {
+                padding: 0.8rem 1rem;
+            }
             .nav-links {
                 display: none;
                 flex-direction: column;
                 position: absolute;
-                top: 70px;
+                top: 65px;
                 left: 0;
                 width: 100%;
-                background: rgba(220, 224, 232, 0.95);
+                background: rgba(24, 24, 37, 0.98);
                 backdrop-filter: blur(20px);
-                padding: 2rem;
-                gap: 1.5rem;
+                padding: 1.5rem;
+                gap: 1.2rem;
                 box-shadow: var(--shadow-md);
-                border-bottom: 1px solid #bcc0cc;
+                border-bottom: 1px solid #45475a;
+                text-align: center;
             }
             .nav-links.active {
                 display: flex;
             }
             .menu-icon {
                 display: block;
+            }
+            .nav-links a {
+                font-size: 1.1rem;
+                padding: 0.5rem;
             }
         }
 
@@ -239,553 +378,228 @@
             font-size: 1rem;
             text-decoration: none;
         }
-
         .btn-primary {
-            background: #859900;
-            color: #eff1f5;
+            background: #89b4fa;
+            color: #1e1e2e;
             box-shadow: var(--shadow-sm);
         }
-
         .btn-primary:hover {
-            background: #6c7c1f;
+            background: #6c96d4;
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
         }
-
         .btn-outline {
-            background: rgba(239, 241, 245, 0.7);
+            background: rgba(30, 30, 46, 0.7);
             backdrop-filter: blur(4px);
-            border: 1px solid #bcc0cc;
-            color: #4c4f69;
+            border: 1px solid #45475a;
+            color: #cdd6f4;
         }
-
         .btn-outline:hover {
-            border-color: #859900;
-            color: #859900;
-            transform: translateY(-2px);
-            background: rgba(239, 241, 245, 0.9);
+            border-color: #89b4fa;
+            color: #89b4fa;
         }
-
-        .hero-stats {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-        
-        .stat-badge {
-            background: rgba(230, 233, 239, 0.8);
-            backdrop-filter: blur(4px);
-            padding: 0.5rem 1rem;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #6c6f85;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* Hero section with two columns */
-        .hero-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 3rem;
-            flex-wrap: wrap;
-        }
-        
-        .hero-content {
-            flex: 1;
-            min-width: 280px;
-        }
-        
-        .hero-image {
-            flex: 1;
-            min-width: 300px;
-            position: relative;
-        }
-        
-        /* Стили для контейнера изображения - сюда можно вставить любую картинку */
-        .custom-image-container {
-            width: 100%;
-            border-radius: 5px;
-            overflow: hidden;
-            box-shadow: var(--shadow-hover);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            background: rgba(30, 30, 47, 0.6);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(188, 192, 204, 0.3);
-        }
-        
-        .custom-image-container:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 25px 35px -12px rgba(0, 0, 0, 0.2);
-        }
-        
-        .custom-image {
-            width: 100%;
-            height: auto;
-            display: block;
-            object-fit: cover;
-        }
-        
-        /* Заглушка для изображения, показывается если картинка не загрузилась */
-        .image-placeholder {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 400px;
-            background: linear-gradient(135deg, #1e1e2f, #2d2d3a);
-            color: #859900;
-            text-align: center;
-            padding: 2rem;
-        }
-        
-        .image-placeholder i {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            color: #859900;
-        }
-        
-        .image-placeholder p {
-            color: #93a1a1;
-            font-size: 0.9rem;
-        }
-        
-        .image-placeholder code {
-            background: rgba(133, 153, 0, 0.2);
-            padding: 0.2rem 0.5rem;
-            border-radius: 6px;
-            margin-top: 0.5rem;
-            display: inline-block;
-        }
-        
-        @media (max-width: 768px) {
-            .hero-wrapper {
-                flex-direction: column;
-            }
-            .hero-image {
-                width: 100%;
-            }
-        }
-
-        .features-grid, .ide-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        .card {
-            border-radius: var(--radius-card);
-            padding: 1.5rem;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(188, 192, 204, 0.5);
-            transition: all 0.3s ease;
-        }
-        
-        .card i {
-            font-size: 2rem;
-            color: #859900;
-            margin-bottom: 1rem;
-        }
-        
-        .card h3 {
-            font-size: 1.25rem;
-            margin-bottom: 0.5rem;
-            color: #4c4f69;
-        }
-        
-        .card p {
-            color: #6c6f85;
-            font-size: 0.95rem;
-        }
-
-        .download-card {
-            border-radius: 2rem;
-            padding: 2rem;
-            text-align: center;
-            border: 1px solid rgba(188, 192, 204, 0.6);
-            margin: 2rem 0;
-        }
-
         .big-download-btn {
-            background: #859900;
-            color: #eff1f5;
-            padding: 1rem 2.5rem;
-            font-size: 1.2rem;
+            background: #89b4fa;
+            color: #1e1e2e;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
             font-weight: 700;
             border-radius: 60px;
             display: inline-flex;
             align-items: center;
             gap: 12px;
             transition: var(--transition);
-            text-decoration: none;
-            border: none;
             cursor: pointer;
+            border: none;
         }
-        
         .big-download-btn:hover {
-            background: #6c7c1f;
+            background: #6c96d4;
             transform: scale(1.02);
-            box-shadow: var(--shadow-md);
+        }
+        @media (max-width: 480px) {
+            .btn, .big-download-btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.85rem;
+            }
         }
 
-        .platform-note {
-            margin-top: 1rem;
-            padding: 0.5rem;
-            background: rgba(230, 233, 239, 0.8);
-            backdrop-filter: blur(4px);
-            border-radius: 40px;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
-            color: #859900;
-        }
-
-        .tabs-container {
-            border-radius: 1.5rem;
-            padding: 1rem;
-            border: 1px solid rgba(188, 192, 204, 0.6);
-        }
-        
-        .tabs-header {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            border-bottom: 1px solid rgba(188, 192, 204, 0.6);
-            padding-bottom: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        
-        .tab-btn {
-            background: transparent;
-            border: none;
-            padding: 0.6rem 1.2rem;
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 40px;
-            font-family: inherit;
-            transition: 0.2s;
-            color: #4c4f69;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .tab-btn.active {
-            background: rgba(239, 241, 245, 0.95);
-            color: #859900;
-            box-shadow: var(--shadow-sm);
-        }
-        
-        .tab-pane {
-            display: none;
-        }
-        
-        .tab-pane.active-pane {
-            display: block;
-        }
-        
-        pre {
-            background: #1e1e2f;
-            border-radius: 1rem;
-            padding: 1.25rem;
-            overflow-x: auto;
-            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-            font-size: 0.85rem;
-            color: #E2E8F0;
-            margin: 1rem 0;
+        .download-card {
             position: relative;
-        }
-        
-        .copy-btn {
-            position: absolute;
-            top: 0.75rem;
-            right: 0.75rem;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(8px);
-            border: none;
-            color: #CBD5E1;
-            padding: 0.3rem 0.7rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.7rem;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-        
-        .copy-btn:hover {
-            background: #859900;
-            color: #1e1e2f;
-        }
-
-        .steps {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 2rem;
-            justify-content: space-between;
-            margin-top: 2rem;
-        }
-        
-        .step {
-            flex: 1;
+            border-radius: 2rem;
+            padding: 2rem;
             text-align: center;
-            border-radius: 1.5rem;
-            padding: 2rem 1rem;
-            border: 1px solid rgba(188, 192, 204, 0.6);
-            transition: all 0.3s ease;
+            backdrop-filter: blur(8px);
+            background: rgba(30, 30, 46, 0.75);
+            border: 1px solid rgba(69, 71, 90, 0.5);
+            margin: 2rem 0;
+            overflow: hidden;
         }
-        
-        .step:hover {
-            transform: translateY(-5px);
-        }
-        
-        .step-icon {
-            background: rgba(220, 224, 232, 0.8);
-            width: 60px;
-            height: 60px;
+        .download-card::before {
+            content: "{ } ; [ ] ( ) -> { } ; [ ] ( ) ->";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            font-family: monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: rgba(137, 180, 250, 0.08);
+            white-space: nowrap;
+            overflow: hidden;
+            pointer-events: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 60px;
-            margin: 0 auto 1rem;
-            font-size: 1.8rem;
-            color: #859900;
+            transform: rotate(-5deg) scale(1.2);
+            letter-spacing: 4px;
+        }
+        .platform-note {
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background: rgba(49, 50, 68, 0.8);
             backdrop-filter: blur(4px);
-        }
-
-        footer {
-            border-top: 1px solid rgba(188, 192, 204, 0.6);
-            padding: 2rem 0;
-            text-align: center;
-            color: #6c6f85;
-            backdrop-filter: blur(4px);
-            background: rgba(239, 241, 245, 0.7);
-            position: relative;
-            z-index: 2;
-        }
-
-        .reveal {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: 0.7s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-        }
-        
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .ide-logo-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        
-        .ide-logo-row h2 {
+            border-radius: 40px;
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 0;
+            gap: 0.5rem;
+            font-size: 0.85rem;
         }
-        
-        .ide-logo-row h2 i {
-            font-size: 2rem;
-            color: #859900;
-            background: linear-gradient(135deg, #859900, #6c71c4);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
         .badge-list {
             display: flex;
             flex-wrap: wrap;
             gap: 1rem;
             margin: 1.5rem 0;
         }
-        
         .badge-tech {
             padding: 0.3rem 1rem;
             border-radius: 30px;
             font-size: 0.8rem;
-            font-weight: 500;
-            display: inline-flex;
+            backdrop-filter: blur(4px);
+            background: rgba(30, 30, 46, 0.75);
+            border: 1px solid rgba(69, 71, 90, 0.5);
+        }
+        .windows-only, .hybrid-badge {
+            background: linear-gradient(135deg, #89b4fa, #cba6f7);
+            color: #1e1e2e;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .specs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+            margin-top: 1.5rem;
+        }
+        .specs-card {
+            border-radius: 1.25rem;
+            padding: 1.25rem;
+            backdrop-filter: blur(4px);
+            background: rgba(30, 30, 46, 0.7);
+            border: 1px solid rgba(69, 71, 90, 0.5);
+            display: flex;
             align-items: center;
-            gap: 0.5rem;
-            color: #4c4f69;
+            gap: 1rem;
+            transition: all 0.2s ease;
         }
-        
-        @media (max-width: 640px) {
-            section { padding: 3rem 0; }
-            .container { padding: 0 1rem; }
+        .specs-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(137, 180, 250, 0.15);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
         }
-
+        .specs-content {
+            flex: 1;
+        }
+        .specs-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: #a6adc8;
+        }
+        .specs-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #cdd6f4;
+        }
+        .specs-desc {
+            font-size: 0.8rem;
+            color: #a6adc8;
+            margin-top: 0.25rem;
+        }
+        footer {
+            border-top: 1px solid rgba(69, 71, 90, 0.6);
+            padding: 2rem 0;
+            text-align: center;
+            font-size: 0.85rem;
+            backdrop-filter: blur(4px);
+            background: rgba(24, 24, 37, 0.7);
+        }
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
         .resource-link {
             display: inline-flex;
             align-items: center;
             gap: 0.75rem;
             font-size: 1.2rem;
             text-decoration: none;
-            color: #4c4f69;
-            transition: var(--transition);
+            color: #cdd6f4;
             padding: 0.5rem 1rem;
             border-radius: 40px;
+            transition: var(--transition);
         }
-        
         .resource-link:hover {
-            color: #859900;
+            color: #89b4fa;
             transform: translateY(-2px);
-            background: rgba(133, 153, 0, 0.1);
+            background: rgba(137, 180, 250, 0.1);
         }
-
-        .windows-only {
-            background: linear-gradient(135deg, #859900, #6c71c4);
-            color: #eff1f5;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            margin-left: 0.5rem;
-        }
-
-        .hybrid-badge {
-            background: linear-gradient(135deg, #6c71c4, #859900);
-            color: #eff1f5;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            margin-left: 0.5rem;
-        }
-        
-        .stat-badge i, .card i, .step-icon i {
-            color: #859900;
-        }
-        .btn-primary i, .big-download-btn i {
-            color: #eff1f5;
-        }
-        h2 i {
-            color: #859900;
-        }
-        .tab-btn i {
-            color: #6c6f85;
-        }
-        .tab-btn.active i {
-            color: #859900;
-        }
-
-        .specs-wrapper {
-            margin-top: 2rem;
-        }
-        
-        .specs-title {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            color: #4c4f69;
-        }
-        
-        .specs-title i {
-            color: #859900;
-            font-size: 1.6rem;
-        }
-        
-        .specs-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.25rem;
-        }
-        
-        .specs-card {
-            background: rgba(239, 241, 245, 0.85);
+        .scroll-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(137, 180, 250, 0.85);
             backdrop-filter: blur(8px);
-            border-radius: 1.25rem;
-            padding: 1.25rem 1.5rem;
-            border: 1px solid rgba(188, 192, 204, 0.5);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .specs-icon {
+            color: #1e1e2e;
             width: 48px;
             height: 48px;
-            background: rgba(133, 153, 0, 0.15);
-            border-radius: 1rem;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            color: #859900;
-            flex-shrink: 0;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 99;
+            border: none;
+            font-size: 1.2rem;
         }
-        
-        .specs-content {
-            flex: 1;
+        .scroll-top.visible {
+            opacity: 1;
+            visibility: visible;
         }
-        
-        .specs-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-            color: #6c6f85;
-            margin-bottom: 0.25rem;
-        }
-        
-        .specs-value {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #4c4f69;
-            line-height: 1.3;
-        }
-        
-        .specs-desc {
-            font-size: 0.8rem;
-            color: #7c7f95;
-            margin-top: 0.25rem;
-        }
-        
-        .specs-badge {
-            display: inline-block;
-            background: rgba(133, 153, 0, 0.2);
-            padding: 0.2rem 0.6rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 500;
-            color: #859900;
-            margin-left: 0.5rem;
-        }
-        
-        @media (max-width: 640px) {
-            .specs-card {
-                padding: 1rem;
-            }
-            .specs-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 1.2rem;
-            }
-            .specs-value {
-                font-size: 0.95rem;
-            }
+        .scroll-top:hover {
+            background: #89b4fa;
+            transform: translateY(-3px);
         }
     </style>
 </head>
 <body>
 
-<!-- Динамические blur-элементы на заднем фоне -->
+<div class="arabesque-bg"></div>
 <div class="blur-bg">
     <div class="blur-circle blur-circle-1"></div>
     <div class="blur-circle blur-circle-2"></div>
@@ -793,6 +607,7 @@
     <div class="blur-circle blur-circle-4"></div>
     <div class="blur-circle blur-circle-5"></div>
 </div>
+<canvas id="networkCanvas"></canvas>
 
 <nav class="navbar">
     <div class="nav-container">
@@ -806,7 +621,6 @@
         <div class="nav-links" id="navLinks">
             <a href="#features">Возможности</a>
             <a href="#ide">Lumen IDE</a>
-            <a href="#examples">Примеры</a>
             <a href="#docs">Документация</a>
             <a href="#download" class="btn btn-outline" style="padding:0.5rem 1.2rem">Скачать</a>
         </div>
@@ -814,87 +628,72 @@
 </nav>
 
 <main>
-    <!-- Hero Section with Custom Image -->
     <section id="hero">
         <div class="container reveal">
-            <div class="hero-wrapper">
-                <div class="hero-content">
-                    <h1 style="font-size: 3rem; line-height: 1.2; color: #4c4f69;">Lumen <span style="color: #859900;">·</span> <span style="color: #6c71c4;">Скорость C++</span><br> Простота Python</h1>
-                    <p style="font-size: 1.25rem; margin: 1.5rem 0; color: #6c6f85;">Современный компилируемый язык с гибридной типизацией для обучения школьников системному мышлению. Сочетает мощь низкоуровневого кода и чистоту высокоуровневых абстракций.</p>
+            <div class="hero-wrapper" style="display: flex; align-items: center; gap: 3rem; flex-wrap: wrap;">
+                <div class="hero-content" style="flex: 1; min-width: 280px;">
+                    <h1 style="font-size: 3rem; line-height: 1.2;"><span style="color: #cba6f7;">Lumen</span> <span style="color: #89b4fa;">·</span> <span style="color: #cba6f7;">Скорость C++</span> <br> <span style="color: #89b4fa;">Простота Python</span></h1>
+                    <p style="font-size: 1.2rem; margin: 1.5rem 0; color: #a6adc8;">Современный компилируемый язык с гибридной типизацией для обучения школьников системному мышлению. Сочетает мощь низкоуровневого кода и чистоту высокоуровневых абстракций.</p>
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                         <a href="#download" class="btn btn-primary"><i class="fas fa-download"></i> Скачать Lumen IDE</a>
                         <a href="#" class="btn btn-outline"><i class="fas fa-book"></i> Документация</a>
                     </div>
-                    <div class="hero-stats">
+                    <div class="hero-stats" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem;">
                         <span class="stat-badge"><i class="fas fa-bolt"></i> Компилируемый</span>
                         <span class="stat-badge"><i class="fas fa-adjust"></i> Гибридная типизация</span>
                         <span class="stat-badge"><i class="fas fa-brain"></i> Умные указатели</span>
                         <span class="stat-badge"><i class="fas fa-lambda"></i> Функции высшего порядка</span>
                     </div>
                 </div>
-                <div class="hero-image">
-                    <!-- КОНТЕЙНЕР ДЛЯ ВАШЕЙ КАРТИНКИ -->
-                    <!-- ЗАМЕНИТЕ src="ваша_картинка.png" НА ПУТЬ К ВАШЕМУ ИЗОБРАЖЕНИЮ -->
-                    <div class="custom-image-container">
-                        <img class="custom-image" 
-                             src="hero_image.png"
-                             alt="Lumen IDE Screenshot">
+                <div class="hero-image" style="flex: 1; min-width: 300px;">
+                    <div class="custom-image-container" style="border-radius: 1rem; overflow: hidden; box-shadow: var(--shadow-md); background: rgba(0,0,0,0.2);">
+                        <img class="custom-image" src="hero_image.png" alt="Lumen IDE Screenshot" style="width:100%; display: block;">
                     </div>
-                    
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Download Button Windows ONLY -->
+    <section id="features">
+        <div class="container">
+            <h2>Возможности языка Lumen</h2>
+            <div class="features-grid">
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-shield-alt"></i><h4>Безопасные указатели</h4><p>Контроль памяти без GC</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-shield-alt"></i></div><div class="card-label">Управление памятью</div><div class="card-value">Безопасные указатели</div><div class="card-desc">*auto, static, move, copy — контроль памяти без GC, как в Rust, но с простым синтаксисом.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-layer-group"></i><h4>Функции высшего порядка</h4><p>Замыкания, фабрики</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-layer-group"></i></div><div class="card-label">Функциональное программирование</div><div class="card-value">Функции высшего порядка</div><div class="card-desc">Замыкания (global), функции как объекты, фабрики — мощь функционального стиля.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-cogs"></i><h4>Макросы</h4><p>Генерация кода на лету</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-cogs"></i></div><div class="card-label">Метапрограммирование</div><div class="card-value">Макросы и генерация кода</div><div class="card-desc">#macro, #define для кодогенерации и гибкости без потери производительности.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-cubes"></i><h4>Пространства имён</h4><p>Модульность без классов</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-cubes"></i></div><div class="card-label">Модульность</div><div class="card-value">Пространства имён</div><div class="card-desc">Модульность через namespace, ООП-подобный синтаксис без классов.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-globe"></i><h4>Глобальный контекст</h4><p>Состояние в замыканиях</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-globe"></i></div><div class="card-label">Замыкания</div><div class="card-value">Глобальный контекст</div><div class="card-desc">global для замыканий и фабрик — сохранение состояния с первого класса.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-code"></i><h4>Гибридная типизация</h4><p>Статика + вывод типов</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-code"></i></div><div class="card-label">Типизация</div><div class="card-value">Гибридная типизация</div><div class="card-desc">Статическая типизация с auto-выводом — безопасность типов без избыточности.</div></div></div></div>
+            </div>
+        </div>
+    </section>
+
     <section id="download" class="reveal">
         <div class="container">
             <div class="download-card">
-                <i class="fab fa-windows" style="font-size: 2.5rem; color: #859900;"></i>
-                <h3 style="margin: 0.5rem 0; color:#4c4f69;">Lumen IDE для Windows 64-bit</h3>
-                <p style="margin-bottom: 0.5rem;">Версия 1.05b — первая стабильная сборка</p>
+                <i class="fab fa-windows" style="font-size: 2.5rem; color: #89b4fa;"></i>
+                <h3 style="margin: 0.5rem 0;">Lumen IDE для Windows 64-bit</h3>
+                <p style="margin-bottom: 0.5rem; color: #a6adc8;">Версия 1.05b — первая стабильная сборка</p>
                 <div class="platform-note">
                     <i class="fas fa-check-circle"></i> Поддерживаемая платформа: Windows 10/11 (64-bit)
                 </div>
                 <div style="margin: 1.5rem 0;">
                     <button id="windowsDownloadBtn" class="big-download-btn"><i class="fas fa-download"></i> Скачать Lumen IDE для Windows 64-bit</button>
                 </div>
-                <p style="font-size: 0.85rem; color: #6c6f85; margin-top: 1rem;">
-                    <i class="fas fa-info-circle"></i> Установщик включает компилятор Lumen, Lumen IDE и все необходимые компоненты
-                </p>
+                <p style="font-size: 0.85rem; color: #a6adc8;"><i class="fas fa-info-circle"></i> Установщик включает компилятор Lumen, Lumen IDE и все необходимые компоненты</p>
             </div>
         </div>
     </section>
 
-    <!-- Features of Language -->
-    <section id="features" class="reveal">
-        <div class="container">
-            <h2><i class="fas fa-cog" style="color: #859900; margin-right: 0.5rem;"></i> Возможности языка Lumen</h2>
-            <div class="features-grid">
-                <div class="card"><i class="fas fa-shield-alt"></i><h3>Безопасные указатели</h3><p>*auto, static, move, copy — контроль памяти без GC, как в Rust, но с простым синтаксисом.</p></div>
-                <div class="card"><i class="fas fa-layer-group"></i><h3>Функции высшего порядка</h3><p>Замыкания (global), функции как объекты, фабрики — мощь функционального стиля.</p></div>
-                <div class="card"><i class="fas fa-code-branch"></i><h3>Макросы и метапрограммирование</h3><p>#macro, #define для кодогенерации и гибкости без потери производительности.</p></div>
-                <div class="card"><i class="fas fa-cubes"></i><h3>Пространства имён</h3><p>Модульность через namespace, ООП-подобный синтаксис без классов.</p></div>
-                <div class="card"><i class="fas fa-globe"></i><h3>Глобальный контекст</h3><p>global для замыканий и фабрик — сохранение состояния с первого класса.</p></div>
-                <div class="card"><i class="fas fa-code"></i><h3>Гибридная типизация</h3><p>Статическая типизация с auto-выводом — безопасность типов без избыточности.</p></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Lumen IDE Detailed Block -->
     <section id="ide" class="reveal">
         <div class="container">
-            <div class="ide-logo-row">
-                <h2>
-                    <i class="fas fa-lightbulb"></i>
-                    Lumen IDE
-                </h2>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; margin-bottom: 0.5rem;">
+                <h2><i class="fas fa-lightbulb"></i> Lumen IDE</h2>
                 <span class="windows-only"><i class="fab fa-windows"></i> Windows 64-bit</span>
                 <span class="hybrid-badge"><i class="fas fa-code"></i> Гибридная типизация</span>
             </div>
-            <p style="font-size: 1.2rem; margin-top: 0.5rem;"><strong>Integrated Development Environment for Lumen</strong></p>
-            <p style="max-width: 720px; margin-top: 0.5rem;">Lumen IDE — легкая, но мощная среда разработки, написанная на Python + PyQt6. Не требует настройки: установил и пиши код. Кастомный лексер, языковой сервер и автодополнение с иконками типов.</p>
-            
+            <p style="font-size: 1.1rem;"><strong>Integrated Development Environment for Lumen</strong></p>
+            <p style="max-width: 720px; margin-top: 0.5rem; color: #a6adc8;">Lumen IDE — легкая, но мощная среда разработки, написанная на Python + PyQt6. Не требует настройки: установил и пиши код. Кастомный лексер, языковой сервер и автодополнение с иконками типов.</p>
             <div class="badge-list">
                 <span class="badge-tech"><i class="fab fa-python"></i> Python + PyQt6</span>
                 <span class="badge-tech"><i class="fas fa-code"></i> QScintilla</span>
@@ -903,369 +702,212 @@
                 <span class="badge-tech"><i class="fab fa-windows"></i> Windows 64-bit Only</span>
                 <span class="badge-tech"><i class="fas fa-adjust"></i> Гибридная типизация</span>
             </div>
-
             <h3 style="margin: 2rem 0 1rem;">Ключевые возможности IDE</h3>
             <div class="ide-grid">
-                <div class="card"><i class="fas fa-highlighter"></i><h3>Подсветка синтаксиса</h3><p>Кастомный лексер для всех конструкций Lumen: указатели, макросы, namespace.</p></div>
-                <div class="card"><i class="fas fa-lightbulb"></i><h3>Автодополнение кода</h3><p>Подсказки с иконками типов (K, M, T, L, D, S, F) на основе анализа.</p></div>
-                <div class="card"><i class="fas fa-server"></i><h3>Языковой сервер</h3><p>Фоновая проверка ошибок, семантический анализ в реальном времени.</p></div>
-                <div class="card"><i class="fas fa-exclamation-triangle"></i><h3>Визуализация ошибок</h3><p>Подсветка на полях, всплывающие подсказки с пояснением.</p></div>
-                <div class="card"><i class="fas fa-clock"></i><h3>Автосохранение</h3><p>Интервал от 0.3с до 5 минут + ручное сохранение (Ctrl+S).</p></div>
-                <div class="card"><i class="fas fa-compress-alt"></i><h3>Сворачивание кода</h3><p>Code folding для удобной навигации в больших файлах.</p></div>
-                <div class="card"><i class="fas fa-palette"></i><h3>Кастомное меню / темы</h3><p>Закругленные меню, анимированные кнопки, светлая/темная тема.</p></div>
-                <div class="card"><i class="fas fa-brackets-curly"></i><h3>Подсветка парных скобок</h3><p>Визуальное выделение для повышения читаемости кода.</p></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-paint-roller"></i><h4>Подсветка синтаксиса</h4><p>Не просто текст, а магия</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-paint-roller"></i></div><div class="card-label">Визуализация кода</div><div class="card-value">Подсветка синтаксиса</div><div class="card-desc">Кастомный лексер для всех конструкций Lumen позволяет подсвечивать каждую лексему языка по отдельности.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-lightbulb"></i><h4>Автодополнение</h4><p>Иконки типов, подсказки</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-lightbulb"></i></div><div class="card-label">IntelliSense</div><div class="card-value">Автодополнение кода</div><div class="card-desc">Подсказки с иконками типов (K, M, T, L, D, S, F) на основе анализа.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-server"></i><h4>Языковой сервер</h4><p>Анализ в реальном времени</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-server"></i></div><div class="card-label">Анализ кода</div><div class="card-value">Языковой сервер</div><div class="card-desc">Фоновая проверка ошибок, семантический анализ в реальном времени. Это позволяет увидеть результат программы не запуская ее.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-bug"></i><h4>Визуализация ошибок</h4><p>Ошибка? — не беда</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-bug"></i></div><div class="card-label">Диагностика</div><div class="card-value">Визуализация ошибок</div><div class="card-desc">Подсветка на полях, всплывающие подсказки с пояснением прямо в строках кода.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-outdent"></i><h4>Сворачивание кода <span class="beta-badge" style="background:rgba(203,166,247,0.2); border-color:#cba6f7; margin-left:0.3rem;">Beta</span></h4><p>Code folding</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-outdent"></i></div><div class="card-label">Навигация</div><div class="card-value">Сворачивание кода <span class="beta-badge">Beta</span></div><div class="card-desc">Code folding для удобной навигации в больших файлах.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-palette"></i><h4>Кастомное меню / темы</h4><p>Светлая / тёмная тема</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-palette"></i></div><div class="card-label">Интерфейс</div><div class="card-value">Кастомное меню / темы</div><div class="card-desc">Закругленные меню, анимированные кнопки, большое количество красивых тем.</div></div></div></div>
             </div>
-
-            <div class="specs-wrapper">
-                <div class="specs-title">
-                    <i class="fas fa-microchip"></i>
-                    <span>Технические характеристики Lumen IDE</span>
-                </div>
+            <div class="specs-wrapper" style="margin-top: 2rem;">
+                <div class="specs-title" style="display: flex; align-items: center; gap: 0.75rem; font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem;"><i class="fas fa-microchip"></i><span>Технические характеристики Lumen IDE</span></div>
                 <div class="specs-grid">
-                    <div class="specs-card">
-                        <div class="specs-icon"><i class="fas fa-tag"></i></div>
-                        <div class="specs-content">
-                            <div class="specs-label">Версия</div>
-                            <div class="specs-value">1.05b <span class="specs-badge">Stable</span></div>
-                            <div class="specs-desc">Первая стабильная сборка с полной поддержкой Lumen</div>
-                        </div>
-                    </div>
-                    
-                    <div class="specs-card">
-                        <div class="specs-icon"><i class="fab fa-python"></i></div>
-                        <div class="specs-content">
-                            <div class="specs-label">Технологии</div>
-                            <div class="specs-value">Python 3.10+ · PyQt6 · QScintilla</div>
-                            <div class="specs-desc">Современный стек для быстрой и надежной работы</div>
-                        </div>
-                    </div>
-                    
-                    <div class="specs-card">
-                        <div class="specs-icon"><i class="fab fa-windows"></i></div>
-                        <div class="specs-content">
-                            <div class="specs-label">Платформа</div>
-                            <div class="specs-value">Windows 10 / 11 (64-bit)</div>
-                            <div class="specs-desc">Оптимизирован для последних версий Windows</div>
-                        </div>
-                    </div>
-                    
-                    <div class="specs-card">
-                        <div class="specs-icon"><i class="fas fa-memory"></i></div>
-                        <div class="specs-content">
-                            <div class="specs-label">Системные требования</div>
-                            <div class="specs-value">2 ГБ ОЗУ · 100 МБ диска</div>
-                            <div class="specs-desc">Легковесная среда, работает даже на старых ПК</div>
-                        </div>
-                    </div>
-                    
-                    <div class="specs-card">
-                        <div class="specs-icon"><i class="fas fa-keyboard"></i></div>
-                        <div class="specs-content">
-                            <div class="specs-label">Горячие клавиши</div>
-                            <div class="specs-value">F5 (Запуск) · Ctrl+S (Сохранить) · Ctrl+Z (Отменить)</div>
-                            <div class="specs-desc">Интуитивные сочетания для быстрой разработки</div>
-                        </div>
-                    </div>
-                    
-                    <div class="specs-card">
-                        <div class="specs-icon"><i class="fas fa-paint-brush"></i></div>
-                        <div class="specs-content">
-                            <div class="specs-label">Кастомизация</div>
-                            <div class="specs-value">Светлая/Темная тема · Настраиваемые шрифты</div>
-                            <div class="specs-desc">Персонализируйте IDE под свои предпочтения</div>
-                        </div>
-                    </div>
-                    
-                    <div class="specs-card">
-                        <div class="specs-icon"><i class="fas fa-rocket"></i></div>
-                        <div class="specs-content">
-                            <div class="specs-label">Производительность</div>
-                            <div class="specs-value">Мгновенный запуск · Автосохранение</div>
-                            <div class="specs-desc">Не ждите — пишите код сразу после установки</div>
-                        </div>
-                    </div>
-                    
-                    <div class="specs-card">
-                        <div class="specs-icon"><i class="fas fa-code-branch"></i></div>
-                        <div class="specs-content">
-                            <div class="specs-label">Поддержка Lumen</div>
-                            <div class="specs-value">100% всех конструкций языка</div>
-                            <div class="specs-desc">Указатели · Макросы · Namespace · Замыкания</div>
-                        </div>
-                    </div>
+                    <div class="specs-card"><div class="specs-icon"><i class="fas fa-tag"></i></div><div class="specs-content"><div class="specs-label">Версия</div><div class="specs-value">1.05b <span style="background: #89b4fa20; padding:0.1rem 0.4rem; border-radius:20px;">Stable</span></div><div class="specs-desc">Первая стабильная сборка</div></div></div>
+                    <div class="specs-card"><div class="specs-icon"><i class="fab fa-python"></i></div><div class="specs-content"><div class="specs-label">Технологии</div><div class="specs-value">Python 3.10+ · PyQt6 · QScintilla</div><div class="specs-desc">Современный стек</div></div></div>
+                    <div class="specs-card"><div class="specs-icon"><i class="fab fa-windows"></i></div><div class="specs-content"><div class="specs-label">Платформа</div><div class="specs-value">Windows 10 / 11 (64-bit)</div><div class="specs-desc">Оптимизирован</div></div></div>
+                    <div class="specs-card"><div class="specs-icon"><i class="fas fa-memory"></i></div><div class="specs-content"><div class="specs-label">Системные требования</div><div class="specs-value">2 ГБ ОЗУ · 100 МБ диска</div><div class="specs-desc">Легковесная среда</div></div></div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Code Examples with Tabs -->
-    <section id="examples" class="reveal">
-        <div class="container">
-            <h2><i class="fas fa-code" style="color: #859900; margin-right: 0.5rem;"></i> Примеры кода Lumen</h2>
-            <div class="tabs-container">
-                <div class="tabs-header">
-                    <button class="tab-btn active" data-tab="tab1"><i class="fas fa-memory"></i> Умные указатели</button>
-                    <button class="tab-btn" data-tab="tab2"><i class="fas fa-layer-group"></i> Замыкания</button>
-                    <button class="tab-btn" data-tab="tab3"><i class="fas fa-cubes"></i> Пространства имен</button>
-                    <button class="tab-btn" data-tab="tab4"><i class="fas fa-chart-line"></i> Рекурсия</button>
-                </div>
-                <div id="tab1" class="tab-pane active-pane">
-                    <pre id="code1"><code>func swap(final static arg1: *auto, final static arg2: *auto) -> Null {
-    let tmp = *arg1;
-    *arg1 = *arg2;
-    *arg2 = tmp;
-}
-
-let a = new (10);
-let b = new (20);
-swap(a, b);
-outln *a, *b; // 20 10</code><button class="copy-btn" data-code="code1"><i class="far fa-copy"></i> Копировать</button></pre>
-                </div>
-                <div id="tab2" class="tab-pane">
-                    <pre id="code2"><code>func make_multiplier(global x: Int) -> auto {
-    func multiplier(y: Int) -> Int {
-        ret x * y;
-    }
-    ret multiplier;
-}
-
-let double = make_multiplier(2);
-outln double(5); // 10</code><button class="copy-btn" data-code="code2"><i class="far fa-copy"></i> Копировать</button></pre>
-                </div>
-                <div id="tab3" class="tab-pane">
-                    <pre id="code3"><code>func createPoint(global x: Int, global y: Int) -> auto {
-    let template = namespace {
-        func print() -> Null {
-            outln "Point(" , x , ", " , y , ")";
-        }
-        func sum(other: Namespace) -> Namespace {
-            ret createPoint(x + other::x, y + other::y);
-        }
-    };
-    ret template;
-}
-
-let p1 = createPoint(10, 20);
-let p2 = createPoint(30, 40);
-let p3 = p1::sum(p2);
-p3::print(); // Point(40, 60)</code><button class="copy-btn" data-code="code3"><i class="far fa-copy"></i> Копировать</button></pre>
-                </div>
-                <div id="tab4" class="tab-pane">
-                    <pre id="code4"><code>func factorial(n: Int) -> Int {
-    if (n <= 1) ret 1;
-    ret n * factorial(n - 1);
-}
-
-outln factorial(5); // 120</code><button class="copy-btn" data-code="code4"><i class="far fa-copy"></i> Копировать</button></pre>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Getting Started -->
-    <section id="getting-started" class="reveal">
-        <div class="container">
-            <h2><i class="fas fa-rocket" style="color: #859900; margin-right: 0.5rem;"></i> Начало работы за 3 шага</h2>
-            <div class="steps">
-                <div class="step"><div class="step-icon"><i class="fas fa-download"></i></div><h3>Скачай</h3><p>Загрузи Lumen IDE для Windows 64-bit</p></div>
-                <div class="step"><div class="step-icon"><i class="fas fa-play"></i></div><h3>Установи</h3><p>Запусти установщик и следуй инструкциям</p></div>
-                <div class="step"><div class="step-icon"><i class="fas fa-code"></i></div><h3>Напиши</h3><p>Создай hello.lumen и нажми F5</p></div>
-            </div>
-            <pre style="background: #1e1e2f; margin-top: 2rem;"><code>func main() -> Int {
-    outln "Hello, Lumen!";
-    ret 0;
-}</code><button class="copy-btn" id="helloCopyBtn" style="right:1rem;"><i class="far fa-copy"></i> Копировать</button></pre>
-        </div>
-    </section>
-
-    <!-- Community -->
     <section id="docs" class="reveal">
         <div class="container" style="text-align: center;">
-            <h2><i class="fas fa-users" style="color: #859900; margin-right: 0.5rem;"></i> Сообщество и ресурсы</h2>
+            <h2>Сообщество и ресурсы</h2>
             <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; margin: 2rem 0;">
-                <a href="#" class="resource-link"><i class="fas fa-book fa-lg"></i> Документация</a>
                 <a href="#" class="resource-link"><i class="fab fa-github fa-lg"></i> GitHub</a>
                 <a href="#" class="resource-link"><i class="fab fa-telegram fa-lg"></i> Telegram</a>
                 <a href="#" class="resource-link"><i class="fab fa-vk fa-lg"></i> VK</a>
-                <a href="#" class="resource-link"><i class="fas fa-code-branch fa-lg"></i> Примеры кода</a>
             </div>
         </div>
     </section>
     <footer>
         <div class="container">
-            <p><i class="far fa-copyright"></i> 2025 Lumen Language & Lumen IDE. Гибридная типизация | Компилируемый язык для обучения | Windows 64-bit</p>
+            <p><i class="far fa-copyright"></i> 2025 Lumen Language & Lumen IDE. Все права защищены.</p>
         </div>
     </footer>
 </main>
 
+<button class="scroll-top" id="scrollTopBtn"><i class="fas fa-arrow-up"></i></button>
+
 <script>
-    // Динамическая анимация blur-кругов
+    // Анимация частиц только для ширины > 768px (на мобильных canvas скрыт через CSS)
+    if (window.innerWidth > 768) {
+        const canvas = document.getElementById('networkCanvas');
+        if (canvas) {
+            let ctx = canvas.getContext('2d');
+            let particles = [];
+            const particleCount = 70;
+            const connectionDistance = 150;
+
+            function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            class Particle {
+                constructor(x, y, vx, vy) { this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.radius = 1.2; }
+                update() {
+                    this.x += this.vx; this.y += this.vy;
+                    if (this.x < 0) { this.x = 0; this.vx = -this.vx; }
+                    if (this.x > canvas.width) { this.x = canvas.width; this.vx = -this.vx; }
+                    if (this.y < 0) { this.y = 0; this.vy = -this.vy; }
+                    if (this.y > canvas.height) { this.y = canvas.height; this.vy = -this.vy; }
+                }
+                draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fillStyle = '#89b4fa'; ctx.fill(); }
+            }
+            function initParticles() {
+                particles = [];
+                for (let i = 0; i < particleCount; i++) {
+                    let x = Math.random() * canvas.width, y = Math.random() * canvas.height;
+                    let vx = (Math.random() - 0.5) * 0.6, vy = (Math.random() - 0.5) * 0.6;
+                    particles.push(new Particle(x, y, vx, vy));
+                }
+            }
+            function drawLines() {
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        let dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < connectionDistance) {
+                            let opacity = 0.08 * (1 - distance / connectionDistance);
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(137, 180, 250, ${opacity * 1.2})`;
+                            ctx.lineWidth = 0.8;
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+            function animateNetwork() {
+                if (!ctx) return;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let p of particles) { p.update(); p.draw(); }
+                drawLines();
+                requestAnimationFrame(animateNetwork);
+            }
+            window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
+            resizeCanvas(); initParticles(); animateNetwork();
+        }
+    }
+
+    // Анимация размытых кругов
     const circles = document.querySelectorAll('.blur-circle');
-    
     const circleParams = [
-        { x: -150, y: -150, size: 500, vx: 0.3, vy: 0.2, sizeSpeed: 0.15, minSize: 400, maxSize: 700, angle: 0 },
-        { x: window.innerWidth - 600, y: window.innerHeight - 600, size: 600, vx: -0.25, vy: 0.35, sizeSpeed: 0.12, minSize: 480, maxSize: 800, angle: 45 },
-        { x: window.innerWidth * 0.6, y: window.innerHeight * 0.4, size: 450, vx: 0.4, vy: -0.3, sizeSpeed: 0.18, minSize: 350, maxSize: 650, angle: 90 },
-        { x: window.innerWidth * 0.1, y: window.innerHeight * 0.7, size: 350, vx: 0.2, vy: 0.45, sizeSpeed: 0.1, minSize: 280, maxSize: 550, angle: 135 },
-        { x: window.innerWidth * 0.8, y: window.innerHeight * 0.2, size: 400, vx: -0.35, vy: -0.25, sizeSpeed: 0.14, minSize: 320, maxSize: 600, angle: 180 }
+        { x: -100, y: -100, size: 450, vx: 0.2, vy: 0.15, angle: 0, minSize: 350, maxSize: 600 },
+        { x: window.innerWidth - 500, y: window.innerHeight - 500, size: 550, vx: -0.2, vy: 0.25, angle: 0.5, minSize: 450, maxSize: 700 },
+        { x: window.innerWidth * 0.5, y: window.innerHeight * 0.3, size: 400, vx: 0.25, vy: -0.2, angle: 1, minSize: 320, maxSize: 550 },
+        { x: window.innerWidth * 0.2, y: window.innerHeight * 0.6, size: 380, vx: 0.15, vy: 0.3, angle: 1.5, minSize: 300, maxSize: 500 },
+        { x: window.innerWidth * 0.7, y: window.innerHeight * 0.2, size: 420, vx: -0.25, vy: -0.18, angle: 2, minSize: 350, maxSize: 580 }
     ];
-    
     function updateCircles() {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        
+        const width = window.innerWidth, height = window.innerHeight;
         circles.forEach((circle, index) => {
-            const params = circleParams[index];
-            if (!params) return;
-            
-            params.x += params.vx;
-            params.y += params.vy;
-            
-            params.angle += params.sizeSpeed * 0.02;
-            const sizeFactor = 0.7 + Math.sin(params.angle) * 0.3;
-            let newSize = params.minSize + (params.maxSize - params.minSize) * sizeFactor;
-            
-            if (params.x < -params.size * 0.5) {
-                params.x = -params.size * 0.5;
-                params.vx = Math.abs(params.vx);
-            }
-            if (params.x > width - params.size * 0.5) {
-                params.x = width - params.size * 0.5;
-                params.vx = -Math.abs(params.vx);
-            }
-            if (params.y < -params.size * 0.5) {
-                params.y = -params.size * 0.5;
-                params.vy = Math.abs(params.vy);
-            }
-            if (params.y > height - params.size * 0.5) {
-                params.y = height - params.size * 0.5;
-                params.vy = -Math.abs(params.vy);
-            }
-            
-            circle.style.left = params.x + 'px';
-            circle.style.top = params.y + 'px';
-            circle.style.width = newSize + 'px';
-            circle.style.height = newSize + 'px';
-            
-            const baseOpacity = index === 0 ? 0.45 : index === 1 ? 0.4 : index === 2 ? 0.35 : index === 3 ? 0.3 : 0.25;
-            circle.style.opacity = Math.min(0.55, Math.max(0.2, baseOpacity * (0.7 + Math.sin(params.angle) * 0.3)));
+            const p = circleParams[index];
+            if (!p) return;
+            p.x += p.vx; p.y += p.vy;
+            p.angle += 0.008;
+            let sizeFactor = 0.7 + Math.sin(p.angle) * 0.3;
+            let newSize = p.minSize + (p.maxSize - p.minSize) * sizeFactor;
+            if (p.x < -newSize * 0.4) p.x = -newSize * 0.4;
+            if (p.x > width - newSize * 0.4) p.x = width - newSize * 0.4;
+            if (p.y < -newSize * 0.4) p.y = -newSize * 0.4;
+            if (p.y > height - newSize * 0.4) p.y = height - newSize * 0.4;
+            circle.style.left = p.x + 'px'; circle.style.top = p.y + 'px';
+            circle.style.width = newSize + 'px'; circle.style.height = newSize + 'px';
         });
-        
         requestAnimationFrame(updateCircles);
     }
-    
-    function initCircles() {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        
-        circles.forEach((circle, index) => {
-            const params = circleParams[index];
-            if (params) {
-                params.x = Math.min(Math.max(params.x, -params.size * 0.5), width - params.size * 0.5);
-                params.y = Math.min(Math.max(params.y, -params.size * 0.5), height - params.size * 0.5);
-                circle.style.width = params.size + 'px';
-                circle.style.height = params.size + 'px';
-                circle.style.left = params.x + 'px';
-                circle.style.top = params.y + 'px';
-            }
-        });
-        
-        updateCircles();
-    }
-    
-    window.addEventListener('resize', () => {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        
-        circles.forEach((circle, index) => {
-            const params = circleParams[index];
-            if (params) {
-                params.x = Math.min(Math.max(params.x, -params.size * 0.5), width - params.size * 0.5);
-                params.y = Math.min(Math.max(params.y, -params.size * 0.5), height - params.size * 0.5);
-            }
-        });
-    });
-    
-    initCircles();
-    
+    updateCircles();
+
+    // Мобильное меню
     const menuToggle = document.getElementById('menuToggle');
-    const navLinks = document.getElementById('navLinks');
-    if(menuToggle) {
-        menuToggle.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
-    }
+    const navLinksMenu = document.getElementById('navLinks');
+    if (menuToggle) menuToggle.addEventListener('click', () => navLinksMenu.classList.toggle('active'));
 
-    const winBtn = document.getElementById('windowsDownloadBtn');
-    if(winBtn) {
-        winBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            alert("Скачивание Lumen IDE v1.05b для Windows 64-bit\nРазмер: ~85 MB\nУстановщик готов к запуску.");
-        });
-    }
-
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const panes = document.querySelectorAll('.tab-pane');
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tabId = btn.getAttribute('data-tab');
-            tabBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            panes.forEach(pane => pane.classList.remove('active-pane'));
-            const activePane = document.getElementById(tabId);
-            if(activePane) activePane.classList.add('active-pane');
-        });
-    });
-
-    const copyButtons = document.querySelectorAll('.copy-btn');
-    copyButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const targetId = btn.getAttribute('data-code');
-            let codeBlock = null;
-            if(targetId) {
-                codeBlock = document.getElementById(targetId);
-            } else {
-                codeBlock = btn.closest('pre');
-            }
-            if(codeBlock) {
-                let text = codeBlock.innerText.replace('Копировать', '').replace('Copy', '').trim();
-                navigator.clipboard.writeText(text).then(() => {
-                    const originalHTML = btn.innerHTML;
-                    btn.innerHTML = '<i class="fas fa-check"></i> Скопировано!';
-                    setTimeout(() => { btn.innerHTML = originalHTML; }, 1500);
-                }).catch(() => alert("Не удалось скопировать"));
+    // Плавная прокрутка
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+            const target = document.querySelector(targetId);
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (navLinksMenu.classList.contains('active')) navLinksMenu.classList.remove('active');
             }
         });
     });
 
-    const helloBtn = document.getElementById('helloCopyBtn');
-    if(helloBtn) {
-        helloBtn.addEventListener('click', () => {
-            const codePre = helloBtn.closest('pre');
-            if(codePre) {
-                let text = codePre.innerText.replace('Копировать', '').trim();
-                navigator.clipboard.writeText(text).then(() => {
-                    const originalHTML = helloBtn.innerHTML;
-                    helloBtn.innerHTML = '<i class="fas fa-check"></i> Скопировано!';
-                    setTimeout(() => { helloBtn.innerHTML = originalHTML; }, 1500);
-                });
-            }
-        });
-    }
+    // Скачивание
+    document.getElementById('windowsDownloadBtn')?.addEventListener('click', () => {
+        alert("Скачивание Lumen IDE v1.05b для Windows 64-bit\nРазмер: ~85 MB\nУстановщик готов к запуску.");
+    });
 
-    const revealElements = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if(entry.isIntersecting) {
-                entry.target.classList.add('visible');
-            }
-        });
+    // Кнопка вверх
+    const scrollBtn = document.getElementById('scrollTopBtn');
+    window.addEventListener('scroll', () => scrollBtn.classList.toggle('visible', window.scrollY > 300));
+    scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    // Анимация появления
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
     }, { threshold: 0.1 });
-    revealElements.forEach(el => observer.observe(el));
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+    document.querySelectorAll('.reveal').forEach(el => { if(el.getBoundingClientRect().top < window.innerHeight-100) el.classList.add('visible'); });
 
-    document.querySelectorAll('.reveal').forEach(el => {
-        if(el.getBoundingClientRect().top < window.innerHeight-100) el.classList.add('visible');
-    });
+    // Мобильные карточки: переворот при прокрутке, когда карточка находится в центральной зоне (y > 200 и y < window.innerHeight - 200)
+    if (window.innerWidth <= 768) {
+        const flipCards = document.querySelectorAll('.flip-card');
+        // Храним флаг, была ли карточка уже перевёрнута
+        const flippedStatus = new Map();
+        
+        function checkAndFlipCards() {
+            const viewportHeight = window.innerHeight;
+            const topMargin = 200;
+            const bottomMargin = 200;
+            
+            flipCards.forEach(card => {
+                if (flippedStatus.get(card)) return; // уже перевернута
+                
+                const rect = card.getBoundingClientRect();
+                const cardTop = rect.top;
+                const cardBottom = rect.bottom;
+                
+                // Условие: верхняя граница карточки ниже topMargin и нижняя граница выше (viewportHeight - bottomMargin)
+                if (cardTop > topMargin && cardBottom < viewportHeight - bottomMargin) {
+                    card.classList.add('flipped');
+                    flippedStatus.set(card, true);
+                }
+            });
+        }
+        
+        // Используем throttle для оптимизации
+        let ticking = false;
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    checkAndFlipCards();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+        
+        // Проверяем сразу после загрузки
+        window.addEventListener('load', checkAndFlipCards);
+        checkAndFlipCards(); // дополнительно на случай, если load уже произошёл
+    }
 </script>
 </body>
 </html>
