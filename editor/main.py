@@ -2,7 +2,6 @@
 Lumen IDE - Integrated Development Environment for TwistLang
 """
 
-
 import sys
 import os
 import subprocess
@@ -1448,6 +1447,63 @@ class AboutDialog(QWidget):
         return THEMES[DEFAULT_THEME]["colors"]
 
 
+class ErrorTooltip(QWidget):
+    """Custom tooltip for error messages with rounded corners and theme support"""
+    
+    def __init__(self, parent=None):
+        super().__init__(None, Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        self.parent_window = parent
+        
+        self._setup_ui()
+        self._current_colors = None
+        
+    def _setup_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 6, 10, 6)
+        layout.setSpacing(0)
+        
+        self.label = QLabel()
+        self.label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.label.setWordWrap(True)
+        self.label.setFont(QFont("Consolas", 10))
+        layout.addWidget(self.label)
+        
+    def set_text(self, text: str, colors: dict):
+        """Set tooltip text and update theme colors"""
+        self._current_colors = colors
+        self.label.setText(text)
+        self.label.setStyleSheet(f"color: {colors['fg'].name()}; background: transparent;")
+        
+        # Adjust size to content
+        self.label.adjustSize()
+        self.adjustSize()
+        
+        # Update style
+        self.setStyleSheet(f"""
+            ErrorTooltip {{
+                background-color: {colors['bg'].name()};
+                border: 1px solid {colors['status_border'].name()};
+                border-radius: 6px;
+            }}
+        """)
+        
+    def paintEvent(self, event):
+        # Ensure rounded corners are drawn correctly
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if self._current_colors:
+            painter.setBrush(self._current_colors['bg'])
+            painter.setPen(QPen(self._current_colors['status_border'], 1))
+        else:
+            # Fallback
+            painter.setBrush(QColor('#1e1e2e'))
+            painter.setPen(QPen(QColor('#313244'), 1))
+        painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 6, 6)
+        super().paintEvent(event)
+
+
 class RoundedMenu(QMenu):
     """Custom menu with rounded corners and hover tracking"""
     
@@ -2085,7 +2141,6 @@ class CustomScintilla(QsciScintilla):
         self.last_save_time = datetime.now()
         
         self.ctrl_pressed = False
-        self.current_tooltip_msg = None
         
         self.errors: List[ErrorInfo] = []
         self.error_lines: Set[int] = set()
@@ -2104,6 +2159,10 @@ class CustomScintilla(QsciScintilla):
         # Setup context menu
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._show_context_menu)
+        
+        # Custom error tooltip
+        self.error_tooltip = ErrorTooltip(self)
+        self.error_tooltip.hide()
         
     def _show_context_menu(self, pos: QPoint):
         """Show localized context menu"""
@@ -2356,18 +2415,28 @@ class CustomScintilla(QsciScintilla):
             
             error_msg = self.get_error_at_position(line, col) if line >= 0 and col >= 0 else None
             
-            if error_msg != self.current_tooltip_msg:
-                if error_msg:
-                    QToolTip.showText(event.globalPosition().toPoint(), str(error_msg), self)
-                else:
-                    QToolTip.hideText()
-                self.current_tooltip_msg = error_msg
+            if error_msg:
+                # Получаем цвета темы
+                colors = self._get_theme_colors()
+                self.error_tooltip.set_text(error_msg, colors)
+                
+                # Позиционируем рядом с курсором (чуть правее и ниже)
+                global_pos = event.globalPosition().toPoint()
+                self.error_tooltip.move(global_pos.x() + 20, global_pos.y() + 10)
+                if not self.error_tooltip.isVisible():
+                    self.error_tooltip.show()
+            else:
+                self.error_tooltip.hide()
                 
             super().mouseMoveEvent(event)
         except Exception as e:
             print(f"Error in mouseMoveEvent: {e}")
             super().mouseMoveEvent(event)
             
+    def leaveEvent(self, event):
+        self.error_tooltip.hide()
+        super().leaveEvent(event)
+        
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton and self.ctrl_pressed:
             pos = event.pos()
@@ -3407,6 +3476,11 @@ class TwistLangEditor(QMainWindow):
  
         
         editor.setFoldMarginColors(colors["margin_bg"], colors["margin_bg"])
+        
+        # Update tooltip colors if visible
+        if hasattr(editor, 'error_tooltip') and editor.error_tooltip.isVisible():
+            current_text = editor.error_tooltip.label.text()
+            editor.error_tooltip.set_text(current_text, colors)
         
         editor.repaint()
 
