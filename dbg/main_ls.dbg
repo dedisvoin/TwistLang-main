@@ -1,4 +1,4 @@
-pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':15:0:17:2 message: Lambda(auto, auto) -> auto
+pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':2:0:7:2 message: Hello, World
 
-pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':16:0:18:2 message: 30
+pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':5:0:7:2 message: Hello, World
 

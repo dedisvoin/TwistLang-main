@@ -16,12 +16,12 @@ from enum import Enum
 from PyQt6.QtGui import QPainterPath, QRegion
 from PyQt6.Qsci import QsciScintilla, QsciLexerCustom, QsciAPIs
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QMenu, QStatusBar,
+    QApplication, QMainWindow, QMenu, QScrollArea, QSizePolicy, QStatusBar,
     QLabel, QTabWidget, QTabBar, QToolButton,
     QFileDialog, QMessageBox, QToolTip, QWidget, QHBoxLayout,
     QVBoxLayout, QFrame, QStackedWidget
 )
-from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, Qt
+from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QVariantAnimation, Qt
 from PyQt6.QtGui import (
     QColor, QFont, QAction, QKeySequence, QShortcut,
     QPainter, QPen, QIcon, QPixmap, QMouseEvent,
@@ -48,12 +48,13 @@ WINDOW_MIN_HEIGHT = 300
 TITLE_BAR_HEIGHT = 32
 RESIZE_MARGIN = 8
 DEFAULT_FONT_SIZE = 12
+MINUTE = 60_000
 AUTOSAVE_INTERVALS = [
     ("0.3 seconds", 300),
     ("1 seconds", 1000),
-    ("1 minute", 60000),
-    ("2 minutes", 120000),
-    ("5 minutes", 300000)
+    ("1 minute", MINUTE),
+    ("2 minutes", 2 * MINUTE),
+    ("5 minutes", 5 * MINUTE)
 ]
 
 VERSION = "1.05b"
@@ -143,6 +144,9 @@ class Strings:
         "context_select_all": "Select All",
         "context_go_to_include": "Go to Include",
         "context_clear_errors": "Clear Errors",
+        
+        # Theme preview
+        "theme_preview": "Theme Preview",
         
         # Status bar
         "auto_save_on": "Auto-save: ON ({}s)",
@@ -249,6 +253,9 @@ class Strings:
         "context_go_to_include": "Перейти к include",
         "context_clear_errors": "Очистить ошибки",
         
+        # Theme preview
+        "theme_preview": "Превью темы",
+        
         # Status bar
         "auto_save_on": "Автосохранение: ВКЛ ({}с)",
         "auto_save_off": "Автосохранение: ВЫКЛ",
@@ -299,6 +306,8 @@ class Strings:
         
         # Tooltips
         "toggle_folding": "Переключить сворачивание кода (показать/скрыть поля сворачивания)\n[Функция в бета-тестировании]"
+
+        
     }
     
     current_language = Language.RUSSIAN
@@ -387,6 +396,402 @@ def get_safe_monospace_font(preferred_font: str, size: int) -> QFont:
     return QFont("Consolas", size)
 
 
+# =============================================================================
+# THEME PREVIEW WIDGET
+# =============================================================================
+
+class ThemePreviewWidget(QWidget):
+    """Widget for displaying theme preview with animated theme transitions"""
+
+    def __init__(self, parent=None):
+        super().__init__(None, Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        self.setFixedSize(460, 700)
+
+        self.theme_name = ""
+        self._current_colors = None
+        self._start_colors = None
+        self._end_colors = None
+        self._display_colors = None  # цвета для отрисовки (анимированные)
+        self._setup_ui()
+
+        # Пример кода для отображения
+        self.code_lines = """#define PI = 3.141592
+#macro max(a, b) = if (a > b) {a} else {b}
+
+final static let a: String = "This is text \\n";
+
+namespace std {
+    func main(static a: *auto) -> auto { 
+        ret null; 
+    }
+
+    for (let i = 0; i < 10; i = i + 1;) {
+        out i, " ";
+    }
+}
+// this is demo
+// is not valid code!!!
+outln std::main(3.14);
+""".split('\n')
+        self.tokenized_lines = []
+
+        # Анимация перехода между темами
+        self.transition_animation = QVariantAnimation(self)
+        self.transition_animation.setDuration(700)
+        self.transition_animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        self.transition_animation.valueChanged.connect(self._on_animation_value_changed)
+        self.transition_animation.finished.connect(self._on_animation_finished)
+
+    def _setup_ui(self):
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(10, 10, 10, 10)
+        self.main_layout.setSpacing(6)
+
+        # Заголовок
+        self.title_label = QLabel(Strings.get("theme_preview"))
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_font = QFont("Consolas", 10, QFont.Weight.Bold)
+        self.title_label.setFont(title_font)
+        self.main_layout.addWidget(self.title_label)
+
+        # Разделитель
+        self.separator = QFrame()
+        self.separator.setFixedHeight(1)
+        self.main_layout.addWidget(self.separator)
+
+        # Название темы
+        self.name_label = QLabel()
+        self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        name_font = QFont("Consolas", 9)
+        self.name_label.setFont(name_font)
+        self.main_layout.addWidget(self.name_label)
+
+        # Небольшой отступ
+        spacer = QWidget()
+        spacer.setFixedHeight(1)
+        self.main_layout.addWidget(spacer)
+
+        # Контейнер для цветовых образцов
+        self.swatches_widget = QWidget()
+        swatches_layout = QVBoxLayout(self.swatches_widget)
+        swatches_layout.setContentsMargins(0, 0, 0, 0)
+        swatches_layout.setSpacing(3)
+
+        self.swatch_labels = []
+
+        swatch_items = [
+            ("bg", "Background"),
+            ("fg", "Foreground"),
+            ("keyword", "Keyword"),
+            ("type", "Type"),
+            ("string", "String"),
+            ("comment", "Comment"),
+            ("number", "Number"),
+            ("operator", "Operator"),
+            ("function", "Function"),
+            ("modifier", "Modifier"),
+            ("directive", "Directive"),
+            ("literal", "Literal"),
+            ("namespace", "Namespace"),
+            ("special", "Special"),
+            ("object", "Object"),
+            ("error", "Error"),
+            ("warning", "Warning"),
+            ("echo", "Echo"),
+        ]
+
+        for color_key, label_text in swatch_items:
+            row = QWidget()
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setSpacing(10)
+
+            color_box = QLabel()
+            color_box.setFixedSize(16, 10)
+            color_box.setStyleSheet("border: 1px solid #888; border-radius: 2px;")
+
+            text_label = QLabel(label_text)
+            text_label.setFont(QFont("Consolas", 10))
+
+            row_layout.addWidget(color_box)
+            row_layout.addWidget(text_label)
+            row_layout.addStretch()
+
+            swatches_layout.addWidget(row)
+            self.swatch_labels.append((color_key, color_box, text_label))
+
+        self.main_layout.addWidget(self.swatches_widget)
+
+        # Второй разделитель
+        self.sep2 = QFrame()
+        self.sep2.setFixedHeight(1)
+        self.main_layout.addWidget(self.sep2)
+
+        # Область для кода
+        self.code_area = QWidget()
+        self.code_area.setMinimumHeight(290)
+        self.code_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.main_layout.addWidget(self.code_area)
+
+    def update_language(self):
+        """Update header text when language changes"""
+        self.title_label.setText(Strings.get("theme_preview"))
+
+    def set_theme(self, theme_name: str):
+        """Set theme to preview with smooth transition"""
+        if theme_name not in THEMES:
+            return
+
+        target_colors = THEMES[theme_name]["colors"].copy()
+
+        # Если анимация уже идёт – останавливаем и фиксируем текущие отображаемые цвета как базовые
+        if self.transition_animation.state() == QVariantAnimation.State.Running:
+            self.transition_animation.stop()
+            if self._display_colors is not None:
+                self._current_colors = self._display_colors.copy()
+        elif self._current_colors is None:
+            # Самое первое применение темы (без анимации)
+            self._current_colors = target_colors.copy()
+            self._display_colors = target_colors.copy()
+            self.theme_name = theme_name
+            self.name_label.setText(theme_name)
+            self._apply_colors(target_colors)
+            self._tokenize_and_update(target_colors)
+            return
+
+        self.theme_name = theme_name
+        self.name_label.setText(theme_name)
+
+        # Начальное состояние – текущие (возможно, промежуточные) цвета
+        self._start_colors = self._current_colors.copy()
+        self._end_colors = target_colors
+
+        self.transition_animation.setStartValue(0.0)
+        self.transition_animation.setEndValue(1.0)
+        self.transition_animation.start()
+
+    def _on_animation_value_changed(self, value):
+        progress = value
+        start = self._start_colors
+        end = self._end_colors
+
+        interp_colors = {}
+        for key in start.keys():
+            if key in end:
+                s_color = start[key]
+                e_color = end[key]
+                r = int(s_color.red() + (e_color.red() - s_color.red()) * progress)
+                g = int(s_color.green() + (e_color.green() - s_color.green()) * progress)
+                b = int(s_color.blue() + (e_color.blue() - s_color.blue()) * progress)
+                a = int(s_color.alpha() + (e_color.alpha() - s_color.alpha()) * progress)
+                interp_colors[key] = QColor(r, g, b, a)
+            else:
+                interp_colors[key] = start[key]
+
+        self._display_colors = interp_colors
+        self._apply_colors(interp_colors)
+        self._tokenize_and_update(interp_colors)
+
+    def _on_animation_finished(self):
+        if self._end_colors is not None:
+            self._current_colors = self._end_colors.copy()
+            self._display_colors = self._current_colors.copy()
+            self._apply_colors(self._current_colors)
+            self._tokenize_and_update(self._current_colors)
+
+    def _apply_colors(self, colors: dict):
+        """Применяет цвета к образцам, стилям виджета (без перерисовки кода)"""
+        for color_key, color_box, text_label in self.swatch_labels:
+            if color_key in colors:
+                color_box.setStyleSheet(f"""
+                    background-color: {colors[color_key].name()};
+                    border: 1px solid {colors.get('status_border', '#888').name()};
+                    border-radius: 2px;
+                """)
+                text_label.setStyleSheet(f"color: {colors.get('fg', '#cdd6f4').name()}; background: transparent;")
+
+        bg_color = colors.get('bg', QColor('#1e1e2e'))
+        fg_color = colors.get('fg', QColor('#cdd6f4'))
+        border_color = colors.get('status_border', QColor('#313244'))
+
+        self.separator.setStyleSheet(f"""
+            QFrame {{
+                background-color: {border_color.name()};
+                border: none;
+            }}
+        """)
+        self.sep2.setStyleSheet(f"""
+            QFrame {{
+                background-color: {border_color.name()};
+                border: none;
+            }}
+        """)
+
+        self.setStyleSheet(f"""
+            ThemePreviewWidget {{
+                background-color: {bg_color.name()};
+                border: 1px solid {border_color.name()};
+                border-radius: 10px;
+            }}
+        """)
+
+        self.title_label.setStyleSheet(f"color: {fg_color.name()}; background: transparent;")
+        self.name_label.setStyleSheet(f"color: {fg_color.name()}; background: transparent;")
+
+    def _tokenize_and_update(self, colors: dict):
+        """Пересоздаёт токены кода с новыми цветами и обновляет область кода"""
+        lexer = TwistLangLexer(theme_name=self.theme_name)
+        self.tokenized_lines = []
+        for line in self.code_lines:
+            tokens = self._highlight_line(line, lexer, colors)
+            self.tokenized_lines.append(tokens)
+        self.code_area.update()
+
+    def _highlight_line(self, line: str, lexer, colors: dict) -> List[Tuple[str, QColor]]:
+        """Применяет правила лексера к одной строке и возвращает список (текст, цвет)"""
+        tokens = []
+        i = 0
+        n = len(line)
+        expecting_namespace = False
+
+        while i < n:
+            # Комментарий //
+            if line.startswith('//', i):
+                tokens.append((line[i:], colors.get("comment", colors["fg"])))
+                break
+
+            # Строка в кавычках
+            if line[i] in ('"', "'"):
+                start = i
+                quote = line[i]
+                i += 1
+                escaped = False
+                while i < n:
+                    ch = line[i]
+                    if ch == '\\':
+                        escaped = not escaped
+                    elif ch == quote and not escaped:
+                        i += 1
+                        break
+                    else:
+                        escaped = False
+                    i += 1
+                token_text = line[start:i]
+                tokens.append((token_text, colors.get("string", colors["fg"])))
+                continue
+
+            # Числа
+            if line[i].isdigit() or (line[i] == '.' and i + 1 < n and line[i + 1].isdigit()):
+                j = i
+                has_dot = False
+                while j < n and (line[j].isdigit() or (line[j] == '.' and not has_dot)):
+                    if line[j] == '.':
+                        has_dot = True
+                    j += 1
+                tokens.append((line[i:j], colors.get("number", colors["fg"])))
+                i = j
+                continue
+
+            # Идентификаторы и ключевые слова
+            if line[i].isalpha() or line[i] == '_' or line[i] == '#':
+                j = i
+                while j < n and (line[j].isalnum() or line[j] == '_' or line[j] == '#'):
+                    j += 1
+                word = line[i:j]
+                color = colors["fg"]
+
+                if word == "namespace" or word == "struct":
+                    expecting_namespace = True
+                    color = colors.get("keyword", colors["fg"])
+                elif expecting_namespace:
+                    color = colors.get("namespace", colors["fg"])
+                    expecting_namespace = False
+                else:
+                    if word in lexer.keywords:
+                        color = colors.get("keyword", colors["fg"])
+                    elif word in lexer.special_keywords:
+                        color = colors.get("special", colors["fg"])
+                    elif word in lexer.modifiers:
+                        color = colors.get("modifier", colors["fg"])
+                    elif word in lexer.types:
+                        color = colors.get("type", colors["fg"])
+                    elif word in lexer.literals:
+                        color = colors.get("literal", colors["fg"])
+                    elif word.startswith('#'):
+                        color = colors.get("directive", colors["fg"])
+                    elif j < n and line[j:j + 2] == '::':
+                        color = colors.get("namespace", colors["fg"])
+                    elif j < n and line[j] == '(':
+                        color = colors.get("function", colors["fg"])
+                    elif j < n and line[j] == '.':
+                        color = colors.get("object", colors["fg"])
+
+                tokens.append((word, color))
+                i = j
+                continue
+
+            # Операторы
+            if line[i] in '+-*/%=&|^!<>~,?.:;(){}[]':
+                two_char = line[i:i + 2]
+                if two_char in {'::', '->', '<=', '>=', '==', '!=', '<<', '>>'}:
+                    tokens.append((two_char, colors.get("operator", colors["fg"])))
+                    i += 2
+                    continue
+                tokens.append((line[i], colors.get("operator", colors["fg"])))
+                i += 1
+                continue
+
+            # Пробелы
+            if line[i].isspace():
+                j = i
+                while j < n and line[j].isspace():
+                    j += 1
+                tokens.append((line[i:j], colors["fg"]))
+                i = j
+                continue
+
+            # Остальное
+            tokens.append((line[i], colors["fg"]))
+            i += 1
+
+        return tokens
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        if self._display_colors:
+            colors = self._display_colors
+            bg_color = colors.get('bg', QColor('#1e1e2e'))
+            border_color = colors.get('status_border', QColor('#313244'))
+        else:
+            bg_color = QColor('#1e1e2e')
+            border_color = QColor('#313244')
+
+        painter.setBrush(bg_color)
+        painter.setPen(QPen(border_color, 1))
+        painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 10, 10)
+
+        if self.tokenized_lines:
+            code_rect = self.code_area.geometry()
+            x = code_rect.x() + 5
+            y = code_rect.y() + 2
+
+            font = QFont("Consolas", 10)
+            painter.setFont(font)
+            metrics = painter.fontMetrics()
+            line_height = metrics.height() + 2
+
+            for line_tokens in self.tokenized_lines:
+                current_x = x
+                for text, color in line_tokens:
+                    painter.setPen(color)
+                    painter.drawText(current_x, y + metrics.ascent(), text)
+                    current_x += metrics.horizontalAdvance(text)
+                y += line_height
 # =============================================================================
 # CUSTOM WIDGETS
 # =============================================================================
@@ -1044,7 +1449,9 @@ class AboutDialog(QWidget):
 
 
 class RoundedMenu(QMenu):
-    """Custom menu with rounded corners"""
+    """Custom menu with rounded corners and hover tracking"""
+    
+    hovered_action = pyqtSignal(QAction)  # Signal emitted when hovering over an action
     
     def __init__(self, title=None, parent=None):
         super().__init__(title, parent)
@@ -1058,6 +1465,26 @@ class RoundedMenu(QMenu):
         consolas_font = QFont("Consolas", 11)
         self.setFont(consolas_font)
         
+        self._current_hovered_action = None
+        self._hover_timer = QTimer(self)
+        self._hover_timer.setInterval(50)
+        self._hover_timer.timeout.connect(self._check_hover)
+        self._hover_timer.start()
+        
+    def _check_hover(self):
+        """Check which action is currently hovered"""
+        if not self.isVisible():
+            return
+            
+        from PyQt6.QtGui import QCursor
+        pos = self.mapFromGlobal(QCursor.pos())
+        action = self.actionAt(pos)
+        
+        if action != self._current_hovered_action:
+            self._current_hovered_action = action
+            self.hovered_action.emit(action)
+
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -1081,6 +1508,11 @@ class RoundedMenu(QMenu):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         
         super().paintEvent(event)
+        
+    def hideEvent(self, event):
+        self._current_hovered_action = None
+        self.hovered_action.emit(None)
+        super().hideEvent(event)
         
     def _get_theme_colors(self):
         window = self.window()
@@ -1347,6 +1779,11 @@ class TwistLangLexer(QsciLexerCustom):
         bold_font = get_safe_monospace_font("Consolas", self.font_size)
         bold_font.setBold(True)
         self.setFont(bold_font, self.STYLE_KEYWORD)
+
+        special_font = get_safe_monospace_font("Consolas", self.font_size)
+        special_font.setItalic(True)
+        special_font.setUnderline(True)
+        self.setFont(special_font, self.STYLE_MODIFIER)
 
     def styleText(self, start: int, end: int):
         editor = self.editor()
@@ -2084,6 +2521,12 @@ class TwistLangEditor(QMainWindow):
         self.resize_start_pos = None
         self.resize_start_geometry = None
         
+        # Theme preview
+        self.theme_preview = None
+        self.preview_hide_timer = QTimer(self)
+        self.preview_hide_timer.setInterval(50)
+        self.preview_hide_timer.timeout.connect(self._check_preview_hide)
+        
         self._setup_window()
         self._setup_ui()
         self._setup_shortcuts()
@@ -2220,10 +2663,23 @@ class TwistLangEditor(QMainWindow):
         theme_menu.setFont(consolas_font)
         settings_menu.addMenu(theme_menu)
         
+        # Connect hover signal for theme preview
+        theme_menu.hovered_action.connect(self._on_theme_menu_hover)
+        
+        prev_type = None
         for theme_name in THEMES.keys():
+            theme_data = THEMES[theme_name]
+            current_type = theme_data.get("type", "dark")  # если тип не указан, считаем тёмной
+            
+            # Если тип изменился и это не первая тема — добавляем разделитель
+            if prev_type is not None and prev_type != current_type:
+                theme_menu.addSeparator()
+            prev_type = current_type
+
             theme_action = QAction(theme_name, self)
             theme_action.setCheckable(True)
             theme_action.setFont(consolas_font)
+            theme_action.setData(theme_name)
             if theme_name == self.current_theme:
                 theme_action.setChecked(True)
             theme_action.triggered.connect(lambda checked, tn=theme_name: self.select_theme(tn))
@@ -2290,6 +2746,78 @@ class TwistLangEditor(QMainWindow):
         # В конце обновите title bar
         self.title_bar.add_menu(menubar)
         self._update_checkmarks_after_rebuild()
+
+    def _on_theme_menu_hover(self, action: QAction):
+        """Handle hover on theme menu items"""
+        if action and action.data():
+            theme_name = action.data()
+            if theme_name in THEMES:
+                self._show_theme_preview(theme_name, action)
+            else:
+                self._hide_theme_preview()
+        else:
+            # Start timer to check if we should hide
+            self.preview_hide_timer.start()
+    
+    def _check_preview_hide(self):
+        """Check if preview should be hidden"""
+        if self.theme_preview:
+            # Check if mouse is over any theme menu
+            from PyQt6.QtGui import QCursor
+            cursor_pos = QCursor.pos()
+            preview_geo = self.theme_preview.geometry()
+            
+            # Also check if mouse is over the preview itself
+            if not preview_geo.contains(cursor_pos):
+                # Check all open menus
+                for widget in QApplication.instance().topLevelWidgets():
+                    if isinstance(widget, RoundedMenu) and widget.isVisible():
+                        if widget.geometry().contains(cursor_pos):
+                            return
+                self._hide_theme_preview()
+                self.preview_hide_timer.stop()
+    
+    def _show_theme_preview(self, theme_name: str, action: QAction):
+        """Show theme preview widget"""
+        self.preview_hide_timer.stop()
+        
+        if not self.theme_preview:
+            self.theme_preview = ThemePreviewWidget()
+        
+        self.theme_preview.set_theme(theme_name)
+        
+        # Position preview to the right of the menu
+        # Получаем меню через родителя действия
+        menu = None
+        for widget in QApplication.instance().topLevelWidgets():
+            if isinstance(widget, RoundedMenu) and widget.isVisible():
+                # Проверяем, принадлежит ли действие этому меню
+                for menu_action in widget.actions():
+                    if menu_action == action:
+                        menu = widget
+                        break
+                if menu:
+                    break
+        
+        if menu:
+            menu_geo = menu.geometry()
+            preview_x = menu_geo.right() + 5
+            preview_y = menu_geo.top()
+            self.theme_preview.move(preview_x, preview_y)
+        else:
+            # Fallback: позиционируем рядом с курсором
+            from PyQt6.QtGui import QCursor
+            cursor_pos = QCursor.pos()
+            self.theme_preview.move(cursor_pos.x() + 20, cursor_pos.y())
+        
+        if not self.theme_preview.isVisible():
+            self.theme_preview.show()
+    
+    def _hide_theme_preview(self):
+        """Hide theme preview widget"""
+        if self.theme_preview:
+            self.theme_preview.hide()
+        self.preview_hide_timer.stop()
 
     def _update_checkmarks_after_rebuild(self):
         """Восстанавливает состояние галочек после пересоздания меню"""
@@ -2481,6 +3009,9 @@ class TwistLangEditor(QMainWindow):
         # Показываем сообщение
         lang_name = Strings.get("english") if language == Language.ENGLISH else Strings.get("russian")
         self.show_status_message(f"Language switched to {lang_name}", 2000)
+
+        if self.theme_preview:
+            self.theme_preview.update_language()
 
     def _create_action(self, text: str, shortcut: Optional[str], slot) -> QAction:
         action = QAction(text, self)
