@@ -57,7 +57,7 @@ AUTOSAVE_INTERVALS = [
     ("5 minutes", 5 * MINUTE)
 ]
 
-VERSION = "1.05b"
+VERSION = "1.07b"
 
 
 class Language(Enum):
