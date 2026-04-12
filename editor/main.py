@@ -41,7 +41,7 @@ MIN_FONT_SIZE = 8
 
 APP_ICON_PATH = r"data\app_icon.svg"
 
-DEFAULT_THEME = "Kanagawa Light"
+DEFAULT_THEME = "Rosé Pine"
 WINDOW_MIN_WIDTH = 400
 WINDOW_MIN_HEIGHT = 300
 TITLE_BAR_HEIGHT = 32
@@ -315,7 +315,7 @@ class Strings:
 
     }
     
-    current_language = Language.RUSSIAN
+    current_language = Language.ENGLISH
     
     @classmethod
     def set_language(cls, lang: Language):

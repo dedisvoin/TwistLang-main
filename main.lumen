@@ -1,15 +1,8 @@
-global let Input = lambda(msg: String) -> *auto {
-    new<static(auto), const> input(msg)
-};
+static let Number: Type = Int | Double;
+
+echo Number;
 
 
-let main = lambda() -> auto {
-    namespace {
-        let name = Input("Enter you name: ");
-        echo name;
-        outln "Hello, " + *name;
-    }
-};
 
 
-main();
+

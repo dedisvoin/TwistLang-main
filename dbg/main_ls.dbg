@@ -1,2 +1,1 @@
-pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':2:34:5:1 message: Input is run time instruction. Default return - ''
-pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':15:4:2:2 message: *String[0x15]
+pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':3:0:12:2 message: Int | Double
