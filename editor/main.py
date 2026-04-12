@@ -198,7 +198,9 @@ class Strings:
         # Tooltips
         "toggle_folding": "Toggle code folding (show/hide fold margins)\n[This function in beta test]",
 
-        "code_snap": "Code Snap"
+        "code_snap": "Code Snap",
+        "error_text": "Inline Messages",
+
     }
     
     # Russian strings
@@ -308,7 +310,9 @@ class Strings:
         # Tooltips
         "toggle_folding": "Переключить сворачивание кода (показать/скрыть поля сворачивания)\n[Функция в бета-тестировании]",
 
-        "code_snap": "Снимок кода"
+        "code_snap": "Снимок кода",
+        "error_text": "Строковые сообщения",
+
     }
     
     current_language = Language.RUSSIAN
@@ -2205,6 +2209,9 @@ class CustomScintilla(QsciScintilla):
         self.error_lines: Set[int] = set()
         self.error_messages: Dict[int, str] = {}
         
+        # Флаг для отображения текста ошибок
+        self.error_text_visible = True
+        
         self.setMouseTracking(True)
         self._setup_editor()
         self._setup_error_highlighting()
@@ -2243,7 +2250,7 @@ class CustomScintilla(QsciScintilla):
         
         menu.addSeparator()
         
-        # Select All action - исправлено: используем лямбду
+        # Select All action
         select_all_action = menu.addAction(Strings.get("context_select_all"))
         select_all_action.triggered.connect(lambda: self.selectAll())
         
@@ -2348,6 +2355,11 @@ class CustomScintilla(QsciScintilla):
     def set_main_window(self, window):
         self.main_window = window
         
+    def set_error_text_visible(self, visible: bool):
+        """Включить/отключить отображение текста ошибок"""
+        self.error_text_visible = visible
+        self.viewport().update()
+        
     def set_errors(self, errors: List[tuple]):
         self.clear_errors()
         for error in errors:
@@ -2374,19 +2386,19 @@ class CustomScintilla(QsciScintilla):
         if not isinstance(message, str):
             message = str(message)
         
+        # Подчеркивание ошибок всегда включено
         if (error_type in [0, 1]):
             self.fillIndicatorRange(line, start_col, line, end_col,
                                 self.INDICATOR_ERROR if error_type == 0 else self.WARNING_ERROR)
             
         if error_type == 0:
-            self.markerAdd(line, self.ERROR_LINE_MARKER)
+            if (self.error_text_visible): self.markerAdd(line, self.ERROR_LINE_MARKER)
             self.error_messages[line] = f"Error: {message}"
         elif error_type == 1:
-            self.markerAdd(line, self.WARNING_LINE_MARKER)
+            if (self.error_text_visible): self.markerAdd(line, self.WARNING_LINE_MARKER)
             self.error_messages[line] = f"Warning: {message}"
         elif error_type == 2:
-            self.markerAdd(line, self.ECHO_LINE_MARKER)
-            
+            if (self.error_text_visible): self.markerAdd(line, self.ECHO_LINE_MARKER)
             self.error_messages[line] = message
             
         self.error_lines.add(line)
@@ -2540,7 +2552,8 @@ class CustomScintilla(QsciScintilla):
     def paintEvent(self, event):
         super().paintEvent(event)
         
-        if not self.error_messages:
+        # Проверяем, нужно ли отображать текст ошибок
+        if not self.error_text_visible or not self.error_messages:
             return
             
         try:
@@ -3196,6 +3209,8 @@ class TwistLangEditor(QMainWindow):
         self.resize_direction = None
         self.resize_start_pos = None
         self.resize_start_geometry = None
+
+        self.error_text_visible = True
         
         # Theme preview
         self.theme_preview = None
@@ -3395,6 +3410,19 @@ class TwistLangEditor(QMainWindow):
         
         about_action = self._create_action(Strings.get("about"), None, self.show_about_dialog)
         settings_menu.addAction(about_action)
+
+        
+        # В settings_menu после theme_menu и language_menu
+        settings_menu.addSeparator()
+
+        # Error Text toggle
+        self.error_text_action = QAction(Strings.get("error_text"), self)
+        self.error_text_action.setCheckable(True)
+        self.error_text_action.setChecked(self.error_text_visible)
+        self.error_text_action.setFont(consolas_font)
+        self.error_text_action.triggered.connect(self._toggle_error_text)
+        settings_menu.addAction(self.error_text_action)
+
             
         # Run menu
         run_menu = RoundedMenu(Strings.get("run_menu"), self)
@@ -3430,6 +3458,27 @@ class TwistLangEditor(QMainWindow):
         # В конце обновите title bar
         self.title_bar.add_menu(menubar)
         self._update_checkmarks_after_rebuild()
+
+    def _toggle_error_text(self, checked: bool):
+        """Toggle error text display in all editors"""
+        self.error_text_visible = checked
+        
+        # Обновляем все открытые редакторы
+        for i in range(self.tab_widget.count()):
+            editor = self.tab_widget.widget(i)
+            if isinstance(editor, CustomScintilla):
+                editor.set_error_text_visible(checked)
+        
+        # Обновляем иконку галочки
+        if checked:
+            colors = THEMES[self.current_theme]["colors"]
+            self.error_text_action.setIcon(self._create_check_icon(colors["fg"]))
+        else:
+            self.error_text_action.setIcon(QIcon())
+        
+        # Показываем статус
+        status_text = Strings.get("error_text_on") if checked else Strings.get("error_text_off")
+        self.show_status_message(status_text, 2000)
 
     def show_codesnap(self):
         """Show CodeSnap dialog for current editor"""
@@ -3536,6 +3585,15 @@ class TwistLangEditor(QMainWindow):
                 self.autosave_action.setIcon(self.check_icon)
             else:
                 self.autosave_action.setIcon(QIcon())
+
+        # Восстанавливаем галочку для error text
+        if hasattr(self, 'error_text_action'):
+            if self.error_text_visible:
+                self.error_text_action.setChecked(True)
+                self.error_text_action.setIcon(self.check_icon)
+            else:
+                self.error_text_action.setChecked(False)
+                self.error_text_action.setIcon(QIcon())
         
         # Восстанавливаем галочки для интервалов автосохранения
         for action in self.interval_actions:
@@ -4390,6 +4448,8 @@ class TwistLangEditor(QMainWindow):
         
         if filename:
             self.start_language_server(filename)
+
+        editor.set_error_text_visible(self.error_text_visible)
             
         self._update_content_display()
         
