@@ -12,7 +12,7 @@ from typing import Optional, Dict, List, Tuple, Set
 from dataclasses import dataclass
 from enum import Enum
 
-from PyQt6.QtGui import QPainterPath, QRegion
+from PyQt6.QtGui import QFontMetrics, QPainterPath, QRegion
 from PyQt6.Qsci import QsciScintilla, QsciLexerCustom, QsciAPIs
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMenu, QScrollArea, QSizePolicy, QStatusBar,
@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
     QFileDialog, QMessageBox, QToolTip, QWidget, QHBoxLayout,
     QVBoxLayout, QFrame, QStackedWidget
 )
-from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QVariantAnimation, Qt
+from PyQt6.QtCore import QEvent, QPropertyAnimation, QEasingCurve, QVariantAnimation, Qt
 from PyQt6.QtGui import (
     QColor, QFont, QAction, QKeySequence, QShortcut,
     QPainter, QPen, QIcon, QPixmap, QMouseEvent,
@@ -196,7 +196,9 @@ class Strings:
         "version": f"Version {VERSION}",
         
         # Tooltips
-        "toggle_folding": "Toggle code folding (show/hide fold margins)\n[This function in beta test]"
+        "toggle_folding": "Toggle code folding (show/hide fold margins)\n[This function in beta test]",
+
+        "code_snap": "Code Snap"
     }
     
     # Russian strings
@@ -304,9 +306,9 @@ class Strings:
         "version": f"Версия {VERSION}",
         
         # Tooltips
-        "toggle_folding": "Переключить сворачивание кода (показать/скрыть поля сворачивания)\n[Функция в бета-тестировании]"
+        "toggle_folding": "Переключить сворачивание кода (показать/скрыть поля сворачивания)\n[Функция в бета-тестировании]",
 
-        
+        "code_snap": "Снимок кода"
     }
     
     current_language = Language.RUSSIAN
@@ -1214,12 +1216,20 @@ class CustomTitleBar(QFrame):
         painter.setBrush(QColor(196, 43, 28))
         painter.setPen(Qt.PenStyle.NoPen)
         
-        path = QPainterPath()
-        path.moveTo(rect.left(), rect.top())
-        path.arcTo(rect.right() - 14.5, rect.top(), 20, 70, 90, -90)
-        path.lineTo(rect.right(), rect.bottom() + 1)
-        path.lineTo(rect.left(), rect.bottom() + 1)
-        path.lineTo(rect.left(), rect.top())
+        if not self.is_maximized:
+            path = QPainterPath()
+            path.moveTo(rect.left(), rect.top())
+            path.arcTo(rect.right() - 17, rect.top(), 20, 70, 90, -90)
+            path.lineTo(rect.right(), rect.bottom() + 1)
+            path.lineTo(rect.left(), rect.bottom() + 1)
+            path.lineTo(rect.left(), rect.top())
+        else:
+            path = QPainterPath()
+            path.moveTo(rect.left(), rect.top())
+            path.lineTo(rect.right() + 1, rect.top())
+            path.lineTo(rect.right() + 1, rect.bottom())
+            path.lineTo(rect.left(), rect.bottom())
+
         
         painter.drawPath(path)
         
@@ -2127,6 +2137,35 @@ class TwistLangLexer(QsciLexerCustom):
         return (ch, length)
 
 
+class WindowBorderOverlay(QWidget):
+    """Прозрачный оверлей для рисования обводки окна"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)  # Пропускаем клики
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        main_window = self.parent()
+        if hasattr(main_window, 'current_theme'):
+            colors = THEMES[main_window.current_theme]["colors"]
+            border_color = colors.get('status_border', QColor('#FF0000'))
+        else:
+            border_color = QColor('#FF0000')
+        
+        is_maximized = main_window.isMaximized()
+        radius = 7 if not is_maximized else 0
+        
+        if not is_maximized:
+            pen = QPen(border_color, 2)
+            painter.setPen(pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            
+            rect = self.rect().adjusted(1, 1, -1, -1)
+            painter.drawRoundedRect(rect, radius, radius)
+
 # =============================================================================
 # EDITOR
 # =============================================================================
@@ -2587,6 +2626,551 @@ class CustomScintilla(QsciScintilla):
         return THEMES[DEFAULT_THEME]["colors"]
 
 
+class CodeSnapDialog(QWidget):
+    """Dialog for creating beautiful code screenshots"""
+    
+    def __init__(self, editor: CustomScintilla, parent=None):
+        super().__init__(None, Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        self.parent_window = parent
+        self.editor = editor
+        self.setWindowTitle("CodeSnap")
+        
+        # Настройки
+        self.padding = 30
+        self.corner_radius = 12
+        self.show_line_numbers = True
+        self.show_window_controls = True
+        self.auto_scale = True  # Автоматически масштабировать если не помещается
+        self.min_scale = 0.5    # Минимальный масштаб
+        self.max_scale = 1.0    # Максимальный масштаб
+        self.scale_factor = 1.0
+        
+        # Получаем выделенный текст или весь текст
+        self.selected_text = self._get_selected_or_all_text()
+        self.lines = self.selected_text.split('\n')
+        
+        # Ограничиваем количество строк для производительности
+        if len(self.lines) > 500:
+            self.lines = self.lines[:500]
+            self.lines.append("// ... (truncated, showing first 500 lines)")
+        
+        # Вычисляем размеры
+        self._calculate_size()
+        
+        # Проверяем, помещается ли окно на экран и масштабируем если нужно
+        self._adjust_to_screen()
+        
+        self.setFixedSize(self.image_width, self.image_height)
+        
+        # Центрируем на экране
+        self._center_on_screen()
+        
+        # Анимация появления
+        self.setWindowOpacity(0.0)
+        self.fade_animation = QPropertyAnimation(self, b"windowOpacity")
+        self.fade_animation.setDuration(300)
+        self.fade_animation.setStartValue(0.0)
+        self.fade_animation.setEndValue(1.0)
+        self.fade_animation.start()
+        
+        # Устанавливаем фокус для закрытия по Escape
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        
+        # Таймер для проверки потери фокуса
+        self.focus_check_timer = QTimer(self)
+        self.focus_check_timer.setInterval(100)
+        self.focus_check_timer.timeout.connect(self._check_focus)
+        self.focus_check_timer.start()
+        
+        # Флаг для отслеживания клика вне окна
+        self.installEventFilter(self)
+        
+    def _get_selected_or_all_text(self) -> str:
+        """Get selected text or all text if nothing selected"""
+        if self.editor.hasSelectedText():
+            return self.editor.selectedText()
+        return self.editor.text()
+    
+    def _calculate_size(self):
+        """Calculate image size based on content"""
+        font = QFont("Consolas", int(12 * self.scale_factor))
+        metrics = QFontMetrics(font)
+        
+        line_height = metrics.height() + 4
+        max_line_width = 0
+        
+        for line in self.lines:
+            # Заменяем табы на пробелы для корректного расчета
+            display_line = line.replace('\t', '    ')
+            line_width = metrics.horizontalAdvance(display_line)
+            max_line_width = max(max_line_width, line_width)
+        
+        # Добавляем место для номеров строк
+        line_number_width = 0
+        if self.show_line_numbers:
+            line_number_width = metrics.horizontalAdvance(str(len(self.lines))) + 30
+        
+        # Вычисляем размеры
+        content_width = line_number_width + max_line_width
+        self.image_width = content_width + self.padding * 2
+        self.image_height = line_height * len(self.lines) + self.padding * 2 + 40  # +40 для заголовка
+        
+        # Применяем масштаб
+        self.image_width = int(self.image_width)
+        self.image_height = int(self.image_height)
+        
+        # Минимальные размеры
+        self.image_width = max(self.image_width, 400)
+        self.image_height = max(self.image_height, 200)
+    
+    def _adjust_to_screen(self):
+        """Adjust window size to fit screen if needed"""
+        screen = QApplication.primaryScreen().availableGeometry()
+        
+        # Добавляем отступы от краев экрана
+        max_width = screen.width() - 100
+        max_height = screen.height() - 100
+        
+        # Проверяем, нужно ли масштабирование
+        if self.auto_scale and (self.image_width > max_width or self.image_height > max_height):
+            # Вычисляем необходимый масштаб
+            scale_x = max_width / self.image_width
+            scale_y = max_height / self.image_height
+            scale = min(scale_x, scale_y)
+            
+            # Ограничиваем минимальный масштаб
+            scale = max(scale, self.min_scale)
+            scale = min(scale, self.max_scale)
+            
+            if scale < 1.0:
+                self.scale_factor = scale
+                # Пересчитываем размеры с новым масштабом
+                self._calculate_size()
+                
+                # Дополнительно проверяем, что после масштабирования всё помещается
+                if self.image_width > max_width:
+                    self.image_width = int(max_width)
+                if self.image_height > max_height:
+                    self.image_height = int(max_height)
+    
+    def _center_on_screen(self):
+        """Center dialog on screen"""
+        screen = QApplication.primaryScreen().geometry()
+        x = (screen.width() - self.width()) // 2
+        y = (screen.height() - self.height()) // 2
+        
+        # Убеждаемся, что окно не выходит за пределы экрана
+        x = max(10, min(x, screen.width() - self.width() - 10))
+        y = max(10, min(y, screen.height() - self.height() - 10))
+        
+        self.move(x, y)
+    
+    def _check_focus(self):
+        """Check if window lost focus and close if needed"""
+        if not self.isActiveWindow() and not self.underMouse():
+            # Проверяем, не открыто ли меню сохранения
+            for widget in QApplication.topLevelWidgets():
+                if isinstance(widget, QFileDialog) and widget.isVisible():
+                    return
+            self.close()
+    
+    def eventFilter(self, obj, event):
+        """Handle events for the dialog"""
+        if event.type() == QEvent.Type.WindowDeactivate:
+            # Небольшая задержка перед закрытием
+            QTimer.singleShot(100, self._check_and_close)
+        elif event.type() == QEvent.Type.MouseButtonPress:
+            # Проверяем, кликнули ли вне окна
+            if not self.rect().contains(event.pos()):
+                self.close()
+        return super().eventFilter(obj, event)
+    
+    def _check_and_close(self):
+        """Check if we should close the dialog"""
+        # Не закрываем, если открыт диалог сохранения
+        for widget in QApplication.topLevelWidgets():
+            if isinstance(widget, QFileDialog) and widget.isVisible():
+                return
+            if isinstance(widget, QMessageBox) and widget.isVisible():
+                return
+        
+        if not self.isActiveWindow() and not self.underMouse():
+            self.close()
+    
+    def keyPressEvent(self, event):
+        """Handle keyboard shortcuts"""
+        if event.key() == Qt.Key.Key_Escape:
+            self.close()
+        elif event.key() == Qt.Key.Key_S and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            self.save_screenshot()
+        elif event.key() == Qt.Key.Key_C and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            self.copy_to_clipboard()
+        elif event.key() == Qt.Key.Key_Plus and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            self._zoom_in()
+        elif event.key() == Qt.Key.Key_Minus and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            self._zoom_out()
+        else:
+            super().keyPressEvent(event)
+    
+    def wheelEvent(self, event):
+        """Handle mouse wheel for zooming"""
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            delta = event.angleDelta().y()
+            if delta > 0:
+                self._zoom_in()
+            else:
+                self._zoom_out()
+            event.accept()
+        else:
+            super().wheelEvent(event)
+    
+    def _zoom_in(self):
+        """Zoom in the preview"""
+        if self.scale_factor < self.max_scale:
+            self.scale_factor = min(self.scale_factor + 0.1, self.max_scale)
+            self._recalculate_and_update()
+    
+    def _zoom_out(self):
+        """Zoom out the preview"""
+        if self.scale_factor > self.min_scale:
+            self.scale_factor = max(self.scale_factor - 0.1, self.min_scale)
+            self._recalculate_and_update()
+    
+    def _recalculate_and_update(self):
+        """Recalculate size and update window"""
+        self._calculate_size()
+        self.setFixedSize(self.image_width, self.image_height)
+        self._center_on_screen()
+        self.update()
+    
+    def focusOutEvent(self, event):
+        """Handle focus out event"""
+        QTimer.singleShot(100, self._check_and_close)
+        super().focusOutEvent(event)
+    
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        colors = self._get_theme_colors()
+        
+        # Фон
+        bg_color = colors['bg']
+        painter.setBrush(bg_color)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawRoundedRect(self.rect(), self.corner_radius, self.corner_radius)
+        
+        # Граница
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        pen = QPen(colors['status_border'], 1)
+        painter.setPen(pen)
+        painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), self.corner_radius, self.corner_radius)
+        
+        # Заголовок окна (имитация)
+        if self.show_window_controls:
+            self._draw_window_header(painter, colors)
+        
+        # Код
+        self._draw_code(painter, colors)
+        
+        # Подсказка внизу
+        # self._draw_hint(painter, colors)
+    
+    def _draw_hint(self, painter: QPainter, colors: dict):
+        """Draw hint text at the bottom"""
+        hint_parts = ["Esc - Close", "Ctrl+S - Save", "Ctrl+C - Copy"]
+        hint_parts.append("Ctrl+Wheel - Zoom")
+        hint_parts.append("Click outside - Close")
+        
+        hint = " | ".join(hint_parts)
+        font = QFont("Consolas", 8)
+        painter.setFont(font)
+        metrics = QFontMetrics(font)
+        
+        text_width = metrics.horizontalAdvance(hint)
+        x = (self.width() - text_width) // 2
+        y = self.height() - 8
+        
+        hint_color = QColor(colors['comment'])
+        hint_color.setAlpha(150)
+        painter.setPen(QPen(hint_color, 1))
+        painter.drawText(x, y, hint)
+    
+    def _draw_window_header(self, painter: QPainter, colors: dict):
+        """Draw fake window controls"""
+        header_height = 30
+        
+        # Кнопки управления окном
+        btn_size = 12
+        btn_spacing = 8
+        btn_y = self.padding + (header_height - btn_size) // 2
+        
+        # Close button
+        painter.setBrush(QColor(255, 95, 86))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(self.padding + 10, btn_y, btn_size, btn_size)
+        
+        # Minimize button
+        painter.setBrush(QColor(255, 189, 46))
+        painter.drawEllipse(self.padding + 10 + btn_size + btn_spacing, btn_y, btn_size, btn_size)
+        
+        # Maximize button
+        painter.setBrush(QColor(39, 201, 63))
+        painter.drawEllipse(self.padding + 10 + (btn_size + btn_spacing) * 2, btn_y, btn_size, btn_size)
+        
+        # Имя файла
+        if self.editor.filename:
+            filename = os.path.basename(self.editor.filename)
+            painter.setPen(QPen(colors['comment'], 1))
+            font = QFont("Consolas", int(10))
+            painter.setFont(font)
+            text_rect = QRect(
+                self.padding + 10 + (btn_size + btn_spacing) * 3 + 20,
+                self.padding,
+                self.width() - self.padding * 2 - 100,
+                header_height
+            )
+            
+            # Обрезаем текст если не помещается
+            metrics = QFontMetrics(font)
+            elided_text = metrics.elidedText(filename, Qt.TextElideMode.ElideMiddle, text_rect.width())
+            painter.drawText(text_rect, Qt.AlignmentFlag.AlignVCenter, elided_text)
+    
+    def _draw_code(self, painter: QPainter, colors: dict):
+        """Draw code with syntax highlighting"""
+        # Создаем временный лексер для подсветки
+        lexer = TwistLangLexer(theme_name=self.parent_window.current_theme)
+        
+        font = QFont("Consolas", int(12 * self.scale_factor))
+        painter.setFont(font)
+        metrics = QFontMetrics(font)
+        
+        line_height = metrics.height() + 4
+        start_y = self.padding + (40 if self.show_window_controls else 10)
+        
+        # Максимальная высота для отрисовки
+        max_y = self.height() - self.padding - 25  # 25 для подсказки
+        visible_lines = len(self.lines)
+        
+        # Максимальная ширина для отрисовки (с учетом padding)
+        max_x = self.width() - self.padding - 10
+        
+        for i in range(visible_lines):
+            line = self.lines[i]
+            y = start_y + i * line_height
+            
+            # Номер строки
+            if self.show_line_numbers:
+                line_num = str(i + 1)
+                num_width = metrics.horizontalAdvance(str(len(self.lines))) + 20
+                painter.setPen(QPen(colors['comment'], 1))
+                painter.drawText(
+                    int(self.padding + 5), y + metrics.ascent(),
+                    line_num.rjust(len(str(len(self.lines))))
+                )
+                x_offset = int(self.padding + num_width)
+            else:
+                x_offset = self.padding + 10
+            
+            # Подсветка синтаксиса
+            tokens = self._highlight_line(line, lexer, colors)
+            current_x = x_offset
+            
+            for text, color in tokens:
+                # Проверяем каждый символ отдельно для точного контроля
+                char_width = metrics.horizontalAdvance(text)
+                
+                # Если текст не помещается - обрезаем
+                if current_x + char_width > max_x:
+                    # Рисуем только то, что помещается
+                    available_width = max_x - current_x
+                    if available_width > metrics.averageCharWidth():
+                        # Вычисляем сколько символов поместится
+                        chars_to_fit = 0
+                        width_so_far = 0
+                        for char in text:
+                            char_w = metrics.horizontalAdvance(char)
+                            if width_so_far + char_w > available_width:
+                                break
+                            width_so_far += char_w
+                            chars_to_fit += 1
+                        
+                        if chars_to_fit > 0:
+                            truncated = text[:chars_to_fit]
+                            painter.setPen(QPen(color, 1))
+                            painter.drawText(current_x, y + metrics.ascent(), truncated)
+                    break
+                
+                painter.setPen(QPen(color, 1))
+                painter.drawText(current_x, y + metrics.ascent(), text)
+                current_x += char_width
+        
+        # Показываем индикатор, если есть еще строки
+        if visible_lines < len(self.lines):
+            remaining = len(self.lines) - visible_lines
+            indicator = f"... {remaining} more line(s) ..."
+            
+            font = QFont("Consolas", int(10 * self.scale_factor))
+            font.setItalic(True)
+            painter.setFont(font)
+            metrics = QFontMetrics(font)
+            
+            text_width = metrics.horizontalAdvance(indicator)
+            x = (self.width() - text_width) // 2
+            y = start_y + visible_lines * line_height + metrics.ascent() + 5
+            
+            indicator_color = QColor(colors['comment'])
+            indicator_color.setAlpha(150)
+            painter.setPen(QPen(indicator_color, 1))
+            painter.drawText(x, y, indicator)
+    
+    def _highlight_line(self, line: str, lexer, colors: dict) -> List[Tuple[str, QColor]]:
+        """Apply lexer rules to a single line"""
+        tokens = []
+        i = 0
+        n = len(line)
+        expecting_namespace = False
+        
+        while i < n:
+            # Comment
+            if line.startswith('//', i):
+                tokens.append((line[i:], colors.get("comment", colors["fg"])))
+                break
+            
+            # String
+            if line[i] in ('"', "'"):
+                start = i
+                quote = line[i]
+                i += 1
+                escaped = False
+                while i < n:
+                    ch = line[i]
+                    if ch == '\\':
+                        escaped = not escaped
+                    elif ch == quote and not escaped:
+                        i += 1
+                        break
+                    else:
+                        escaped = False
+                    i += 1
+                token_text = line[start:i]
+                tokens.append((token_text, colors.get("string", colors["fg"])))
+                continue
+            
+            # Numbers
+            if line[i].isdigit() or (line[i] == '.' and i + 1 < n and line[i + 1].isdigit()):
+                j = i
+                has_dot = False
+                while j < n and (line[j].isdigit() or (line[j] == '.' and not has_dot)):
+                    if line[j] == '.':
+                        has_dot = True
+                    j += 1
+                tokens.append((line[i:j], colors.get("number", colors["fg"])))
+                i = j
+                continue
+            
+            # Identifiers and keywords
+            if line[i].isalpha() or line[i] == '_' or line[i] == '#':
+                j = i
+                while j < n and (line[j].isalnum() or line[j] == '_' or line[j] == '#'):
+                    j += 1
+                word = line[i:j]
+                color = colors["fg"]
+                
+                if word == "namespace" or word == "struct":
+                    expecting_namespace = True
+                    color = colors.get("keyword", colors["fg"])
+                elif expecting_namespace:
+                    color = colors.get("namespace", colors["fg"])
+                    expecting_namespace = False
+                else:
+                    if word in lexer.keywords:
+                        color = colors.get("keyword", colors["fg"])
+                    elif word in lexer.special_keywords:
+                        color = colors.get("special", colors["fg"])
+                    elif word in lexer.modifiers:
+                        color = colors.get("modifier", colors["fg"])
+                    elif word in lexer.types:
+                        color = colors.get("type", colors["fg"])
+                    elif word in lexer.literals:
+                        color = colors.get("literal", colors["fg"])
+                    elif word.startswith('#'):
+                        color = colors.get("directive", colors["fg"])
+                    elif j < n and line[j:j+2] == '::':
+                        color = colors.get("namespace", colors["fg"])
+                    elif j < n and line[j] == '(':
+                        color = colors.get("function", colors["fg"])
+                    elif j < n and line[j] == '.':
+                        color = colors.get("object", colors["fg"])
+                
+                tokens.append((word, color))
+                i = j
+                continue
+            
+            # Operators
+            if line[i] in '+-*/%=&|^!<>~,?.:;(){}[]':
+                two_char = line[i:i+2]
+                if two_char in {'::', '->', '<=', '>=', '==', '!=', '<<', '>>'}:
+                    tokens.append((two_char, colors.get("operator", colors["fg"])))
+                    i += 2
+                    continue
+                tokens.append((line[i], colors.get("operator", colors["fg"])))
+                i += 1
+                continue
+            
+            # Whitespace
+            if line[i].isspace():
+                j = i
+                while j < n and line[j].isspace():
+                    j += 1
+                tokens.append((line[i:j], colors["fg"]))
+                i = j
+                continue
+            
+            tokens.append((line[i], colors["fg"]))
+            i += 1
+        
+        return tokens
+    
+    def _get_theme_colors(self):
+        if self.parent_window and hasattr(self.parent_window, 'current_theme'):
+            return THEMES[self.parent_window.current_theme]["colors"]
+        return THEMES[DEFAULT_THEME]["colors"]
+    
+    def save_screenshot(self):
+        """Save screenshot to file"""
+        filename, _ = QFileDialog.getSaveFileName(
+            self, "Save Screenshot", "",
+            "PNG Image (*.png);;All Files (*.*)"
+        )
+        if filename:
+            if not filename.endswith('.png'):
+                filename += '.png'
+            
+            pixmap = self.grab()
+            pixmap.save(filename, 'PNG')
+            
+            QMessageBox.information(self, "Success", f"Screenshot saved to:\n{filename}")
+    
+    def copy_to_clipboard(self):
+        """Copy screenshot to clipboard"""
+        pixmap = self.grab()
+        QApplication.clipboard().setPixmap(pixmap)
+        
+        # Показываем уведомление
+        QToolTip.showText(
+            self.mapToGlobal(QPoint(self.width() // 2, self.height() // 2)),
+            "Copied to clipboard!",
+            self, QRect(), 1000
+        )
+    
+    def closeEvent(self, event):
+        """Clean up on close"""
+        self.focus_check_timer.stop()
+        super().closeEvent(event)
+
 # =============================================================================
 # MAIN WINDOW
 # =============================================================================
@@ -2640,6 +3224,8 @@ class TwistLangEditor(QMainWindow):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setGeometry(100, 100, 1200, 800)
         self.setAcceptDrops(True)
+
+
 
     def _rebuild_menus(self):
         """Полностью пересоздает все меню с текущим языком"""
@@ -2834,10 +3420,29 @@ class TwistLangEditor(QMainWindow):
         check_errors_action = self._create_action(Strings.get("check_errors"), "F4", self.check_current_file_errors)
         run_menu.addAction(check_errors_action)
 
+        run_menu.addSeparator()
+
+        # CodeSnap action
+        codesnap_action = self._create_action(Strings.get("code_snap"), "Ctrl+Shift+P", self.show_codesnap)
+        run_menu.addAction(codesnap_action)
+
         
         # В конце обновите title bar
         self.title_bar.add_menu(menubar)
         self._update_checkmarks_after_rebuild()
+
+    def show_codesnap(self):
+        """Show CodeSnap dialog for current editor"""
+        editor = self.current_editor()
+        if not editor:
+            self.show_status_message("No file open to screenshot", 2000)
+            return
+        
+        dialog = CodeSnapDialog(editor, self)
+        dialog.show()
+        
+        # Сохраняем ссылку чтобы диалог не закрылся сразу
+        self._codesnap_dialog = dialog
 
     def _on_theme_menu_hover(self, action: QAction):
         """Handle hover on theme menu items"""
@@ -3040,6 +3645,20 @@ class TwistLangEditor(QMainWindow):
         self.title_bar.run_clicked.connect(self.run_current_file)
         
         self._update_content_display()
+
+        # Добавляем оверлей для обводки поверх всего
+        self.border_overlay = WindowBorderOverlay(self)
+        self.border_overlay.setGeometry(self.rect())
+        
+        # Обновляем размер оверлея при изменении размера окна
+        self.installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        if obj == self and event.type() == event.Type.Resize:
+            if hasattr(self, 'border_overlay'):
+                self.border_overlay.setGeometry(self.rect())
+        return super().eventFilter(obj, event)
+
         
     def _initialize_theme_checkmark(self):
         colors = THEMES[self.current_theme]["colors"]

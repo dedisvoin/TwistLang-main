@@ -39,16 +39,3 @@ func copy(final static arg: Any) -> *auto {
 func malloc(T: Type) -> *auto {
     ret new<static(T)>;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
