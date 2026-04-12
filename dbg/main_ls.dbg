@@ -1,2 +1,2 @@
-pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':1:0:25:2 message: 1234567
-
+pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':3:0:48:2 message: Hello my name is Ivan!\nI am student!!!!
+pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':6:7:9:1 message: Assertion failed

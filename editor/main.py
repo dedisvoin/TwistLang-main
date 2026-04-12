@@ -329,6 +329,18 @@ class Strings:
 # UTILITY FUNCTIONS
 # =============================================================================
 
+def unescape_message(s: str) -> str:
+    """Convert escaped sequences like \\n, \\t back to actual characters."""
+    replacements = {
+        '\\\\': '\\',   # обрабатываем первым, чтобы не сломать другие замены
+        '\\n': '\n',
+        '\\r': '\r',
+        '\\t': '\t',
+    }
+    for escaped, real in replacements.items():
+        s = s.replace(escaped, real)
+    return s
+
 def create_svg_icon(svg_path: str, color: QColor, size = 32) -> Optional[QIcon]:
     """
     Create an icon from SVG file with specified color.
@@ -1458,6 +1470,7 @@ class ErrorTooltip(QWidget):
         
         self._setup_ui()
         self._current_colors = None
+        self._last_error_type = ErrorType.ERROR
         
     def _setup_ui(self):
         layout = QVBoxLayout(self)
@@ -1466,43 +1479,50 @@ class ErrorTooltip(QWidget):
         
         self.label = QLabel()
         self.label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        self.label.setWordWrap(True)
+        self.label.setWordWrap(False)
         self.label.setFont(QFont("Consolas", 10))
         layout.addWidget(self.label)
         
-    def set_text(self, text: str, colors: dict):
-        """Set tooltip text and update theme colors"""
+    def set_text(self, text: str, colors: dict, error_type: ErrorType = ErrorType.ERROR):
         self._current_colors = colors
+        self._last_error_type = error_type
         self.label.setText(text)
         self.label.setStyleSheet(f"color: {colors['fg'].name()}; background: transparent;")
         
-        # Adjust size to content
+        # Определяем акцентный цвет
+        if error_type == ErrorType.ERROR:
+            accent = colors.get('error', QColor(255, 80, 80))
+        elif error_type == ErrorType.WARNING:
+            accent = colors.get('warning', QColor(255, 200, 80))
+        else:  # Echo
+            accent = colors.get('echo', QColor(80, 200, 255))
+        self.label.setStyleSheet(f"color: {accent.name()}; background: transparent;")
+        self._accent_color = accent
+        
         self.label.adjustSize()
         self.adjustSize()
-        
-        # Update style
-        self.setStyleSheet(f"""
-            ErrorTooltip {{
-                background-color: {colors['bg'].name()};
-                border: 1px solid {colors['status_border'].name()};
-                border-radius: 6px;
-            }}
-        """)
+        self.update()  # перерисовка
         
     def paintEvent(self, event):
-        # Ensure rounded corners are drawn correctly
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        if self._current_colors:
-            painter.setBrush(self._current_colors['bg'])
-            painter.setPen(QPen(self._current_colors['status_border'], 1))
+        
+        if self._current_colors is not None:
+            # Рисуем фон
+            bg_color = QColor(self._current_colors['bg'])
+            bg_color.setAlpha(200)
+            
+            painter.setBrush(bg_color)
+            painter.setPen(QPen(self._accent_color, 1))
+            painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 6, 6)
         else:
             # Fallback
             painter.setBrush(QColor('#1e1e2e'))
             painter.setPen(QPen(QColor('#313244'), 1))
-        painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 6, 6)
+            painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 6, 6)
+        
+        # Вызываем родительский метод для отрисовки дочерних виджетов (label)
         super().paintEvent(event)
-
 
 class RoundedMenu(QMenu):
     """Custom menu with rounded corners and hover tracking"""
@@ -2327,7 +2347,8 @@ class CustomScintilla(QsciScintilla):
             self.error_messages[line] = f"Warning: {message}"
         elif error_type == 2:
             self.markerAdd(line, self.ECHO_LINE_MARKER)
-            self.error_messages[line] = f"{message}"
+            
+            self.error_messages[line] = message
             
         self.error_lines.add(line)
         self.errors.append(ErrorInfo(line, start_col, end_col, message, ErrorType(error_type)))
@@ -2372,10 +2393,10 @@ class CustomScintilla(QsciScintilla):
                 
         return None
     
-    def get_error_at_position(self, line: int, col: int) -> Optional[str]:
+    def get_error_at_position(self, line: int, col: int) -> Optional[Tuple[str, ErrorType]]:
         for error in self.errors:
             if error.line == line and error.start_col <= col < error.end_col:
-                return error.message
+                return (error.message, error.type)
         return None
         
     def keyPressEvent(self, event):
@@ -2413,14 +2434,12 @@ class CustomScintilla(QsciScintilla):
             position = self.SendScintilla(self.SCI_POSITIONFROMPOINT, pos.x(), pos.y())
             line, col = self.lineIndexFromPosition(position)
             
-            error_msg = self.get_error_at_position(line, col) if line >= 0 and col >= 0 else None
+            error_info = self.get_error_at_position(line, col) if line >= 0 and col >= 0 else None
             
-            if error_msg:
-                # Получаем цвета темы
+            if error_info:
+                msg, err_type = error_info
                 colors = self._get_theme_colors()
-                self.error_tooltip.set_text(error_msg, colors)
-                
-                # Позиционируем рядом с курсором (чуть правее и ниже)
+                self.error_tooltip.set_text(msg, colors, err_type)
                 global_pos = event.globalPosition().toPoint()
                 self.error_tooltip.move(global_pos.x() + 20, global_pos.y() + 10)
                 if not self.error_tooltip.isVisible():
@@ -2531,8 +2550,12 @@ class CustomScintilla(QsciScintilla):
                 text_color = colors['warning']
             elif (error_type == 2):
                 text_color = colors['echo']
+
                 
             error_text = self.error_messages[line]
+            
+            if (len(error_text.split('\n')) > 1):
+                error_text = error_text.split('\n')[0] + "..."
             
             font = QFont("Consolas", 9)
             if self.main_window:
@@ -3055,7 +3078,6 @@ class TwistLangEditor(QMainWindow):
         state_text = Strings.get("code_folding_on") if enabled else Strings.get("code_folding_off")
         self.show_status_message(state_text, 2000)
         
-        
     def _switch_language(self, language: Language):
         """Переключение языка с пересозданием меню"""
         Strings.set_language(language)
@@ -3480,7 +3502,7 @@ class TwistLangEditor(QMainWindow):
         # Update tooltip colors if visible
         if hasattr(editor, 'error_tooltip') and editor.error_tooltip.isVisible():
             current_text = editor.error_tooltip.label.text()
-            editor.error_tooltip.set_text(current_text, colors)
+            editor.error_tooltip.set_text(current_text, colors, editor.error_tooltip._last_error_type)
         
         editor.repaint()
 
@@ -3934,7 +3956,8 @@ class TwistLangEditor(QMainWindow):
                         pos = int(match.group(3))
                         length = int(match.group(4))
                         t = int(match.group(5))
-                        message = match.group(6).strip()
+                        # Применяем обратное экранирование
+                        message = unescape_message(match.group(6).strip())
                         
                         errors.append((
                             line_num - 1,
@@ -4221,8 +4244,6 @@ class TwistLangEditor(QMainWindow):
             if os.path.isfile(file_path):
                 self.open_file(file_path)
         event.acceptProposedAction()
-
-
 # =============================================================================
 # MAIN ENTRY POINT
 # =============================================================================

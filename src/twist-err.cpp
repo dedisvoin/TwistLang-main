@@ -37,9 +37,24 @@ struct Error {
         this->code = code;
     }
 
+    static std::string escape_message(const std::string& msg) {
+        std::string escaped;
+        escaped.reserve(msg.size());
+        for (char c : msg) {
+            switch (c) {
+                case '\\': escaped += "\\\\"; break;
+                case '\n': escaped += "\\n";  break;
+                case '\r': escaped += "\\r";  break;
+                case '\t': escaped += "\\t";  break;
+                default:   escaped += c;     break;
+            }
+        }
+        return escaped;
+    }
+
     void write_error_to_file(std::ostream& out, const Error& err) const {
         out << "pif: " << err.pif << ":" << err.pif.lenght << ":" << err.message_type
-            << " message: " << err.message << "\n";
+            << " message: " << escape_message(err.message);
         if (err.sub_error)
             write_error_to_file(out, *err.sub_error);
     }
