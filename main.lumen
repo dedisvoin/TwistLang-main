@@ -1,5 +1,15 @@
-let name = input("Name");
+global let Input = lambda(msg: String) -> *auto {
+    new<static(auto), const> input(msg)
+};
 
-let ptr = new<static(auto)> null;
 
-*ptr = 10.;
+let main = lambda() -> auto {
+    namespace {
+        let name = Input("Enter you name: ");
+        echo name;
+        outln "Hello, " + *name;
+    }
+};
+
+
+main();

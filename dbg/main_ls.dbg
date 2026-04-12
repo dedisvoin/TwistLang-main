@@ -1,2 +1,2 @@
-pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':1:16:8:1 message: Input is run time instruction. Default return - ''
-pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':5:0:11:0 message: Incompatible type `Double` (expected `Null`)
+pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':2:34:5:1 message: Input is run time instruction. Default return - ''
+pif: 'C:/Users/Ivan/Desktop/TwistLang-main/main.lumen':15:4:2:2 message: *String[0x15]

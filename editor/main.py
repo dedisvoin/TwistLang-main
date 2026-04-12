@@ -456,7 +456,7 @@ outln std::main(3.14);
 
         # Анимация перехода между темами
         self.transition_animation = QVariantAnimation(self)
-        self.transition_animation.setDuration(700)
+        self.transition_animation.setDuration(300)
         self.transition_animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
         self.transition_animation.valueChanged.connect(self._on_animation_value_changed)
         self.transition_animation.finished.connect(self._on_animation_finished)
@@ -1220,20 +1220,24 @@ class CustomTitleBar(QFrame):
         painter.setBrush(QColor(196, 43, 28))
         painter.setPen(Qt.PenStyle.NoPen)
         
+        radius = 7
+    
         if not self.is_maximized:
+            # Создаем путь с скруглением только в правом верхнем углу
             path = QPainterPath()
             path.moveTo(rect.left(), rect.top())
-            path.arcTo(rect.right() - 17, rect.top(), 20, 70, 90, -90)
-            path.lineTo(rect.right(), rect.bottom() + 1)
-            path.lineTo(rect.left(), rect.bottom() + 1)
-            path.lineTo(rect.left(), rect.top())
+            path.lineTo(rect.right() - radius, rect.top())
+            path.arcTo(rect.right() - radius * 2 + 1, rect.top(), radius * 2, radius * 2, 90, -90)
+            path.lineTo(rect.right() + 1, rect.bottom())
+            path.lineTo(rect.left(), rect.bottom())
+            path.closeSubpath()
         else:
+            
             path = QPainterPath()
             path.moveTo(rect.left(), rect.top())
             path.lineTo(rect.right() + 1, rect.top())
             path.lineTo(rect.right() + 1, rect.bottom())
             path.lineTo(rect.left(), rect.bottom())
-
         
         painter.drawPath(path)
         
@@ -1537,6 +1541,7 @@ class ErrorTooltip(QWidget):
         
         # Вызываем родительский метод для отрисовки дочерних виджетов (label)
         super().paintEvent(event)
+
 
 class RoundedMenu(QMenu):
     """Custom menu with rounded corners and hover tracking"""
@@ -2150,24 +2155,24 @@ class WindowBorderOverlay(QWidget):
         
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        #painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
         main_window = self.parent()
         if hasattr(main_window, 'current_theme'):
             colors = THEMES[main_window.current_theme]["colors"]
-            border_color = colors.get('status_border', QColor('#FF0000'))
+            border_color = colors.get('status_border', QColor('#FF0000')).lighter(170)
         else:
             border_color = QColor('#FF0000')
         
         is_maximized = main_window.isMaximized()
-        radius = 7 if not is_maximized else 0
+        radius = 8 if not is_maximized else 0
         
         if not is_maximized:
-            pen = QPen(border_color, 2)
+            pen = QPen(border_color, 1)
             painter.setPen(pen)
             painter.setBrush(Qt.BrushStyle.NoBrush)
             
-            rect = self.rect().adjusted(1, 1, -1, -1)
+            rect = self.rect().adjusted(0, 0, 0, 0)
             painter.drawRoundedRect(rect, radius, radius)
 
 # =============================================================================
@@ -3165,7 +3170,7 @@ class CodeSnapDialog(QWidget):
             pixmap = self.grab()
             pixmap.save(filename, 'PNG')
             
-            QMessageBox.information(self, "Success", f"Screenshot saved to:\n{filename}")
+            
     
     def copy_to_clipboard(self):
         """Copy screenshot to clipboard"""
@@ -3842,6 +3847,12 @@ class TwistLangEditor(QMainWindow):
                 self.autosave_action.setIcon(self.check_icon)
             else:
                 self.autosave_action.setIcon(QIcon())
+
+        if hasattr(self, 'error_text_action'):
+            if self.error_text_visible:
+                self.error_text_action.setIcon(self.check_icon)
+            else:
+                self.error_text_action.setIcon(QIcon())
         
         for action in self.interval_actions:
             if action.data() == self.autosave_interval:

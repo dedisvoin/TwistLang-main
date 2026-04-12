@@ -55,8 +55,11 @@ struct Error {
     void write_error_to_file(std::ostream& out, const Error& err) const {
         out << "pif: " << err.pif << ":" << err.pif.lenght << ":" << err.message_type
             << " message: " << escape_message(err.message);
-        if (err.sub_error)
+        if (err.sub_error) {
+            out << "\n";
             write_error_to_file(out, *err.sub_error);
+        }
+
     }
 
     std::string ToString() const {
