@@ -1,8 +1,0 @@
-static let Number: Type = Int | Double;
-
-echo Number;
-
-
-
-
-

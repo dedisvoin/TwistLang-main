@@ -1,0 +1,6 @@
+namespace std {
+    const let PI = 3.141592;
+}
+
+std::PI = 3.141592;
+outln std::PI;

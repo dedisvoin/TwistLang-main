@@ -97,7 +97,7 @@ struct NodeCall : public Node { NO_EXEC
                 throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", err.message_type, saved_message);
                 
             }
-            throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda",new Error(err), err.message_type);
+            throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.message_type);
         }
 
         
