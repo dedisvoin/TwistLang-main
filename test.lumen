@@ -1,6 +1,5 @@
-namespace std {
-    const let PI = 3.141592;
-}
+static let max: Lambda = lambda(a: Int, b: Int) -> Int {
+    if (a > b) {a} else {b}
+};
 
-std::PI = 3.141592;
-outln std::PI;
+

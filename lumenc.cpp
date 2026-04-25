@@ -10,6 +10,7 @@
 #include <chrono>
 #include <thread>
 
+
 Preprocessor preprocessor;
 
 const ArgsParser GenerateArgsParser(const int argc, char** const argv) noexcept {
@@ -53,7 +54,7 @@ vector<Error> run_with_collect(vector<Node*>& nodes, Memory* mem) {
     for (auto node: nodes) {
         delete node;
     }
-    
+
     return collected;
 }
 
@@ -63,10 +64,10 @@ void language_server(const std::string& file_path, std::string file_name) {
 
     while (true) {
         Error::ClearBuffer();
-        
+
         // Используем unique_ptr для автоматического управления памятью
         std::unique_ptr<Memory> g_memory = std::make_unique<Memory>();
-        
+
         try {
             std::string source = OpenFile(file_path);
 
@@ -107,9 +108,9 @@ void language_server(const std::string& file_path, std::string file_name) {
 
         // Очистка глобальной памяти перед следующей итерацией
         GlobalMemory::all_objects.clear();  // ← ВАЖНО: очищаем глобальный кэш
-        
+
         std::this_thread::sleep_for(0.1s);
-        
+
         // unique_ptr автоматически вызовет delete
         // AddressManager::reset() лучше вызывать после удаления памяти
         AddressManager::reset();

@@ -40,6 +40,12 @@ THEMES = {
             "autosave_off": QColor("#f38ba8"),
             "status_bg": QColor("#2d2d3a"),
             "status_border": QColor("#4c4f69"),
+            "tree_hover_bg": QColor("#c9cdd8"),
+            "tree_hover_fg": QColor("#4c4f69"),
+            "tree_selection_bg": QColor("#4c4f69"),
+            "tree_selection_fg": QColor("#eff1f5"),
+            "tree_edit_bg": QColor("#4c4f69"),
+            "tree_edit_fg": QColor("#eff1f5"),
         }
     },
 
@@ -80,6 +86,12 @@ THEMES = {
             "autosave_off": QColor("#d73a49"),
             "status_bg": QColor("#2d2d30"),
             "status_border": QColor("#d0d0d0"),
+            "tree_hover_bg": QColor("#e8e8e8"),
+            "tree_hover_fg": QColor("#202020"),
+            "tree_selection_bg": QColor("#c6c6c6"),
+            "tree_selection_fg": QColor("#202020"),
+            "tree_edit_bg": QColor("#c6c6c6"),
+            "tree_edit_fg": QColor("#202020"),
         }
     },
 
@@ -120,6 +132,12 @@ THEMES = {
             "autosave_off": QColor("#d20f39"),
             "status_bg": QColor("#2d2d3a"),
             "status_border": QColor("#ccd0da"),
+            "tree_hover_bg": QColor("#dce0e8"),
+            "tree_hover_fg": QColor("#4c4f69"),
+            "tree_selection_bg": QColor("#8839ef"),
+            "tree_selection_fg": QColor("#eff1f5"),
+            "tree_edit_bg": QColor("#8839ef"),
+            "tree_edit_fg": QColor("#eff1f5"),
         }
     },
 
@@ -160,6 +178,12 @@ THEMES = {
             "autosave_off": QColor("#c46a6a"),
             "status_bg": QColor("#2f2f2f"),
             "status_border": QColor("#b8b2a4"),
+            "tree_hover_bg": QColor("#ded8ce"),
+            "tree_hover_fg": QColor("#3c3c3c"),
+            "tree_selection_bg": QColor("#5c7eb5"),
+            "tree_selection_fg": QColor("#f8f4ed"),
+            "tree_edit_bg": QColor("#5c7eb5"),
+            "tree_edit_fg": QColor("#f8f4ed"),
         }
     },
         
@@ -195,11 +219,17 @@ THEMES = {
             "brace_fg": QColor("#859900"),
             "error": QColor("#dc322f"),
             "warning": QColor("#b58900"),
-            "echo": QColor("#93a1a1"),  # цвет комментария
+            "echo": QColor("#93a1a1"),
             "autosave_on": QColor("#2aa198"),
             "autosave_off": QColor("#dc322f"),
             "status_bg": QColor("#073642"),
             "status_border": QColor("#586e75"),
+            "tree_hover_bg": QColor("#ddd6c3"),
+            "tree_hover_fg": QColor("#657b83"),
+            "tree_selection_bg": QColor("#268bd2"),
+            "tree_selection_fg": QColor("#fdf6e3"),
+            "tree_edit_bg": QColor("#268bd2"),
+            "tree_edit_fg": QColor("#fdf6e3"),
         }
     },
     
@@ -235,11 +265,17 @@ THEMES = {
             "brace_fg": QColor("#0078d7"),
             "error": QColor("#ff0000"),
             "warning": QColor("#ff8c00"),
-            "echo": QColor("#6a6a6a"),  # серее основного текста
+            "echo": QColor("#6a6a6a"),
             "autosave_on": QColor("#107c10"),
             "autosave_off": QColor("#d73a49"),
             "status_bg": QColor("#2d2d2d"),
             "status_border": QColor("#cccccc"),
+            "tree_hover_bg": QColor("#dddddd"),
+            "tree_hover_fg": QColor("#000000"),
+            "tree_selection_bg": QColor("#2b91af"),
+            "tree_selection_fg": QColor("#ffffff"),
+            "tree_edit_bg": QColor("#2b91af"),
+            "tree_edit_fg": QColor("#ffffff"),
         }
     },
 
@@ -275,11 +311,17 @@ THEMES = {
             "brace_fg": QColor("#fa8d3e"),
             "error": QColor("#f07171"),
             "warning": QColor("#f2ae49"),
-            "echo": QColor("#9a9ea3"),  # серее основного текста
+            "echo": QColor("#9a9ea3"),
             "autosave_on": QColor("#86b300"),
             "autosave_off": QColor("#f07171"),
             "status_bg": QColor("#2d3c4d"),
             "status_border": QColor("#abb0b6"),
+            "tree_hover_bg": QColor("#d8d8d8"),
+            "tree_hover_fg": QColor("#5c6166"),
+            "tree_selection_bg": QColor("#399ee6"),
+            "tree_selection_fg": QColor("#fafafa"),
+            "tree_edit_bg": QColor("#399ee6"),
+            "tree_edit_fg": QColor("#fafafa"),
         }
     },
 
@@ -315,11 +357,17 @@ THEMES = {
             "brace_fg": QColor("#f57b5c"),
             "error": QColor("#e65e5e"),
             "warning": QColor("#f57b5c"),
-            "echo": QColor("#8c9690"),  # серее основного текста
+            "echo": QColor("#8c9690"),
             "autosave_on": QColor("#8da101"),
             "autosave_off": QColor("#e65e5e"),
             "status_bg": QColor("#3a4a5a"),
             "status_border": QColor("#939f91"),
+            "tree_hover_bg": QColor("#e0d8c8"),
+            "tree_hover_fg": QColor("#5c6a72"),
+            "tree_selection_bg": QColor("#4f9e9e"),
+            "tree_selection_fg": QColor("#fef6e4"),
+            "tree_edit_bg": QColor("#4f9e9e"),
+            "tree_edit_fg": QColor("#fef6e4"),
         }
     },
 
@@ -337,7 +385,7 @@ THEMES = {
             "comment": QColor("#5a6e7a"),
             "string": QColor("#b3d46b"),
             "number": QColor("#ffb86c"),
-            "operator": QColor("#7b8c74"),      # darker muted green, slightly darker than literal
+            "operator": QColor("#7b8c74"),
             "function": QColor("#ff6b6b"),
             "modifier": QColor("#ff8c42"),
             "directive": QColor("#ffb86c"),
@@ -360,9 +408,14 @@ THEMES = {
             "autosave_off": QColor("#ff6b6b"),
             "status_bg": QColor("#15222e"),
             "status_border": QColor("#2a3a4a"),
+            "tree_hover_bg": QColor("#22303e"),
+            "tree_hover_fg": QColor("#d9e0ee"),
+            "tree_selection_bg": QColor("#70c9f0"),
+            "tree_selection_fg": QColor("#1e2a3a"),
+            "tree_edit_bg": QColor("#70c9f0"),
+            "tree_edit_fg": QColor("#1e2a3a"),
         }
     },
-
 
     # dark
 
@@ -403,6 +456,12 @@ THEMES = {
             "autosave_off": QColor("#f38ba8"),
             "status_bg": QColor("#181825"),
             "status_border": QColor("#313244"),
+            "tree_hover_bg": QColor("#29293b"),
+            "tree_hover_fg": QColor("#cdd6f4"),
+            "tree_selection_bg": QColor("#89b4fa"),
+            "tree_selection_fg": QColor("#1e1e2e"),
+            "tree_edit_bg": QColor("#89b4fa"),
+            "tree_edit_fg": QColor("#1e1e2e"),
         }
     },
     
@@ -438,11 +497,17 @@ THEMES = {
             "brace_fg": QColor("#f5c2e7"),
             "error": QColor("#f35815"),
             "warning": QColor("#ffc413"),
-            "echo": QColor("#a6adc8"),  # светлее фона, но темнее основного текста
+            "echo": QColor("#a6adc8"),
             "autosave_on": QColor("#a6e3a1"),
             "autosave_off": QColor("#f38ba8"),
             "status_bg": QColor("#181825"),
             "status_border": QColor("#313244"),
+            "tree_hover_bg": QColor("#29293b"),
+            "tree_hover_fg": QColor("#cdd6f4"),
+            "tree_selection_bg": QColor("#cba6f7"),
+            "tree_selection_fg": QColor("#1e1e2e"),
+            "tree_edit_bg": QColor("#cba6f7"),
+            "tree_edit_fg": QColor("#1e1e2e"),
         }
     },
         
@@ -483,6 +548,12 @@ THEMES = {
             "autosave_off": QColor("#e46876"),
             "status_bg": QColor("#16161d"),
             "status_border": QColor("#2a2a37"),
+            "tree_hover_bg": QColor("#23232e"),
+            "tree_hover_fg": QColor("#dcd7ba"),
+            "tree_selection_bg": QColor("#7e9cd8"),
+            "tree_selection_fg": QColor("#1f1f28"),
+            "tree_edit_bg": QColor("#7e9cd8"),
+            "tree_edit_fg": QColor("#1f1f28"),
         }
     },
         
@@ -518,11 +589,17 @@ THEMES = {
             "brace_fg": QColor("#ff8f40"),
             "error": QColor("#f07178"),
             "warning": QColor("#ffb454"),
-            "echo": QColor("#8a8d93"),  # светлее фона, темнее основного текста
+            "echo": QColor("#8a8d93"),
             "autosave_on": QColor("#c2d94c"),
             "autosave_off": QColor("#f07178"),
             "status_bg": QColor("#0d1017"),
             "status_border": QColor("#273747"),
+            "tree_hover_bg": QColor("#0f141e"),
+            "tree_hover_fg": QColor("#e6e1cf"),
+            "tree_selection_bg": QColor("#39bae6"),
+            "tree_selection_fg": QColor("#0a0e14"),
+            "tree_edit_bg": QColor("#39bae6"),
+            "tree_edit_fg": QColor("#0a0e14"),
         }
     },
               
@@ -558,11 +635,17 @@ THEMES = {
             "brace_fg": QColor("#e6986c"),
             "error": QColor("#e67e80"),
             "warning": QColor("#e6986c"),
-            "echo": QColor("#9eaf9a"),  # светлее фона
+            "echo": QColor("#9eaf9a"),
             "autosave_on": QColor("#a7c080"),
             "autosave_off": QColor("#e67e80"),
             "status_bg": QColor("#26323f"),
             "status_border": QColor("#4a5a6a"),
+            "tree_hover_bg": QColor("#2f3f4f"),
+            "tree_hover_fg": QColor("#d3c6aa"),
+            "tree_selection_bg": QColor("#7fbbb3"),
+            "tree_selection_fg": QColor("#2d3c4d"),
+            "tree_edit_bg": QColor("#7fbbb3"),
+            "tree_edit_fg": QColor("#2d3c4d"),
         }
     },
          
@@ -598,11 +681,109 @@ THEMES = {
             "brace_fg": QColor("#ebbcba"),
             "error": QColor("#eb6f92"),
             "warning": QColor("#f6c177"),
-            "echo": QColor("#908caa"),  # светлее фона, темнее основного текста
+            "echo": QColor("#908caa"),
             "autosave_on": QColor("#9ccfd8"),
             "autosave_off": QColor("#eb6f92"),
             "status_bg": QColor("#1f1d2e"),
             "status_border": QColor("#403d52"),
+            "tree_hover_bg": QColor("#1c192d"),
+            "tree_hover_fg": QColor("#e0def4"),
+            "tree_selection_bg": QColor("#9ccfd8"),
+            "tree_selection_fg": QColor("#191724"),
+            "tree_edit_bg": QColor("#9ccfd8"),
+            "tree_edit_fg": QColor("#191724"),
+        }
+    },
+
+    "Nord Aurora": {
+        "type": "dark",
+        "colors": {
+            "bg": QColor("#1a2538"),
+            "fg": QColor("#d8dee9"),
+            "title_bg": QColor("#2e3b4e"),
+            "title_bg_darker": QColor("#232e3f"),
+            "title_fg": QColor("#e5e9f0"),
+            "title_border": QColor("#3b4c63"),
+            "keyword": QColor("#81a1c1"),
+            "type": QColor("#8fbcbb"),
+            "comment": QColor("#4c5b73"),
+            "string": QColor("#a3be8c"),
+            "number": QColor("#b48ead"),
+            "operator": QColor("#616e88"),
+            "function": QColor("#88c0d0"),
+            "modifier": QColor("#b48ead"),
+            "directive": QColor("#d08770"),
+            "literal": QColor("#ebcb8b"),
+            "namespace": QColor("#8fbcbb"),
+            "special": QColor("#d08770"),
+            "object": QColor("#a3be8c"),
+            "caret": QColor("#e5e9f0"),
+            "caret_line": QColor("#2e3b4e"),
+            "margin_bg": QColor("#141f2e"),
+            "margin_fg": QColor("#4c5b73"),
+            "selection_bg": QColor("#3b4c63"),
+            "selection_fg": QColor("#e5e9f0"),
+            "brace_bg": QColor("#81a1c155"),
+            "brace_fg": QColor("#81a1c1"),
+            "error": QColor("#bf616a"),
+            "warning": QColor("#d08770"),
+            "echo": QColor("#7a8ba5"),
+            "autosave_on": QColor("#a3be8c"),
+            "autosave_off": QColor("#bf616a"),
+            "status_bg": QColor("#141f2e"),
+            "status_border": QColor("#2e3b4e"),
+            "tree_hover_bg": QColor("#232e3f"),
+            "tree_hover_fg": QColor("#e5e9f0"),
+            "tree_selection_bg": QColor("#88c0d0"),
+            "tree_selection_fg": QColor("#1a2538"),
+            "tree_edit_bg": QColor("#88c0d0"),
+            "tree_edit_fg": QColor("#1a2538"),
+        }
+    },
+
+    "Tokyo Night Storm": {
+        "type": "dark",
+        "colors": {
+            "bg": QColor("#1a1b26"),
+            "fg": QColor("#c0caf5"),
+            "title_bg": QColor("#292e42"),
+            "title_bg_darker": QColor("#1f2335"),
+            "title_fg": QColor("#c0caf5"),
+            "title_border": QColor("#3b4261"),
+            "keyword": QColor("#bb9af7"),
+            "type": QColor("#7dcfff"),
+            "comment": QColor("#565f89"),
+            "string": QColor("#9ece6a"),
+            "number": QColor("#ff9e64"),
+            "operator": QColor("#89b4fa"),
+            "function": QColor("#7aa2f7"),
+            "modifier": QColor("#bb9af7"),
+            "directive": QColor("#f7768e"),
+            "literal": QColor("#e0af68"),
+            "namespace": QColor("#2ac3de"),
+            "special": QColor("#f7768e"),
+            "object": QColor("#73daca"),
+            "caret": QColor("#c0caf5"),
+            "caret_line": QColor("#292e42"),
+            "margin_bg": QColor("#15161e"),
+            "margin_fg": QColor("#565f89"),
+            "selection_bg": QColor("#3b4261"),
+            "selection_fg": QColor("#c0caf5"),
+            "brace_bg": QColor("#bb9af755"),
+            "brace_fg": QColor("#bb9af7"),
+            "error": QColor("#f7768e"),
+            "warning": QColor("#e0af68"),
+            "echo": QColor("#787c99"),
+            "autosave_on": QColor("#9ece6a"),
+            "autosave_off": QColor("#f7768e"),
+            "status_bg": QColor("#15161e"),
+            "status_border": QColor("#292e42"),
+            "tree_hover_bg": QColor("#1f2335"),
+            "tree_hover_fg": QColor("#c0caf5"),
+            "tree_selection_bg": QColor("#7aa2f7"),
+            "tree_selection_fg": QColor("#1a1b26"),
+            "tree_edit_bg": QColor("#7aa2f7"),
+            "tree_edit_fg": QColor("#1a1b26"),
         }
     },
     
@@ -643,31 +824,37 @@ THEMES = {
             "autosave_off": QColor("#cc241d"),
             "status_bg": QColor("#1d2021"),
             "status_border": QColor("#3c3836"),
+            "tree_hover_bg": QColor("#2e2a29"),
+            "tree_hover_fg": QColor("#ebdbb2"),
+            "tree_selection_bg": QColor("#8ec07c"),
+            "tree_selection_fg": QColor("#282828"),
+            "tree_edit_bg": QColor("#8ec07c"),
+            "tree_edit_fg": QColor("#282828"),
         }
     },
     
     "Emerald Forest": {
         "type": "dark",
         "colors": {
-            "bg": QColor("#1e241e"),           # почти чёрный с лёгким зелёным оттенком
-            "fg": QColor("#cfddcf"),           # светлый серо-зелёный (основной текст)
+            "bg": QColor("#1e241e"),
+            "fg": QColor("#cfddcf"),
             "title_bg": QColor("#2a302a"),
             "title_bg_darker": QColor("#212621"),
             "title_fg": QColor("#dfecdf"),
             "title_border": QColor("#3a403a"),
-            "keyword": QColor("#c6a0f6"),      # мягкий сиреневый
-            "type": QColor("#7dc4e4"),         # светло-голубой (циан)
-            "comment": QColor("#6a746a"),      # приглушённый серо-зелёный
-            "string": QColor("#f5b88c"),       # тёплый персиковый
-            "number": QColor("#e2bf7a"),       # золотистый
-            "operator": QColor("#8a988a"),     # нейтральный серо-зелёный, темнее литералов
-            "function": QColor("#c8d96c"),     # мягкий жёлто-зелёный
-            "modifier": QColor("#b0a5f0"),     # лавандовый
-            "directive": QColor("#d99e6e"),    # терракотовый
-            "literal": QColor("#f5aa8c"),      # светло-коралловый (отличается от строк)
-            "namespace": QColor("#6cc8b4"),    # бирюзовый
-            "special": QColor("#e68c8c"),      # мягкий красный
-            "object": QColor("#9acc8c"),       # приглушённая мята
+            "keyword": QColor("#c6a0f6"),
+            "type": QColor("#7dc4e4"),
+            "comment": QColor("#6a746a"),
+            "string": QColor("#f5b88c"),
+            "number": QColor("#e2bf7a"),
+            "operator": QColor("#8a988a"),
+            "function": QColor("#c8d96c"),
+            "modifier": QColor("#b0a5f0"),
+            "directive": QColor("#d99e6e"),
+            "literal": QColor("#f5aa8c"),
+            "namespace": QColor("#6cc8b4"),
+            "special": QColor("#e68c8c"),
+            "object": QColor("#9acc8c"),
             "caret": QColor("#f0f8f0"),
             "caret_line": QColor("#2a302a"),
             "margin_bg": QColor("#182018"),
@@ -683,6 +870,12 @@ THEMES = {
             "autosave_off": QColor("#e68c8c"),
             "status_bg": QColor("#182018"),
             "status_border": QColor("#2a302a"),
+            "tree_hover_bg": QColor("#212621"),
+            "tree_hover_fg": QColor("#cfddcf"),
+            "tree_selection_bg": QColor("#7dc4e4"),
+            "tree_selection_fg": QColor("#1e241e"),
+            "tree_edit_bg": QColor("#7dc4e4"),
+            "tree_edit_fg": QColor("#1e241e"),
         }
     },
 }
