@@ -16,16 +16,16 @@ from enum import Enum
 from PyQt6.QtGui import QFileSystemModel, QFontMetrics, QPainterPath, QRegion
 from PyQt6.Qsci import QsciScintilla, QsciLexerCustom, QsciAPIs
 from PyQt6.QtWidgets import (
-    QApplication, QFileIconProvider, QMainWindow, QMenu, QSizePolicy, QStatusBar,
+    QApplication, QFileIconProvider, QHeaderView, QMainWindow, QMenu, QSizePolicy, QStatusBar,
     QLabel, QTabWidget, QTabBar, QToolButton, QTreeView, QSplitter,
     QFileDialog, QMessageBox, QToolTip, QWidget, QHBoxLayout,
-    QVBoxLayout, QFrame, QStackedWidget
+    QVBoxLayout, QFrame, QStackedWidget, QAbstractItemView
 )
 from PyQt6.QtCore import QEvent, QPointF, QPropertyAnimation, QEasingCurve, QVariantAnimation, Qt, QDir, QModelIndex, pyqtProperty
 from PyQt6.QtGui import (
     QColor, QFont, QAction, QKeySequence, QShortcut,
     QPainter, QPen, QIcon, QPixmap, QMouseEvent,
-    QLinearGradient
+    QLinearGradient, QStandardItemModel, QStandardItem
 )
 from PyQt6.Qsci import QsciLexerPython, QsciLexerCPP
 from PyQt6.QtCore import QByteArray, QRect, QRectF, pyqtSignal, QTimer, QSize, QPoint
@@ -228,6 +228,12 @@ class Strings:
         "toggle_folding": "Toggle code folding (show/hide fold margins)\n[This function in beta test]",
         "code_snap": "Code Snap",
         "error_text": "Inline Messages",
+
+        # Error overview panel
+        "error_panel_file": "File",
+        "error_panel_line": "Line",
+        "error_panel_type": "Type",
+        "error_panel_message": "Message",
     }
 
     # Russian strings
@@ -361,6 +367,12 @@ class Strings:
         "toggle_folding": "Переключить сворачивание кода (показать/скрыть поля сворачивания)\n[Функция в бета-тестировании]",
         "code_snap": "Снимок кода",
         "error_text": "Строковые сообщения",
+
+        # Error overview panel
+        "error_panel_file": "Файл",
+        "error_panel_line": "Строка",
+        "error_panel_type": "Тип",
+        "error_panel_message": "Сообщение",
     }
 
     current_language = Language.ENGLISH
@@ -1183,6 +1195,144 @@ class FileExplorer(QWidget):
         self.model.setIconProvider(self._create_icon_provider(colors['fg']))
 
 # =============================================================================
+# ERROR OVERVIEW PANEL
+# =============================================================================
+
+class ErrorOverviewPanel(QWidget):
+    """Панель, отображающая ошибки для текущего активного файла."""
+
+    error_clicked = pyqtSignal(str, int, int)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._setup_ui()
+        self.model = QStandardItemModel(0, 4, self)
+        self.update_language()
+        self.tree.setModel(self.model)
+        self.tree.clicked.connect(self._on_clicked)
+
+    def _setup_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        self.tree = QTreeView()
+        self.tree.setRootIsDecorated(False)
+        self.tree.setAlternatingRowColors(False)
+        self.tree.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tree.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.tree.setSortingEnabled(False)
+        self.tree.header().setStretchLastSection(True)
+        self.tree.header().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+
+        # Отключаем захват фокуса, чтобы клик не уводил курсор из редактора
+        self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+
+        tree_font = QFont(MONOSPACE_FONT_NAME, 10)
+        self.tree.setFont(tree_font)
+        self.tree.header().setFont(tree_font)
+
+        layout.addWidget(self.tree)
+
+    def set_errors(self, file_path: str, errors: List):
+        self.model.removeRows(0, self.model.rowCount())
+        short_name = os.path.basename(file_path) if file_path else "Unknown"
+
+        window = self.window()
+        if window and hasattr(window, 'current_theme'):
+            colors = THEMES[window.current_theme]["colors"]
+        else:
+            colors = {
+                "error": QColor("#ff5050"),
+                "warning": QColor("#ffc850"),
+                "echo": QColor("#cecece")
+            }
+
+        for err in errors:
+            file_item = QStandardItem(short_name)
+            file_item.setData(file_path, Qt.ItemDataRole.UserRole)
+            file_item.setToolTip(file_path)
+
+            line_item = QStandardItem(str(err.line + 1))
+            # Корректируем колонку: в редакторе start_col был увеличен на 1,
+            # возвращаем к реальной позиции (0-based)
+            line_item.setData(max(0, err.start_col - 1), Qt.ItemDataRole.UserRole + 1)
+
+            type_str = err.type.name.capitalize()
+            type_item = QStandardItem(type_str)
+            if err.type == ErrorType.ERROR:
+                type_item.setForeground(colors.get("error", QColor("#ff5050")))
+            elif err.type == ErrorType.WARNING:
+                type_item.setForeground(colors.get("warning", QColor("#ffc850")))
+            elif err.type == ErrorType.ECHO:
+                type_item.setForeground(colors.get("echo", QColor("#cecece")))
+
+            msg_item = QStandardItem(err.message)
+            msg_item.setForeground(colors.get("fg", QColor("#cdd6f4")))
+            self.model.appendRow([file_item, line_item, type_item, msg_item])
+
+        header = self.tree.header()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        self.tree.resizeColumnToContents(0)
+        self.tree.resizeColumnToContents(1)
+        self.tree.resizeColumnToContents(2)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+
+    def _on_clicked(self, index):
+        if not index.isValid():
+            return
+        row = index.row()
+        file_item = self.model.item(row, 0)
+        line_item = self.model.item(row, 1)
+        if file_item and line_item:
+            file_path = file_item.data(Qt.ItemDataRole.UserRole)
+            line = int(line_item.text()) - 1
+            start_col = line_item.data(Qt.ItemDataRole.UserRole + 1) or 0
+            self.error_clicked.emit(file_path, line, start_col)
+
+    def update_language(self):
+        self.model.setHorizontalHeaderLabels([
+            Strings.get("error_panel_file"),
+            Strings.get("error_panel_line"),
+            Strings.get("error_panel_type"),
+            Strings.get("error_panel_message")
+        ])
+
+    def update_theme(self):
+        window = self.window()
+        if not window or not hasattr(window, 'current_theme'):
+            return
+        colors = THEMES[window.current_theme]["colors"]
+        self.setStyleSheet(f"""
+            ErrorOverviewPanel {{
+                background-color: {colors['margin_bg'].name()};
+            }}
+            QTreeView {{
+                background-color: {colors['margin_bg'].name()};
+                color: {colors['fg'].name()};
+                border: none;
+                font-family: {MONOSPACE_FONT_NAME};
+                font-size: 10pt;
+            }}
+            QTreeView::item {{
+                background-color: {colors['margin_bg'].name()};
+                padding-left: 8px;
+            }}
+            QTreeView::item:selected {{
+                background-color: {colors['selection_bg'].name()};
+                color: {colors['selection_fg'].name()};
+            }}
+            QHeaderView::section {{
+                background-color: {colors['title_bg'].name()};
+                color: {colors['title_fg'].name()};
+                padding: 4px;
+                border: none;
+                font-family: {MONOSPACE_FONT_NAME};
+                font-size: 10pt;
+                padding-left: 8px;
+            }}
+        """)
+# =============================================================================
 # CUSTOM WIDGETS
 # =============================================================================
 
@@ -1266,7 +1416,7 @@ class WelcomeWidget(QWidget):
 
         gradient = QLinearGradient(0, 0, self.width(), self.height())
         gradient.setColorAt(0, colors['bg'])
-        gradient.setColorAt(1, colors['title_bg'])
+        gradient.setColorAt(1, colors['bg'])
         painter.fillRect(self.rect(), gradient)
 
         painter.setOpacity(1.0)
@@ -3662,6 +3812,8 @@ class TwistLangEditor(QMainWindow):
         self.error_timer.timeout.connect(self.check_current_file_errors)
         self.error_timer.start(100)
 
+        self._update_error_overview()
+
 
     def _setup_window(self):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
@@ -4080,8 +4232,6 @@ class TwistLangEditor(QMainWindow):
                 action.setIcon(QIcon())
 
     def _setup_ui(self):
-
-
         central_widget = QWidget()
         central_widget.setObjectName("centralWidget")
         self.setCentralWidget(central_widget)
@@ -4098,7 +4248,6 @@ class TwistLangEditor(QMainWindow):
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.main_splitter.setHandleWidth(0)
         self.main_splitter.setChildrenCollapsible(False)
-        main_layout.addWidget(self.main_splitter, 1)
 
         # File explorer - изначально скрыт
         self.file_explorer = FileExplorer(self)
@@ -4153,6 +4302,21 @@ class TwistLangEditor(QMainWindow):
         self.content_stack.addWidget(self.tab_container)
 
         self.tab_widget.currentChanged.connect(self._on_tab_changed)
+
+        # ERROR OVERVIEW PANEL
+        self.error_overview_panel = ErrorOverviewPanel(self)
+        self.error_overview_panel.error_clicked.connect(self._on_error_overview_clicked)
+
+        # Create vertical splitter to hold main area and error panel
+        self.vertical_splitter = QSplitter(Qt.Orientation.Vertical)
+        self.vertical_splitter.setHandleWidth(0)
+        self.vertical_splitter.setChildrenCollapsible(False)
+        self.vertical_splitter.setStyleSheet("QSplitter::handle { background: transparent; border: none; }")
+        self.vertical_splitter.addWidget(self.main_splitter)
+        self.vertical_splitter.addWidget(self.error_overview_panel)
+        self.vertical_splitter.setSizes([600, 150])
+
+        main_layout.addWidget(self.vertical_splitter, 1)
 
         self.status_bar = QStatusBar()
         self.status_bar.setObjectName("statusBar")
@@ -4211,6 +4375,36 @@ class TwistLangEditor(QMainWindow):
         QApplication.instance().installEventFilter(self)
 
         self._apply_global_font_to_all_editors()
+
+    def _on_error_overview_clicked(self, file_path: str, line: int, col: int):
+        """Переход к ошибке с сохранением фокуса в редакторе."""
+        editor = self._find_editor_by_filename(file_path)
+        if editor:
+            self.tab_widget.setCurrentWidget(editor)
+            editor.setCursorPosition(line, col)
+            editor.ensureLineVisible(line)
+            editor.setFocus()
+            # Дополнительный отложенный вызов гарантирует, что фокус не отберётся
+            QTimer.singleShot(0, editor.setFocus)
+            return
+
+        if os.path.exists(file_path):
+            self.open_file(file_path)
+            editor = self._find_editor_by_filename(file_path)
+            if editor:
+                self.tab_widget.setCurrentWidget(editor)
+                editor.setCursorPosition(line, col)
+                editor.ensureLineVisible(line)
+                editor.setFocus()
+                QTimer.singleShot(0, editor.setFocus)
+
+    def _update_error_overview(self):
+        """Refresh error panel with errors of the current editor."""
+        editor = self.current_editor()
+        if editor and editor.filename:
+            self.error_overview_panel.set_errors(editor.filename, editor.errors)
+        else:
+            self.error_overview_panel.set_errors("", [])
 
     def _show_file_explorer_for_path(self, path: str):
         """Показать файловое дерево для указанного пути"""
@@ -4394,15 +4588,10 @@ class TwistLangEditor(QMainWindow):
 
     def _switch_language(self, language: Language):
         Strings.set_language(language)
-
         self._rebuild_menus()
-
         self.title_bar.title_label.setText(Strings.get("window_title"))
-
         self.welcome_widget.update()
-
         self._update_status_labels()
-
         self.folding_toggle.setToolTip(Strings.get("toggle_folding"))
 
         lang_name = Strings.get("english") if language == Language.ENGLISH else Strings.get("russian")
@@ -4410,6 +4599,9 @@ class TwistLangEditor(QMainWindow):
 
         if self.theme_preview:
             self.theme_preview.update_language()
+
+        if self.error_overview_panel:
+            self.error_overview_panel.update_language()
 
         self.file_explorer.update_theme()
 
@@ -4724,6 +4916,10 @@ class TwistLangEditor(QMainWindow):
 
         self.welcome_widget.update()
         self.file_explorer.update_theme()
+
+        # Update error overview panel theme
+        if self.error_overview_panel:
+            self.error_overview_panel.update_theme()
 
     def select_theme(self, theme_name: str):
         self.apply_theme(theme_name)
@@ -5276,10 +5472,12 @@ class TwistLangEditor(QMainWindow):
             self.stop_language_server(file_path)
 
     def _find_editor_by_filename(self, filename: str) -> Optional[CustomScintilla]:
+        norm_name = os.path.normpath(filename).replace('\\', '/').lower()
         for i in range(self.tab_widget.count()):
             editor = self.tab_widget.widget(i)
-            if isinstance(editor, CustomScintilla) and editor.filename == filename:
-                return editor
+            if isinstance(editor, CustomScintilla) and editor.filename:
+                if os.path.normpath(editor.filename).replace('\\', '/').lower() == norm_name:
+                    return editor
         return None
 
     def _get_error_filename(self, file_path: str) -> Optional[str]:
@@ -5358,6 +5556,7 @@ class TwistLangEditor(QMainWindow):
             editor.clear_errors()
 
         self._update_status_labels()
+        self._update_error_overview()
 
     def check_current_file_errors(self):
         editor = self.current_editor()
@@ -5470,6 +5669,7 @@ class TwistLangEditor(QMainWindow):
         if editor:
             editor.clear_errors()
             self._update_status_labels()
+            self._update_error_overview()
             self.show_status_message(Strings.get("errors_cleared"), 2000)
 
     def zoom_in(self):
@@ -5631,6 +5831,8 @@ class TwistLangEditor(QMainWindow):
 
         if self.current_file:
             self._check_file_errors(editor)
+
+        self._update_error_overview()
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
