@@ -22,8 +22,9 @@
 struct NodeNumber : public Node { NO_EXEC
     Value value = NewNull();
 
-    NodeNumber(int value) : value(NewInt(value)) { this->NODE_TYPE = NodeTypes::NODE_NUMBER; }
-
+    NodeNumber(int value) : value(NewInt(value)) {
+        this->NODE_TYPE = NodeTypes::NODE_NUMBER;
+    }
 
     NodeNumber(Token& token) {
         this->NODE_TYPE = NodeTypes::NODE_NUMBER;
@@ -39,9 +40,7 @@ struct NodeNumber : public Node { NO_EXEC
             #endif
         }
 
-
         if (dot_count == 1) {
-
             std::istringstream iss(token.value);
             iss.imbue(std::locale::classic()); // принудительно меняем локаль с точкой
             NUMBER_ACCURACY val;
@@ -53,10 +52,8 @@ struct NodeNumber : public Node { NO_EXEC
                     this->value = NewDouble(0);
                 #endif
             }
-            
+
             this->value = NewDouble(val);
-
-
         } else {
             this->value = NewInt(stoll(token.value));
         }

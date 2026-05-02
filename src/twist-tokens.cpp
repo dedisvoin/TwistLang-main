@@ -14,10 +14,12 @@ enum TokenType {
     L_TRIANGLE_BRACKET, R_TRIANGLE_BRACKET,
     KEYWORD,
     DEREFERENCE,
+    PREPROC,      
     END_OF_FILE,
     DUMMY
 };
- const vector<string> TTTypeArray = {
+
+const vector<string> TTTypeArray = {
     "NUMBER", "STRING", "OPERATOR", "LITERAL", "CHAR",
     "DAC", "DAD",
     "L_BRACKET","R_BRACKET",
@@ -26,6 +28,7 @@ enum TokenType {
     "L_TRIANGLE_BRACKET", "R_TRIANGLE_BRACKET",
     "KEYWORD",
     "DEREFERENCE",
+    "PREPROC",        
     "END_OF_FILE"
 };
 

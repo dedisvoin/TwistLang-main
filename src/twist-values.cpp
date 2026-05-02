@@ -379,8 +379,8 @@ bool Type::is_sub_type_impl(const Type& other, const UnionType* other_union) con
     // Проверяем принадлежность к просто auto
     if (holds_alternative<AutoType>(other.m_data)) {
         // Если текущий тип - указатель, возвращаем false по вашему требованию
-        if (this->is_pointer()) return false; 
-        return true; 
+        if (this->is_pointer()) return false;
+        return true;
     }
 
     // 4. Проверка на полное равенство индексов или типов
@@ -409,7 +409,7 @@ bool Type::is_sub_type_impl(const Type& other, const UnionType* other_union) con
                     result = false; return;
                 }
                 for (size_t i = 0; i < lhs.arg_types.size(); ++i) {
-                    if (!rhs.arg_types[i]->is_sub_type(*lhs.arg_types[i])) {
+                    if (!lhs.arg_types[i]->is_sub_type(*rhs.arg_types[i])) {
                         result = false; return;
                     }
                 }

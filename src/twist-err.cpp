@@ -3,6 +3,7 @@
 #include "twist-utils.cpp"
 #include "twist-values.cpp"
 #include <string>
+#include "sstream"
 
 #pragma once
 
@@ -12,6 +13,7 @@ namespace ErrorTypes {
     const string EXECUTION   = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::MAGENTA + "exec" + TERMINAL_COLORS::RESET;
     const string SEMANTIC    = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::CYAN + "semantic" + TERMINAL_COLORS::RESET;
     const string ECHO    = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::BLUE + "echo" + TERMINAL_COLORS::RESET;
+    const string PREPROCESS_ERROR = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::RED + "preprocessing" + TERMINAL_COLORS::RESET;
 }
 
 typedef string ErrorType;
@@ -122,6 +124,27 @@ std::string Error::error_buffer = "";
 namespace ERROR_THROW {
     static string PREPROCESSOR_OUTPUT;
 
+    // PREPROCESSOR ERRORS
+    Error PreprocessorWaitedEqual(const Token& pos) {
+        Error err = Error("Waited '='", pos.pif, ErrorTypes::PREPROCESS_ERROR, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error PreprocessorMaxIterations(const Token& pos) {
+        Error err = Error("Waited ';' but you use max iterations", pos.pif, ErrorTypes::PREPROCESS_ERROR, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error PreprocessorWaitFilePath(const Token& pos) {
+        Error err = Error("Waited \"file path\"", pos.pif, ErrorTypes::PREPROCESS_ERROR, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error PreprocessorWaitLiteral(const Token& pos) {
+        Error err = Error("Waited literal", pos.pif, ErrorTypes::PREPROCESS_ERROR, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
     Error UnexpectedToken(const Token& token, const string& expected) {
         Error err;
         err.pif = token.pif;
@@ -156,7 +179,7 @@ namespace ERROR_THROW {
         } else {
             err = Error("Call error in function '" + name + "'", start.pif, stop.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         }
-        
+
         err.sub_error = sub_error;
         err.message_type = is_warning;
         return err;
@@ -169,7 +192,7 @@ namespace ERROR_THROW {
         } else {
             err = Error("Call error in function '" + name + "'", start.pif, stop.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         }
-        
+
         err.message_type = is_warning;
         return err;
     }
@@ -244,7 +267,7 @@ namespace ERROR_THROW {
         return err;
     }
 
-    
+
     Error VariableConstRedefinition(const Token& start, const Token& end, string name) {
         Error err = Error("Cannot assign to const variable '" + name + "'", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;

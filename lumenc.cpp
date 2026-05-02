@@ -7,11 +7,6 @@
 #include "fstream"
 #include <filesystem>
 #include <fstream>
-#include <chrono>
-#include <thread>
-
-
-Preprocessor preprocessor;
 
 const ArgsParser GenerateArgsParser(const int argc, char** const argv) noexcept {
     auto string_args = ConvertArgs(argc, argv);
@@ -27,7 +22,6 @@ void run_with(vector<Node*>* nodes, Memory* g_memory) {
     }
 }
 
-
 void write_error_to_file(std::ostream& out, const Error& err) {
     out << "pif: " << err.pif << ":" << err.pif.lenght << ":" << err.message_type
         << " message: " << err.message << "\n";
@@ -40,124 +34,112 @@ vector<Error> run_with_collect(vector<Node*>& nodes, Memory* mem) {
     for (size_t i = 0; i < nodes.size(); ++i) {
         try {
             nodes[i]->exec_from(mem);
-
         } catch (const Error& err) {
             if (err.message_type == 1 || err.message_type == 2) {
-                // Assert – сохраняем и продолжаем
                 collected.push_back(err);
             } else {
-                // Фатальная ошибка – пробрасываем дальше
                 throw;
             }
         }
     }
-    for (auto node: nodes) {
+    for (auto node : nodes) {
         delete node;
     }
-
     return collected;
 }
 
 void language_server(const std::string& file_path, std::string file_name) {
-    using namespace std::chrono_literals;
-    Preprocessor preprocessor;
+    Error::ClearBuffer();
+    std::unique_ptr<Memory> g_memory = std::make_unique<Memory>();
 
-    while (true) {
-        Error::ClearBuffer();
+    try {
+        std::string source = OpenFile(file_path);
+        ERROR::PREPROCESSOR_OUTPUT = source;
+        ERROR_THROW::PREPROCESSOR_OUTPUT = source;
 
-        // Используем unique_ptr для автоматического управления памятью
-        std::unique_ptr<Memory> g_memory = std::make_unique<Memory>();
+        // 1. Лексирование (только основного файла)
+        Lexer lexer(file_path, source);
+        lexer.run();
 
-        try {
-            std::string source = OpenFile(file_path);
+        // 2. Препроцессор — ВСТАВЛЯЕТ ВСЕ INCLUDE, раскрывает define/macro
+        // После этого шага preprocessed_tokens содержит ВЕСЬ код: основной + все библиотеки
+        Preprocessor preprocessor;
+        vector<Token> preprocessed_tokens;
+        preprocessed_tokens = preprocessor.process(lexer.tokens, file_path);
 
-            ERROR::PREPROCESSOR_OUTPUT = source;
-            ERROR_THROW::PREPROCESSOR_OUTPUT = source;
+        // 3. Парсинг ЕДИНОГО потока токенов (основной файл + все include)
+        TokenWalker walker(&preprocessed_tokens);
+        ASTGenerator parser(walker, file_path);
+        parser.parse();
 
-            std::string preprocessed = preprocessor.process(source, file_path);
+        // 4. Генерация стандартных типов (один раз для всей программы)
+        auto nodes = std::move(parser.nodes);
+        GenerateStandartTypes(g_memory.get(), file_path);
 
-            Lexer lexer(file_path, preprocessed);
-            lexer.run();
+        // 5. Выполнение ВСЕГО кода (основной + библиотеки) как единой программы
+        auto assert_errors = run_with_collect(nodes, g_memory.get());
 
-            TokenWalker walker(&lexer.tokens);
-            ASTGenerator parser(walker, file_path);
-            parser.parse();
-
-            auto nodes = std::move(parser.nodes);
-
-            GenerateStandartTypes(g_memory.get(), file_path);
-
-            auto assert_errors = run_with_collect(nodes, g_memory.get());
-
-            if (!assert_errors.empty()) {
-                for (const auto& err : assert_errors) {
-                    err.Write();
-                }
+        // 6. Сбор всех ошибок (включая assert/warning из библиотек)
+        if (!assert_errors.empty()) {
+            for (const auto& err : assert_errors) {
+                err.Write();
             }
-
-        } catch (const Error& err) {
-            err.Write();
-        } catch (const std::exception& e) {
-            // Логируем исключение если нужно
         }
 
-        // Запись лога
-        std::ofstream log(string("dbg/") + file_name + "_ls.dbg", std::ios::trunc);
-        log << Error::GetBuffer();
-        log.close();
-
-        // Очистка глобальной памяти перед следующей итерацией
-        GlobalMemory::all_objects.clear();  // ← ВАЖНО: очищаем глобальный кэш
-
-        std::this_thread::sleep_for(0.1s);
-
-        // unique_ptr автоматически вызовет delete
-        // AddressManager::reset() лучше вызывать после удаления памяти
-        AddressManager::reset();
+    } catch (const Error& err) {
+        err.Write();
+    } catch (const std::exception& e) {
+        // Игнорируем
     }
+
+    // Запись лога
+    std::ofstream log(string("dbg/") + file_name + "_ls.dbg", std::ios::trunc);
+    log << Error::GetBuffer();
+    log.close();
+
+    GlobalMemory::all_objects.clear();
+    AddressManager::reset();
 }
-
-
-
 
 int main(int argc, char** argv) {
     std::locale::global(std::locale("ru_RU.UTF-8"));
 
-    // Create and generate argparser for parse system arguments
     static ArgsParser args_parser = GenerateArgsParser(argc, argv);
 
     if (args_parser.as_debuger) {
+        // Режим однократной проверки (языковой сервер)
         language_server(args_parser.file_path, args_parser.file_name);
         return 0;
     } else {
-        // Open main file and read it
+        // Обычный запуск или компиляция
         static string file_content = OpenFile(args_parser.file_path);
 
-        // Full preprocessing
-        static string preprocessor_output;
-        TimeIt("Preprocessing finished in ", []() {
-            preprocessor_output = preprocessor.process(file_content, args_parser.file_path);
-        });
-
-        ERROR::PREPROCESSOR_OUTPUT = preprocessor_output;
-        ERROR_THROW::PREPROCESSOR_OUTPUT = preprocessor_output;
+        ERROR::PREPROCESSOR_OUTPUT = file_content;
+        ERROR_THROW::PREPROCESSOR_OUTPUT = file_content;
 
         if (!args_parser.compile_mod) {
-            // Save preprocessed file if flag setted
             if (args_parser.save_preprocessed)
-                SavePreprocessedFile("output.twist", preprocessor_output);
+                SavePreprocessedFile("output.twist", file_content);
 
-            // Create Parser object
-            static Lexer parser = Lexer(args_parser.file_path, preprocessor_output);
+            static Lexer parser = Lexer(args_parser.file_path, file_content);
 
-            // Run parsing
             TimeIt("Parse finished in ", [](){
                 parser.run();
             });
 
-            // Save tokens to file if flag setted
-            if (args_parser.save_token)
+            Preprocessor preprocessor = Preprocessor();
+            vector<Token> preprocessed_tokens;
+            try {
+                preprocessed_tokens = preprocessor.process(parser.tokens, args_parser.file_path);
+            } catch (Error& err) {
+                err.print();
+            }
+            if (args_parser.save_token) {
                 SaveTokensFile("tokens.txt", parser.tokens);
+                SaveTokensFile("ptokens.txt", preprocessed_tokens);
+            }
+
+            parser.tokens = preprocessed_tokens;
 
             TokenWalker walker = TokenWalker(&parser.tokens);
             ASTGenerator generator = ASTGenerator(walker, args_parser.file_path);
@@ -168,18 +150,9 @@ int main(int argc, char** argv) {
                 err.print();
             }
 
-            // if (args_parser.save_ast) {
-            //     save_ast_to_file(generator.nodes, "ast.txt");
-            // }
-            // if (args_parser.print_ast) {
-            //     debug_print_ast(generator.nodes);
-            //     return 0;
-            // }
-
             auto nodes = std::move(generator.nodes);
             auto g_memory = new Memory();
             GenerateStandartTypes(g_memory, args_parser.file_path);
-
 
             if (args_parser.middle_run_time) {
                 middleTimeIt("Middle interpretation time compute", [&](){
@@ -204,18 +177,13 @@ int main(int argc, char** argv) {
                         err.print();
                     }
             }
-
-
         } else {
-            // Компиляторный режим
-
+            // Компиляторный режим (без изменений)
             std::filesystem::path path_obj(args_parser.file_path);
             static std::string stem = "compiled_" + path_obj.stem().string() + ".cpp";
             std::ofstream out_file(stem);
 
-
             if (out_file.is_open()) {
-                // Просто записываем все напрямую
                 out_file << "// Подключаем реализацию лексера, обходчика токенов и парсера\n";
                 out_file << "#include \"src/twist-lexer.cpp\"\n";
                 out_file << "#include \"src/twist-tokenwalker.cpp\"\n";
@@ -224,43 +192,32 @@ int main(int argc, char** argv) {
                 out_file << "// Функция для выполнения списка узлов AST в заданном контексте памяти\n";
                 out_file << "void run_with(vector<unique_ptr<Node>>* nodes, Memory& g_memory) {\n";
                 out_file << "    for (size_t i = 0; i < nodes->size(); i++) {\n";
-                out_file << "        // Выполняем код каждого узла в глобальной памяти\n";
                 out_file << "        (*nodes)[i]->exec_from(g_memory);\n";
                 out_file << "    }\n";
                 out_file << "}\n";
                 out_file << "\n";
                 out_file << "// Точка входа в сгенерированный исполняемый файл\n";
                 out_file << "int main() {\n";
-                out_file << "    // Сохраняем путь к исходному файлу\n";
                 out_file << "    std::string file_path = \"" << args_parser.file_path << "\";\n";
                 out_file << "    \n";
-                out_file << "    // Сохраняем вывод препроцессора как строковый литерал (raw string)\n";
-                out_file << "    std::string preprocessor_output = R\"twist(" << preprocessor_output << ")twist\";\n";
+                out_file << "    std::string preprocessor_output = R\"twist(" << file_content << ")twist\";\n";
                 out_file << "    \n";
-                out_file << "    // Устанавливаем глобальный вывод препроцессора для отчётов об ошибках\n";
                 out_file << "    ERROR::PREPROCESSOR_OUTPUT = preprocessor_output;\n";
                 out_file << "    \n";
-                out_file << "    // Создаём и запускаем лексер для токенизации обработанного препроцессором ввода\n";
                 out_file << "    static Lexer parser = Lexer(file_path, preprocessor_output);\n";
                 out_file << "    parser.run();\n";
                 out_file << "    \n";
-                out_file << "    // Создаём обходчик токенов для навигации по сгенерированным токенам\n";
                 out_file << "    TokenWalker walker = TokenWalker(&parser.tokens);\n";
                 out_file << "    \n";
-                out_file << "    // Создаём и запускаем генератор AST (парсер) на потоке токенов\n";
                 out_file << "    ASTGenerator generator = ASTGenerator(walker, file_path);\n";
                 out_file << "    generator.parse();\n";
                 out_file << "    \n";
-                out_file << "    // Передаём владение сгенерированными узлами AST\n";
                 out_file << "    auto nodes = std::move(generator.nodes);\n";
                 out_file << "    \n";
-                out_file << "    // Создаём экземпляр памяти для выполнения программы\n";
                 out_file << "    auto g_memory = Memory();\n";
                 out_file << "    \n";
-                out_file << "    // Заполняем память определениями стандартных типов\n";
                 out_file << "    GenerateStandartTypes(&g_memory, \"" << args_parser.file_path << "\");\n";
                 out_file << "    \n";
-                out_file << "    // Выполняем программу, используя узлы AST и память\n";
                 out_file << "    run_with(&nodes, g_memory);\n";
                 out_file << "    \n";
                 out_file << "    return 0;\n";
@@ -274,7 +231,6 @@ int main(int argc, char** argv) {
                     if (args_parser.delete_precompiled)
                         filesystem::remove(stem.c_str());
                 });
-
             } else {
                 std::cout << "Error opening file: " << stem << std::endl;
             }

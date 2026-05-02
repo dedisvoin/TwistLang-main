@@ -1,0 +1,15 @@
+#define var = const let;
+#define mut = let;
+
+#macro assert_(expr, msg) = [
+    if (!expr) assert false, msg;
+];
+
+#macro assert_eq(a, b, msg) = [
+    if (typeof(a) == typeof(b)) {
+        if (a == b) assert false, "Is Equal";
+        else assert false, "Is Not Equal";
+    } else assert false, "Unequlize";
+    echo msg;
+];
+

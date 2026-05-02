@@ -65,7 +65,7 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
     void exec_from(Memory* _memory) override {
 
         Value value = value_expr->eval_from(_memory);
-        
+
 
         if (_memory->check_literal(var_name)) {
             if (_memory->is_final(var_name)) {
@@ -96,7 +96,7 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
                 if (nullable)
                     static_type = static_type | STANDART_TYPE::NULL_T;
             }
-            
+
             if (!value.type.is_sub_type(static_type)) {
                 throw ERROR_THROW::VariableStaticIncompatibleType(start_expr_token, end_expr_token, static_type, value.type);
             }
