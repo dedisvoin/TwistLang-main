@@ -23,22 +23,21 @@
  */
 
 struct NodeIf : public Node { NO_EVAL
-    Node* condition;
-    Node* true_statement;
-    Node* else_statement = nullptr;
+    Node* expr;
+    Node* true_body;
+    Node* else_body = nullptr;
 
     NodeIf(Node* condition, Node* true_statement, Node* else_statement = nullptr) :
-        condition(condition), true_statement(true_statement),
-        else_statement(else_statement) {
+        expr(condition), true_body(true_statement),
+        else_body(else_statement) {
         this->NODE_TYPE = NodeTypes::NODE_IF;
     }
 
     void exec_from(Memory* _memory) override {
-        auto value = condition->eval_from(_memory);
+        auto value = expr->eval_from(_memory);
 
         bool condition = false;
 
-        // Преобразование значения к булеву типу
         if (value.type == STANDART_TYPE::BOOL) {
             condition = any_cast<bool>(value.data);
         }
@@ -67,31 +66,30 @@ struct NodeIf : public Node { NO_EVAL
         }
 
         if (condition) {
-            true_statement->exec_from(_memory);
+            true_body->exec_from(_memory);
         }
-        else if (else_statement) {
-            else_statement->exec_from(_memory);
+        else if (else_body) {
+            else_body->exec_from(_memory);
         }
     }
 };
 
 
 struct NodeIfExpr : public Node { NO_EXEC
-    Node* condition;
+    Node* expr;
     Node* true_expr;
     Node* else_expr;
 
     NodeIfExpr(Node* condition, Node* true_expr, Node* else_expr)
-        : condition(condition), true_expr(true_expr), else_expr(else_expr) {
+        : expr(condition), true_expr(true_expr), else_expr(else_expr) {
             this->NODE_TYPE = NodeTypes::NODE_IF_EXPRESSION;
     }
 
     Value eval_from(Memory* _memory) override {
-        auto value = condition->eval_from(_memory);
+        auto value = expr->eval_from(_memory);
 
         bool condition = false;
 
-        // Преобразование значения к булеву типу
         if (value.type == STANDART_TYPE::BOOL) {
             condition = any_cast<bool>(value.data);
         }

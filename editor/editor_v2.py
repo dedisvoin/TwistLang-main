@@ -13,10 +13,11 @@ from typing import Optional, Dict, List, Tuple, Set
 from dataclasses import dataclass
 from enum import Enum
 
+from PyQt6 import QtCore
 from PyQt6.QtGui import QFileSystemModel, QFontMetrics, QPainterPath, QRegion
 from PyQt6.Qsci import QsciScintilla, QsciLexerCustom, QsciAPIs
 from PyQt6.QtWidgets import (
-    QApplication, QFileIconProvider, QHeaderView, QMainWindow, QMenu, QSizePolicy, QStatusBar,
+    QApplication, QFileIconProvider, QHeaderView, QMainWindow, QMenu, QPushButton, QSizePolicy, QStatusBar,
     QLabel, QTabWidget, QTabBar, QToolButton, QTreeView, QSplitter,
     QFileDialog, QMessageBox, QToolTip, QWidget, QHBoxLayout,
     QVBoxLayout, QFrame, QStackedWidget, QAbstractItemView
@@ -32,6 +33,8 @@ from PyQt6.QtCore import QByteArray, QRect, QRectF, pyqtSignal, QTimer, QSize, Q
 from PyQt6.QtSvg import QSvgRenderer
 
 from themes import *
+
+from qframelesswindow import FramelessMainWindow, QDialog
 
 
 # =============================================================================
@@ -58,10 +61,10 @@ AUTOSAVE_INTERVALS = [
     ("5 minutes", 5 * MINUTE)
 ]
 
-VERSION = "1.07b"
+VERSION = "0.13b"
 
 # Global font constants
-MONOSPACE_FONT_NAME = "consolas"
+MONOSPACE_FONT_NAME = "Fira Code"
 UI_FONT_NAME = "consolas"
 
 
@@ -234,6 +237,10 @@ class Strings:
         "error_panel_line": "Line",
         "error_panel_type": "Type",
         "error_panel_message": "Message",
+
+        "run_code": "Run",
+        "compile_code": "Compile",
+        "cancel": "Cancel"
     }
 
     # Russian strings
@@ -373,6 +380,10 @@ class Strings:
         "error_panel_line": "Строка",
         "error_panel_type": "Тип",
         "error_panel_message": "Сообщение",
+
+        "run_code": "Запустить",
+        "compile_code": "Скомпилировать",
+        "cancel": "Отмена"
     }
 
     current_language = Language.ENGLISH
@@ -448,6 +459,13 @@ def create_svg_icon(svg_path: str, color: QColor, size = 32) -> Optional[QIcon]:
         print(f"Error creating SVG icon: {e}")
         return None
 
+
+def get_color70(color1, color2):
+    r = int(color1.red() * 0.3 + color2.red() * 0.7)
+    g = int(color1.green() * 0.3 + color2.green() * 0.7)
+    b = int(color1.blue() * 0.3 + color2.blue() * 0.7)
+    accent = QColor(r, g, b)
+    return accent
 
 def get_safe_monospace_font(preferred_font: str, size: int) -> QFont:
     """
@@ -529,7 +547,7 @@ outln std::main(3.14);
         # Заголовок
         self.title_label = QLabel(Strings.get("theme_preview"))
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_font = QFont(MONOSPACE_FONT_NAME, 10, QFont.Weight.Bold)
+        title_font = QFont(UI_FONT_NAME, 10, QFont.Weight.Bold)
         self.title_label.setFont(title_font)
         self.main_layout.addWidget(self.title_label)
 
@@ -541,7 +559,7 @@ outln std::main(3.14);
         # Название темы
         self.name_label = QLabel()
         self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        name_font = QFont(MONOSPACE_FONT_NAME, 9)
+        name_font = QFont(UI_FONT_NAME, 9)
         self.name_label.setFont(name_font)
         self.main_layout.addWidget(self.name_label)
 
@@ -591,7 +609,7 @@ outln std::main(3.14);
             color_box.setStyleSheet("border: 1px solid #888; border-radius: 2px;")
 
             text_label = QLabel(label_text)
-            text_label.setFont(QFont(MONOSPACE_FONT_NAME, 10))
+            text_label.setFont(QFont(UI_FONT_NAME, 10))
 
             row_layout.addWidget(color_box)
             row_layout.addWidget(text_label)
@@ -1089,14 +1107,11 @@ class FileExplorer(QWidget):
         )
 
     def delete_file(self, path: str):
-        """Delete file with confirmation"""
-        reply = QMessageBox.question(
-            self,
-            Strings.get("confirm_delete"),
-            Strings.get("confirm_delete_message").format(os.path.basename(path)),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if reply == QMessageBox.StandardButton.Yes:
+        main_window = self.window()   # получаем TwistLangEditor
+        dialog = ConfirmDialog(main_window,
+                            Strings.get("confirm_delete"),
+                            Strings.get("confirm_delete_message").format(os.path.basename(path)))
+        if dialog.exec():
             try:
                 # Check if file is open in editor
                 main_window = self.window()
@@ -1149,7 +1164,7 @@ class FileExplorer(QWidget):
                 color: {colors['fg'].name()};
                 border: none;
                 outline: none;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
                 font-size: 10pt;
             }}
             QTreeView::item {{
@@ -1179,7 +1194,7 @@ class FileExplorer(QWidget):
                 padding: 2px;
                 margin-top: -2px;
                 margin-left: -2px;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
                 font-size: 10pt;
                 selection-background-color: {colors['tree_edit_bg'].name()};
             }}
@@ -1209,7 +1224,7 @@ class ErrorOverviewPanel(QWidget):
         self.model = QStandardItemModel(0, 4, self)
         self.update_language()
         self.tree.setModel(self.model)
-        self.tree.clicked.connect(self._on_clicked)
+        self.tree.doubleClicked.connect(self._on_clicked)
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
@@ -1228,7 +1243,7 @@ class ErrorOverviewPanel(QWidget):
         # Отключаем захват фокуса, чтобы клик не уводил курсор из редактора
         self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
-        tree_font = QFont(MONOSPACE_FONT_NAME, 10)
+        tree_font = QFont(UI_FONT_NAME, 10)
         self.tree.setFont(tree_font)
         self.tree.header().setFont(tree_font)
 
@@ -1254,21 +1269,31 @@ class ErrorOverviewPanel(QWidget):
             file_item.setToolTip(file_path)
 
             line_item = QStandardItem(str(err.line + 1))
-            # Корректируем колонку: в редакторе start_col был увеличен на 1,
-            # возвращаем к реальной позиции (0-based)
             line_item.setData(max(0, err.start_col - 1), Qt.ItemDataRole.UserRole + 1)
 
             type_str = err.type.name.capitalize()
+            
             type_item = QStandardItem(type_str)
+
             if err.type == ErrorType.ERROR:
-                type_item.setForeground(colors.get("error", QColor("#ff5050")))
+                error_color = QColor(colors.get("error", QColor("#ff5050")))
             elif err.type == ErrorType.WARNING:
-                type_item.setForeground(colors.get("warning", QColor("#ffc850")))
-            elif err.type == ErrorType.ECHO:
-                type_item.setForeground(colors.get("echo", QColor("#cecece")))
+                error_color = QColor(colors.get("warning", QColor("#ffc850")))
+            else:
+                error_color = QColor(colors.get("echo", QColor("#cecece")))
+
+            # Устанавливаем цвет текста и полупрозрачный фон
+            type_item.setForeground(error_color)
+            bg = QColor(error_color)
+            bg.setAlphaF(0.08)
+            type_item.setBackground(bg)
+            type_item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
             msg_item = QStandardItem(err.message)
             msg_item.setForeground(colors.get("fg", QColor("#cdd6f4")))
+            msg_item.setBackground(bg)
+            file_item.setBackground(bg)
+            line_item.setBackground(bg)
             self.model.appendRow([file_item, line_item, type_item, msg_item])
 
         header = self.tree.header()
@@ -1311,12 +1336,12 @@ class ErrorOverviewPanel(QWidget):
                 background-color: {colors['margin_bg'].name()};
                 color: {colors['fg'].name()};
                 border: none;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
                 font-size: 10pt;
             }}
             QTreeView::item {{
-                background-color: {colors['margin_bg'].name()};
                 padding-left: 8px;
+                padding-right: 8px;
             }}
             QTreeView::item:selected {{
                 background-color: {colors['selection_bg'].name()};
@@ -1327,7 +1352,7 @@ class ErrorOverviewPanel(QWidget):
                 color: {colors['title_fg'].name()};
                 padding: 4px;
                 border: none;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
                 font-size: 10pt;
                 padding-left: 8px;
             }}
@@ -1455,7 +1480,7 @@ class WelcomeWidget(QWidget):
         painter.drawText(x, y, text)
 
         painter.setPen(QPen(colors['title_fg'], 1))
-        subtitle_font = QFont(MONOSPACE_FONT_NAME, 14)
+        subtitle_font = QFont(UI_FONT_NAME, 14)
         painter.setFont(subtitle_font)
 
         subtitle = Strings.get("welcome_subtitle")
@@ -1571,27 +1596,83 @@ class RunButton(AnimatedTitleButton):
 
 
 class CustomTitleBar(QFrame):
-    """
-    Custom window title bar with integrated menu and window controls.
-    """
-
     window_minimized = pyqtSignal()
     window_maximized = pyqtSignal()
     window_closed = pyqtSignal()
-    run_clicked = pyqtSignal()
+    run_requested = pyqtSignal()
+    compile_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent_window = parent
         self.is_maximized = False
-        self.dragging = False
-        self.drag_position = QPoint()
-
         self.setFixedHeight(TITLE_BAR_HEIGHT)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-
         self._setup_ui()
         self.update_style()
+        # Разрешаем отслеживание мыши для кнопок (иначе underMouse не всегда срабатывает)
+        self.setMouseTracking(True)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Не начинаем перетаскивание, если нажали на какую-либо кнопку
+            pos = event.pos()
+            for btn in [self.minimize_btn, self.maximize_btn, self.close_btn, self.run_button]:
+                if btn.geometry().contains(pos):
+                    super().mousePressEvent(event)
+                    return
+            # Запускаем системное перемещение (Aero Snap работает)
+            self.window().windowHandle().startSystemMove()
+        super().mousePressEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Игнорируем двойной клик по кнопкам
+            pos = event.pos()
+            for btn in [self.minimize_btn, self.maximize_btn, self.close_btn, self.run_button]:
+                if btn.geometry().contains(pos):
+                    super().mouseDoubleClickEvent(event)
+                    return
+            self.window_maximized.emit()
+        super().mouseDoubleClickEvent(event)
+
+    def _create_run_icon(self) -> QIcon:
+        """Иконка запуска (треугольник вправо) – увеличенная"""
+        pixmap = QPixmap(16, 16)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        colors = self._get_theme_colors()
+        painter.setBrush(colors['fg'])
+        painter.setPen(Qt.PenStyle.NoPen)
+        # треугольник вправо (увеличенный)
+        points = [
+            QPoint(4, 3),
+            QPoint(13, 8),
+            QPoint(4, 13)
+        ]
+        painter.drawPolygon(points)
+        painter.end()
+        return QIcon(pixmap)
+
+    def _create_compile_icon(self) -> QIcon:
+        """Иконка компиляции (упрощённая шестерёнка) – увеличенная"""
+        pixmap = QPixmap(16, 16)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        colors = self._get_theme_colors()
+        pen = QPen(colors['fg'], 1.5)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        # шестерёнка: кружок и зубцы
+        painter.drawEllipse(3, 3, 10, 10)
+        painter.drawLine(8, 1, 8, 4)
+        painter.drawLine(8, 12, 8, 15)
+        painter.drawLine(1, 8, 4, 8)
+        painter.drawLine(12, 8, 15, 8)
+        painter.end()
+        return QIcon(pixmap)
 
     def _setup_ui(self):
         layout = QHBoxLayout(self)
@@ -1609,8 +1690,55 @@ class CustomTitleBar(QFrame):
 
         layout.addStretch()
 
+        # Кнопка запуска – теперь с выпадающим меню «Запустить» / «Скомпилировать»
         self.run_button = RunButton(self)
-        self.run_button.clicked.connect(self.run_clicked.emit)
+        # Убираем прямое соединение clicked
+        # self.run_button.clicked.connect(self.run_clicked.emit)  <-- удалить
+
+        
+        # Создаём меню для кнопки запуска (RoundedMenu с иконками)
+        self.run_menu = RoundedMenu(self)
+        run_action = self.run_menu.addAction(Strings.get("run_code"))
+        run_action.setIcon(self._create_run_icon())
+        run_action.triggered.connect(self.run_requested.emit)
+        compile_action = self.run_menu.addAction(Strings.get("compile_code"))
+        compile_action.setIcon(self._create_compile_icon())
+        compile_action.triggered.connect(self.compile_requested.emit)
+        
+        
+        # Цвет кнопки Run (зелёный акцент) – ближе к фону (70% bg, 30% accent)
+        accent_raw = self._get_theme_colors().get("autosave_on", QColor("#a6e3a1"))
+        bg = self._get_theme_colors().get("bg", QColor("#1e1e2e"))
+        if isinstance(accent_raw, QColor):
+            r = int(accent_raw.red() * 0.3 + bg.red() * 0.7)
+            g = int(accent_raw.green() * 0.3 + bg.green() * 0.7)
+            b = int(accent_raw.blue() * 0.3 + bg.blue() * 0.7)
+            accent = QColor(r, g, b)
+        else:
+            accent = QColor("#a6e3a1")
+        
+        # Сдвигаем иконки вправо + зелёный hover
+        self.run_menu.setStyleSheet(f"""
+            QMenu::icon {{
+                
+                right: auto;
+                left: 5px;
+                position: absolute;
+            }}
+            QMenu::item {{
+                padding-left: 10px;
+            }}
+            QMenu::item:selected {{
+                background-color: {accent.name()};
+                border-radius: 7px;
+                margin: 0px 4px;
+            }}
+        """)
+
+        self.run_button.setMenu(self.run_menu)
+        self.run_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.run_button.setStyleSheet("QToolButton::menu-indicator { image: none; }")  # убрать стрелку
+
         layout.addWidget(self.run_button)
 
         self.minimize_btn = self._create_minimize_button()
@@ -1620,6 +1748,52 @@ class CustomTitleBar(QFrame):
         layout.addWidget(self.minimize_btn)
         layout.addWidget(self.maximize_btn)
         layout.addWidget(self.close_btn)
+
+    def _update_run_menu(self):
+        """Пересоздаёт меню кнопки Run с актуальными цветами темы"""
+        # Удаляем старое меню
+        if hasattr(self, 'run_menu'):
+            self.run_menu.deleteLater()
+        
+        # Создаём новое меню
+        self.run_menu = RoundedMenu(self)
+        run_action = self.run_menu.addAction(Strings.get("run_code"))
+        run_action.setIcon(self._create_run_icon())
+        run_action.triggered.connect(self.run_requested.emit)
+        compile_action = self.run_menu.addAction(Strings.get("compile_code"))
+        compile_action.setIcon(self._create_compile_icon())
+        compile_action.triggered.connect(self.compile_requested.emit)
+        
+        # Цвет кнопки Run (зелёный акцент) – ближе к фону (70% bg, 30% accent)
+        accent_raw = self._get_theme_colors().get("autosave_on", QColor("#a6e3a1"))
+        bg = self._get_theme_colors().get("bg", QColor("#1e1e2e"))
+        if isinstance(accent_raw, QColor):
+            r = int(accent_raw.red() * 0.3 + bg.red() * 0.7)
+            g = int(accent_raw.green() * 0.3 + bg.green() * 0.7)
+            b = int(accent_raw.blue() * 0.3 + bg.blue() * 0.7)
+            accent = QColor(r, g, b)
+        else:
+            accent = QColor("#a6e3a1")
+        
+        # Сдвигаем иконки вправо + зелёный hover
+        self.run_menu.setStyleSheet(f"""
+            QMenu::icon {{
+                padding-left: 8px;
+                right: auto;
+                left: 5px;
+                position: absolute;
+            }}
+            QMenu::item {{
+                padding-left: 30px;
+            }}
+            QMenu::item:selected {{
+                background-color: {accent.name()};
+                border-radius: 7px;
+                margin: 0px 4px;
+            }}
+        """)
+        
+        self.run_button.setMenu(self.run_menu)
 
     def _create_title_section(self) -> QWidget:
         widget = QWidget()
@@ -1631,7 +1805,8 @@ class CustomTitleBar(QFrame):
         layout.addWidget(self.icon_label)
 
         self.title_label = QLabel(Strings.get("window_title"))
-        self.title_label.setStyleSheet(f"font-size: 14px; font-family: {MONOSPACE_FONT_NAME};")
+        self.title_label.setStyleSheet(f"font-size: 14px; font-family: {UI_FONT_NAME};")
+        self.title_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)  # ← добавить
         layout.addWidget(self.title_label)
 
         return widget
@@ -1782,7 +1957,7 @@ class CustomTitleBar(QFrame):
             QLabel {{
                 color: {colors['title_fg'].name()};
                 background-color: transparent;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
             }}
         """)
 
@@ -1796,12 +1971,12 @@ class CustomTitleBar(QFrame):
                         border: none;
                         padding: 8px 12px;
                         font-size: 10pt;
-                        font-family: {MONOSPACE_FONT_NAME};
+                        font-family: {UI_FONT_NAME};
                     }}
                     QToolButton:hover {{
                         background-color: {colors['title_bg_darker'].name()};
                         color: {colors['selection_fg'].name()};
-                        font-family: {MONOSPACE_FONT_NAME};
+                        font-family: {UI_FONT_NAME};
                     }}
                     QToolButton::menu-indicator {{
                         image: none;
@@ -1812,6 +1987,7 @@ class CustomTitleBar(QFrame):
         self.maximize_btn.update()
         self.close_btn.update()
         self.run_button.update()
+        self._update_run_menu()
 
     def add_menu(self, menu_bar):
         for i in reversed(range(self.menu_layout.count())):
@@ -1836,48 +2012,6 @@ class CustomTitleBar(QFrame):
                 self.menu_layout.addWidget(btn)
 
         self.update_style()
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            if self.parent_window and self.is_maximized:
-                super().mousePressEvent(event)
-                return
-
-            pos = event.pos()
-            if not any(btn.geometry().contains(pos) for btn in [
-                self.minimize_btn, self.maximize_btn, self.close_btn, self.run_button
-            ]):
-                self.dragging = True
-                self.drag_position = event.globalPosition().toPoint() - self.parent_window.frameGeometry().topLeft()
-                event.accept()
-                return
-        super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event):
-        if self.parent_window and self.is_maximized:
-            super().mouseMoveEvent(event)
-            return
-
-        if self.dragging and event.buttons() & Qt.MouseButton.LeftButton:
-            self.parent_window.move(event.globalPosition().toPoint() - self.drag_position)
-            event.accept()
-        else:
-            super().mouseMoveEvent(event)
-
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.dragging = False
-            event.accept()
-
-    def mouseDoubleClickEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            pos = event.pos()
-            if not any(btn.geometry().contains(pos) for btn in [
-                self.minimize_btn, self.maximize_btn, self.close_btn, self.run_button
-            ]):
-                self.window_maximized.emit()
-                event.accept()
-                self.update_style()
 
 
 class AboutDialog(QWidget):
@@ -1953,7 +2087,7 @@ class AboutDialog(QWidget):
         painter.drawText(x, y, text)
 
         painter.setPen(QPen(colors['title_fg'], 1))
-        subtitle_font = QFont(MONOSPACE_FONT_NAME, 11)
+        subtitle_font = QFont(UI_FONT_NAME, 11)
         painter.setFont(subtitle_font)
         x = (self.width() - text_width) // 2
         y = (self.height() - text_height) // 2 + metrics.ascent() - 50
@@ -1966,7 +2100,7 @@ class AboutDialog(QWidget):
 
         painter.drawText(subtitle_x, subtitle_y, subtitle)
 
-        author_font = QFont(MONOSPACE_FONT_NAME, 10)
+        author_font = QFont(UI_FONT_NAME, 10)
         painter.setFont(author_font)
         painter.setPen(QPen(colors['title_fg'], 1))
         painter.setOpacity(0.8)
@@ -1989,6 +2123,114 @@ class AboutDialog(QWidget):
             return THEMES[self.parent_window.current_theme]["colors"]
         return THEMES[DEFAULT_THEME]["colors"]
 
+class ConfirmDialog(QDialog):
+    """Стилизованное диалоговое окно подтверждения (Yes/No)"""
+    def __init__(self, parent, title: str, message: str):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setWindowFlags(
+            Qt.WindowType.Popup |
+            Qt.WindowType.FramelessWindowHint |
+            Qt.WindowType.NoDropShadowWindowHint
+        )
+
+        self.setModal(True)
+
+        self.parent_window = parent
+        self.result = False
+
+        self.setFixedSize(300, 130)
+        
+        self._setup_ui(title, message)
+        self._apply_style()
+
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        
+
+    def _setup_ui(self, title, message):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+
+        self.title_label = QLabel(title)
+        title_font = QFont(UI_FONT_NAME, 16, QFont.Weight.Bold)
+        self.title_label.setFont(title_font)
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.title_label)
+
+        self.msg_label = QLabel(message)
+        self.msg_label.setWordWrap(True)
+        self.msg_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.msg_label)
+
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch()
+        self.yes_btn = QPushButton(Strings.get("delete"))
+        self.no_btn = QPushButton(Strings.get("cancel"))
+        self.yes_btn.clicked.connect(self._on_yes)
+        self.no_btn.clicked.connect(self._on_no)
+        buttons_layout.addWidget(self.yes_btn)
+        buttons_layout.addWidget(self.no_btn)
+        buttons_layout.addStretch()
+        layout.addLayout(buttons_layout)
+
+    def _apply_style(self):
+        colors = THEMES[self.parent_window.current_theme]["colors"] if self.parent_window else THEMES[DEFAULT_THEME]["colors"]
+        self.setStyleSheet(f"""
+            QLabel {{
+                color: {colors['fg'].name()};
+                background: transparent;
+            }}
+            QPushButton {{
+                background-color: {colors['title_bg'].name()};
+                color: {colors['title_fg'].name()};
+                border: none;
+                border-radius: 13px;
+                padding: 8px 35px;
+                font-family: {UI_FONT_NAME};
+            }}
+            QPushButton:hover {{
+                background-color: {colors['title_bg_darker'].name()};
+            }}
+            QPushButton:pressed {{
+                background-color: {colors['selection_bg'].name()};
+            }}
+        """)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        colors = THEMES[self.parent_window.current_theme]["colors"] if self.parent_window else THEMES[DEFAULT_THEME]["colors"]
+        rect = self.rect()
+
+        painter.setBrush(QColor(colors['bg']))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawRoundedRect(rect.adjusted(2, 2, -2, -2), 8, 8)
+
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setPen(QPen(QColor(colors['status_border']), 1,
+                            Qt.PenStyle.SolidLine,
+                            Qt.PenCapStyle.RoundCap,
+                            Qt.PenJoinStyle.RoundJoin))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRoundedRect(rect.adjusted(2, 2, -2, -2), 7, 7)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        super().paintEvent(event)
+
+    def _on_yes(self):
+        self.result = True
+        self.accept()
+
+    def _on_no(self):
+        self.result = False
+        self.reject()
+
+    def exec(self) -> bool:
+        super().exec()
+        return self.result
 
 class ErrorTooltip(QWidget):
     """Custom tooltip for error messages with rounded corners and theme support"""
@@ -2011,7 +2253,7 @@ class ErrorTooltip(QWidget):
         self.label = QLabel()
         self.label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.label.setWordWrap(False)
-        self.label.setFont(QFont(MONOSPACE_FONT_NAME, 10))
+        self.label.setFont(QFont(UI_FONT_NAME, 10))
         layout.addWidget(self.label)
 
     def set_text(self, text: str, colors: dict, error_type: ErrorType = ErrorType.ERROR):
@@ -2176,7 +2418,7 @@ class EditorTabWidget(QTabWidget):
                 border-radius: 4px;
                 padding: 0px;
                 margin-right: 4px;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
             }}
             QToolButton:hover {{
                 background-color: {colors['selection_bg'].name()};
@@ -2298,7 +2540,7 @@ class TwistLangLexer(QsciLexerCustom):
         self.keywords = {
             'if', 'else', 'for', 'while', 'let', 'in', 'and', 'or', 'echo',
             'ret', 'assert', 'lambda', 'do',
-            'struct', 'namespace', 'func', 'continue;', 'break;'
+            'struct', 'namespace', 'func', 'continue', 'break'
         }
         self.modifiers = {'const', 'static', 'global', 'final', 'private'}
         self.types = {'Int', 'Bool', 'String', 'Char', 'Null', 'Double',
@@ -3538,7 +3780,7 @@ class CodeSnapDialog(QWidget):
         if self.editor.filename:
             filename = os.path.basename(self.editor.filename)
             painter.setPen(QPen(colors['comment'], 1))
-            font = QFont(MONOSPACE_FONT_NAME, int(10))
+            font = QFont(UI_FONT_NAME, int(10))
             painter.setFont(font)
             text_rect = QRect(
                 self.padding + 10 + (btn_size + btn_spacing) * 3 + 20,
@@ -3765,7 +4007,7 @@ class CodeSnapDialog(QWidget):
 # MAIN WINDOW
 # =============================================================================
 
-class TwistLangEditor(QMainWindow):
+class TwistLangEditor(FramelessMainWindow):
     """Main application window"""
 
     def __init__(self):
@@ -3798,8 +4040,10 @@ class TwistLangEditor(QMainWindow):
         self.preview_hide_timer.setInterval(50)
         self.preview_hide_timer.timeout.connect(self._check_preview_hide)
 
-        self._setup_window()
+        #self._setup_window()
         self._setup_ui()
+        self.setAcceptDrops(True)
+        #self.setTitleBar(self.title_bar)
         self._setup_shortcuts()
         self._setup_timers()
 
@@ -3813,13 +4057,17 @@ class TwistLangEditor(QMainWindow):
         self.error_timer.start(100)
 
         self._update_error_overview()
+        
+
+    
+    
 
 
     def _setup_window(self):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setGeometry(100, 100, 1200, 800)
-        self.setAcceptDrops(True)
+        
 
     def _rebuild_menus(self):
         menubar = self.menuBar()
@@ -4075,13 +4323,29 @@ class TwistLangEditor(QMainWindow):
                 ls_path = os.path.join('bin', 'lumen-ls')
                 if platform.system() == "Windows" and not os.path.exists(ls_path):
                     ls_path += '.exe'
-                subprocess.run([ls_path, '--file', file_path, '-d'], timeout=4)
+                    
+                # Параметры для скрытия консоли
+                startupinfo = None
+                if platform.system() == "Windows":
+                    startupinfo = subprocess.STARTUPINFO()
+                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                    startupinfo.wShowWindow = subprocess.SW_HIDE
+                    
+                subprocess.run(
+                    [ls_path, '--file', file_path, '-d'],
+                    timeout=4,
+                    startupinfo=startupinfo,
+                    creationflags=subprocess.CREATE_NO_WINDOW if platform.system() == "Windows" else 0,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
             except subprocess.TimeoutExpired:
+                pass
+            except Exception:
                 pass
             # После завершения обновляем ошибки в редакторе
             editor = self._find_editor_by_filename(file_path)
             if editor:
-                # Выполняем в главном потоке
                 QTimer.singleShot(0, lambda: self._check_file_errors(editor))
         # Запуск в фоновом потоке
         threading.Thread(target=run_ls, daemon=True).start()
@@ -4365,7 +4629,8 @@ class TwistLangEditor(QMainWindow):
         self.title_bar.window_minimized.connect(self.showMinimized)
         self.title_bar.window_maximized.connect(self._toggle_maximize)
         self.title_bar.window_closed.connect(self.close)
-        self.title_bar.run_clicked.connect(self.run_current_file)
+        self.title_bar.run_requested.connect(self.run_current_file)
+        self.title_bar.compile_requested.connect(self.compile_current_file)
 
         self._update_content_display()
 
@@ -4726,7 +4991,7 @@ class TwistLangEditor(QMainWindow):
 
         status_text_color = QColor(colors['status_bg']).lighter(300).name()
 
-        status_font_family = MONOSPACE_FONT_NAME
+        status_font_family = UI_FONT_NAME
         status_font_size = "10pt"
 
         self.status_bar.setStyleSheet(f"""
@@ -4795,25 +5060,25 @@ class TwistLangEditor(QMainWindow):
                 border: 1px solid {colors['status_border'].name()};
                 border-radius: 8px;
                 padding: 4px 0px;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
                 font-size: 11pt;
             }}
             QMenu::item {{
                 padding: 6px 35px 6px 25px;
                 background-color: transparent;
                 color: {colors['fg'].name()};
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
             }}
             QMenu::item:selected {{
                 background-color: {colors['title_bg'].name()};
                 color: {colors['selection_fg'].name()};
                 border-radius: 7px;
                 margin: 0px 4px;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
             }}
             QMenu::item:disabled {{
                 color: {colors['comment'].name()};
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
             }}
             QMenu::separator {{
                 height: 2px;
@@ -4835,23 +5100,23 @@ class TwistLangEditor(QMainWindow):
             }}
             QMenuBar {{
                 background-color: transparent;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
                 font-size: 11pt;
             }}
             QMenuBar::item {{
                 background-color: transparent;
                 color: {colors['title_fg'].name()};
                 padding: 6px 10px;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
             }}
             QMenuBar::item:selected {{
                 background-color: {colors['title_bg_darker'].name()};
                 border-radius: 4px;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
             }}
             QMenuBar::item:pressed {{
                 background-color: {colors['selection_bg'].name()};
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
             }}
         """
 
@@ -4876,7 +5141,7 @@ class TwistLangEditor(QMainWindow):
                 min-width: 16ex;
                 padding: 5px;
                 margin-left: 2px;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
             }}
             QTabBar::tab:selected {{
                 background-color: {colors['bg'].name()};
@@ -4889,7 +5154,7 @@ class TwistLangEditor(QMainWindow):
                 background-color: {colors['margin_bg'].name()};
                 border: 1px solid {colors['status_border'].name()};
                 border-radius: 3px;
-                font-family: {MONOSPACE_FONT_NAME};
+                font-family: {UI_FONT_NAME};
             }}
             QTabBar QToolButton:hover {{
                 background-color: {colors['selection_bg'].name()};
@@ -5046,7 +5311,7 @@ class TwistLangEditor(QMainWindow):
 
         self.stop_language_server(filename)
 
-        self.start_language_server(filename)
+        
 
         self.show_status_message(Strings.get("ls_restarted").format(os.path.basename(filename)), 2000)
 
@@ -5222,10 +5487,6 @@ class TwistLangEditor(QMainWindow):
                 self._show_file_explorer_for_path(filename)
                 self.first_file_opened = True
 
-            # Запускаем LS только для .lumen файлов
-            if filename.endswith('.lumen'):
-                self.start_language_server(filename)
-
         except Exception as e:
             QMessageBox.critical(self, Strings.get("file_not_found"), Strings.get("could_not_open").format(e))
 
@@ -5317,16 +5578,12 @@ class TwistLangEditor(QMainWindow):
 
         editor.set_folding_visible(self.folding_toggle.isChecked())
 
-        # Запускаем LS только для .lumen файлов
-        if filename and filename.endswith('.lumen'):
-            self.start_language_server(filename)
-
         editor.set_error_text_visible(self.error_text_visible)
 
         self._update_content_display()
 
     def _setup_editor_widget(self, editor: CustomScintilla):
-        font = get_safe_monospace_font(MONOSPACE_FONT_NAME, self.global_font_size)
+        font = get_safe_monospace_font(UI_FONT_NAME, self.global_font_size)
         editor.setFont(font)
         editor.setMarginsFont(font)
         self._update_margin_width(editor)
@@ -5405,38 +5662,6 @@ class TwistLangEditor(QMainWindow):
         if base.endswith('*'):
             base = base[:-1]
         self.tab_widget.setTabText(index, base + ('*' if modified else ''))
-
-    def start_language_server(self, file_path: str):
-        if not file_path:
-            return
-
-        if file_path in self.ls_processes:
-            proc = self.ls_processes[file_path]
-            if proc.poll() is None:
-                print(f"LS already running for {os.path.basename(file_path)}")
-                return
-            else:
-                del self.ls_processes[file_path]
-
-        try:
-            ls_path = os.path.join('bin', 'lumen-ls')
-            if platform.system() == "Windows" and not os.path.exists(ls_path):
-                ls_path += '.exe'
-
-            process = subprocess.Popen(
-                [ls_path, '--file', file_path, '-d'],
-            )
-
-            self.ls_processes[file_path] = process
-            print(f"Started LS for {os.path.basename(file_path)}")
-            self._update_status_labels()
-
-            editor = self._find_editor_by_filename(file_path)
-            if editor:
-                QTimer.singleShot(500, lambda: self._check_file_errors(editor))
-
-        except Exception as e:
-            print(f"Failed to start LS for {file_path}: {e}")
 
     def stop_language_server(self, file_path: str):
         if file_path not in self.ls_processes:
@@ -5563,6 +5788,42 @@ class TwistLangEditor(QMainWindow):
         if editor and editor.filename:
             self._check_file_errors(editor)
             self.show_status_message(Strings.get("error_check_completed"), 2000)
+
+    def compile_current_file(self):
+        editor = self.current_editor()
+        if not editor:
+            return
+
+        filename = getattr(editor, 'filename', None)
+        if not filename:
+            reply = QMessageBox.question(
+                self,
+                Strings.get("save_changes"),
+                Strings.get("save_before_run"),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                self.save_current_file()
+                filename = getattr(editor, 'filename', None)
+                if not filename:
+                    return
+            else:
+                return
+
+        self.save_editor(editor, filename)
+
+        try:
+            system = platform.system()
+            if system == "Windows":
+                subprocess.Popen(f'start cmd /k bin\\lumenc --file "{filename}" -c', shell=True)
+                self.status_bar.showMessage(
+                    f"Compiling {os.path.basename(filename)}...", 3000
+                )
+            else:
+                QMessageBox.information(self, Strings.get("not_supported"),
+                                       Strings.get("run_manually").format(filename))
+        except Exception as e:
+            QMessageBox.critical(self, Strings.get("file_not_found"), Strings.get("failed_to_run").format(e))
 
     def run_current_file(self):
         editor = self.current_editor()
@@ -5809,14 +6070,14 @@ class TwistLangEditor(QMainWindow):
         active_ls = sum(1 for proc in self.ls_processes.values() if proc.poll() is None)
         self.ls_status_label.setText(Strings.get("ls_active").format(active_ls))
 
-        font = QFont(MONOSPACE_FONT_NAME)
+        font = QFont(UI_FONT_NAME)
         font.setPointSize(9)
 
         self.autosave_label.setFont(font)
         self.error_label.setFont(font)
         self.ls_status_label.setFont(font)
 
-        unified_style = f"color: {text_color.name()}; padding: 2px 5px; font-family: {MONOSPACE_FONT_NAME};"
+        unified_style = f"color: {text_color.name()}; padding: 2px 5px; font-family: {UI_FONT_NAME};"
         self.autosave_label.setStyleSheet(unified_style)
         self.error_label.setStyleSheet(unified_style)
         self.ls_status_label.setStyleSheet(unified_style)

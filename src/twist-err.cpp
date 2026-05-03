@@ -212,6 +212,11 @@ namespace ERROR_THROW {
         return err;
     }
 
+    Error InvalidNodeType(const Token& start, string wait_node, string node) {
+        Error err = Error("Waited " + wait_node + ", but found " + node, start.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
     Error AssertionInvalidMessage(const Token& start, const Token& end) {
         Error err = Error("Invalid assertion message, waited `String` type, or `Char` type", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
@@ -225,6 +230,18 @@ namespace ERROR_THROW {
 
     Error InputWarning(const Token& start, const Token& end) {
         Error err = Error("Input is run time instruction. Default return - ''", start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+        err.message_type = 1;
+        return err;
+    }
+
+    Error InfinityLoopWarning(const Token& start, const Token& end) {
+        Error err = Error("Infinity loop", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        err.message_type = 1;
+        return err;
+    }
+
+    Error UnusedLoopWarning(const Token& start, const Token& end) {
+        Error err = Error("Unused loop", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         err.message_type = 1;
         return err;
     }
@@ -324,7 +341,7 @@ namespace ERROR_THROW {
     }
 
     Error WaitedLambdaReturnTypeSpecifier(const Token& start_token, const Token& end_token, Type type) {
-        Error err = Error("Invalid type specifier for return type `" + type.pool + "`, but waited valid type", start_token.pif, end_token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        Error err = Error("Invalid type specifier `" + type.pool + "`, but waited valid type", start_token.pif, end_token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
 
@@ -348,6 +365,62 @@ namespace ERROR_THROW {
     Error InvalidLambdaReturnType(const Token& start_callable, const Token& end_callable, const Token& start_return_type, const Token& end_return_type, Type expected, Type found) {
         Error err = Error("Invalid return type for lambda, expected `" + expected.pool + "` but found `" + found.pool + "`", start_callable.pif, end_callable.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         err.sub_error = new Error("Expected return type `" + expected.pool + "`", start_return_type.pif, end_return_type.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error WaitedFuncArgumentTypeSpecifier(const Token& start_token, const Token& end_token, string name) {
+        Error err = Error("Invalid type specifier for argument '" + name + "'", start_token.pif, end_token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error WaitedFuncReturnTypeSpecifier(const Token& start_token, const Token& end_token, Type type) {
+        Error err = Error("Invalid type specifier `" + type.pool + "`, but waited valid type", start_token.pif, end_token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidFuncReturnType(const Token& start_callable, const Token& end_callable, const Token& start_return_type, const Token& end_return_type, Type expected, Type found) {
+        Error err = Error("Invalid return type for lambda, expected `" + expected.pool + "` but found `" + found.pool + "`", start_callable.pif, end_callable.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        err.sub_error = new Error("Expected return type `" + expected.pool + "`", start_return_type.pif, end_return_type.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidFuncArgumentCount(const Token& start_callable, const Token& end_callable, const Token& start_args, const Token& end_args, string func_name, size_t expected, size_t found) {
+        Error err = Error("Invalid argument count for '" + func_name + "', expected " + to_string(expected) + " but found " + to_string(found), start_callable.pif, end_callable.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        err.sub_error = new Error("Expected " + to_string(expected) + " arguments but found " + to_string(found), start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidFuncArgumentType(const Token& start_callable, const Token& end_callable, const Token& start_args, const Token& end_args, Type expected, Type found, string arg_name, string func_name) {
+        Error err = Error("Invalid type for argument '" + arg_name + "' in function '" + func_name +"', expected `" + expected.pool + "` but found `" + found.pool + "`", start_callable.pif, end_callable.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        err.sub_error = new Error("Expected type `" + expected.pool + "` but found `" + found.pool + "` for argument '" + arg_name + "'", start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidFuncVariadicSizeExpression(const Token& start, const Token& end, const Type actual_type) {
+        return Error("Variadic size must be of type `Int`, got `" + actual_type.pool + "`", start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+    }
+
+    Error InvalidFuncVariadicSize(const Token& start, const Token& end, const int n) {
+        return Error("Variadic size must be positive number, got " + to_string(n), start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+    }
+
+    Error InvalidFuncVariadicArgType(const Token& start, const Token& end, const Type expected, const Type got, string name){
+        return Error("Variadic argument '" + name + "' expected type `" + expected.pool + "`, but got `" + got.pool + "`", start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+    }
+
+    Error FuncArgumentMissing(const Token& start_callable, const Token& end_callable, const Token& start_args, const Token& end_args, const string& arg_name, int arg_index) {
+        Error err = Error("Missing argument at position " + to_string(arg_index + 1) + " with no default value", start_callable.pif, end_callable.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+        err.sub_error = new Error("Argument '" + arg_name + "' declared here", start_args.pif, end_args.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error FuncArgumentShadowsGlobal(const Token& call_start, const Token& call_end, const string& func_name, const string& arg_name) {
+        Error err = Error("Argument '" + arg_name + "' in call to function '" + func_name + "' shadows a global variable with the same name", call_start.pif, call_end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error MaxRecursionDepthExceeded(const Token& start, const Token& end) {
+        Error err = Error("Maximum recursion depth exceeded", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
 
@@ -389,5 +462,13 @@ namespace ERROR_THROW {
     Error InvalidStringArgumentCount(const Token& start_args, const Token& end_args, size_t found) {
         Error err = Error("'String' expected 1 argument, but found " + to_string(found), start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
+    }
+
+    Error ArrayIndexOutOfRange(const Token& index_start, const Token& index_end, int64_t index, int64_t size) {
+        return Error(" Index " + to_string(index) + " is out of bounds for array of size " + to_string(size), index_start.pif, index_end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+    }
+
+    Error ArrayInvalidIndexType(const Token& index_start, const Token& index_end, const Type& actual_type) {
+        return Error("Array index must be of type `Int`, got `" + actual_type.pool + "`", index_start.pif, index_end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
     }
 }

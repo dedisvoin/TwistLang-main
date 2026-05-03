@@ -11,7 +11,9 @@ final const namespace math {
     let PI = _PI;
     let E = _E;
 
-    let sum = lambda(a: Int, b: Int) -> Int { a + b };
+    func sum(a: Int, b: Int) -> Int {
+        ret a + b;
+    }
 }
 
 

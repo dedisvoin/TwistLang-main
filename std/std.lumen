@@ -5,11 +5,6 @@
     if (!expr) assert false, msg;
 ];
 
-#macro assert_eq(a, b, msg) = [
-    if (typeof(a) == typeof(b)) {
-        if (a == b) assert false, "Is Equal";
-        else assert false, "Is Not Equal";
-    } else assert false, "Unequlize";
-    echo msg;
+#macro iter(size, var) = [
+    for (let var = 0; var < size; var = var + 1;)
 ];
-

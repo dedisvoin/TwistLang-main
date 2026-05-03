@@ -18,8 +18,7 @@ struct NodeDereference : public Node { NO_EXEC
         auto value = expr->eval_from(_memory);
         if (value.type.is_pointer()) {
             auto object = STATIC_MEMORY.get_by_address(any_cast<int>(value.data));
-            if (!object)
-                return NewNull();
+            if (!object) return NewNull();
             return object->value;
         }
         if (value.type == STANDART_TYPE::TYPE) {

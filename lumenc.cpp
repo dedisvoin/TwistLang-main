@@ -184,44 +184,79 @@ int main(int argc, char** argv) {
             std::ofstream out_file(stem);
 
             if (out_file.is_open()) {
-                out_file << "// Подключаем реализацию лексера, обходчика токенов и парсера\n";
-                out_file << "#include \"src/twist-lexer.cpp\"\n";
-                out_file << "#include \"src/twist-tokenwalker.cpp\"\n";
-                out_file << "#include \"src/twist-parser.cpp\"\n";
-                out_file << "\n";
-                out_file << "// Функция для выполнения списка узлов AST в заданном контексте памяти\n";
-                out_file << "void run_with(vector<unique_ptr<Node>>* nodes, Memory& g_memory) {\n";
-                out_file << "    for (size_t i = 0; i < nodes->size(); i++) {\n";
-                out_file << "        (*nodes)[i]->exec_from(g_memory);\n";
-                out_file << "    }\n";
-                out_file << "}\n";
-                out_file << "\n";
-                out_file << "// Точка входа в сгенерированный исполняемый файл\n";
-                out_file << "int main() {\n";
-                out_file << "    std::string file_path = \"" << args_parser.file_path << "\";\n";
-                out_file << "    \n";
-                out_file << "    std::string preprocessor_output = R\"twist(" << file_content << ")twist\";\n";
-                out_file << "    \n";
-                out_file << "    ERROR::PREPROCESSOR_OUTPUT = preprocessor_output;\n";
-                out_file << "    \n";
-                out_file << "    static Lexer parser = Lexer(file_path, preprocessor_output);\n";
-                out_file << "    parser.run();\n";
-                out_file << "    \n";
-                out_file << "    TokenWalker walker = TokenWalker(&parser.tokens);\n";
-                out_file << "    \n";
-                out_file << "    ASTGenerator generator = ASTGenerator(walker, file_path);\n";
-                out_file << "    generator.parse();\n";
-                out_file << "    \n";
-                out_file << "    auto nodes = std::move(generator.nodes);\n";
-                out_file << "    \n";
-                out_file << "    auto g_memory = Memory();\n";
-                out_file << "    \n";
-                out_file << "    GenerateStandartTypes(&g_memory, \"" << args_parser.file_path << "\");\n";
-                out_file << "    \n";
-                out_file << "    run_with(&nodes, g_memory);\n";
-                out_file << "    \n";
-                out_file << "    return 0;\n";
-                out_file << "}\n";
+                if (out_file.is_open()) {
+                    // ================================================================
+                    // Подключение основных модулей компилятора Lumen
+                    // ================================================================
+                    out_file << "// ================================================================\n";
+                    out_file << "// Сгенерированный файл: включает весь пайплайн компиляции Lumen\n";
+                    out_file << "// (лексер → препроцессор → парсер → выполнение)\n";
+                    out_file << "// ================================================================\n\n";
+
+                    out_file << "// Модули языка\n";
+                    out_file << "#include \"src/twist-lexer.cpp\"            // Лексический анализатор\n";
+                    out_file << "#include \"src/twist-tokenwalker.cpp\"      // Обходчик токенов\n";
+                    out_file << "#include \"src/twist-parser.cpp\"           // Парсер и построение AST\n";
+                    out_file << "#include \"src/twist-preproc.cpp\"          // Препроцессор (include/define/macro)\n\n";
+
+                    out_file << "// Стандартная библиотека C++\n";
+                    out_file << "#include <vector>                          // Динамический массив (список узлов)\n";
+                    out_file << "#include <string>                          // Строки\n";
+                    out_file << "using namespace std;\n\n";
+
+                    out_file << "// ------------------------------------------------------------\n";
+                    out_file << "// Вспомогательная функция: выполнение последовательности узлов AST\n";
+                    out_file << "// Принимает указатель на вектор узлов и память исполнения\n";
+                    out_file << "// ------------------------------------------------------------\n";
+                    out_file << "void run_with(vector<Node*>* nodes, Memory* g_memory) {\n";
+                    out_file << "    // Проходим по всем узлам, вызывая exec_from (основной метод выполнения)\n";
+                    out_file << "    for (size_t i = 0; i < nodes->size(); i++) {\n";
+                    out_file << "        (*nodes)[i]->exec_from(g_memory);\n";
+                    out_file << "    }\n";
+                    out_file << "}\n\n";
+
+                    out_file << "// ================================================================\n";
+                    out_file << "// Точка входа скомпилированной программы\n";
+                    out_file << "// ================================================================\n";
+                    out_file << "int main() {\n";
+                    out_file << "    // Путь к исходному файлу (передаётся аргументом)\n";
+                    out_file << "    std::string file_path = \"" << args_parser.file_path << "\";\n\n";
+
+                    out_file << "    // Исходный код программы, встроенный как raw string literal\n";
+                    out_file << "    std::string file_content = R\"twist(" << file_content << ")twist\";\n\n";
+
+                    out_file << "    // ---------- Этап 1: Лексический анализ ----------\n";
+                    out_file << "    // Создаём лексер и разбиваем исходный текст на токены\n";
+                    out_file << "    static Lexer parser = Lexer(file_path, file_content);\n";
+                    out_file << "    parser.run();\n\n";
+
+                    out_file << "    // ---------- Этап 2: Препроцессор ----------\n";
+                    out_file << "    // Обрабатываем include'ы, define'ы и макросы\n";
+                    out_file << "    Preprocessor preprocessor = Preprocessor();\n";
+                    out_file << "    vector<Token> preprocessed_tokens;\n";
+                    out_file << "    preprocessed_tokens = preprocessor.process(parser.tokens, file_path);\n\n";
+
+                    out_file << "    // ---------- Этап 3: Парсинг ----------\n";
+                    out_file << "    // Строим абстрактное синтаксическое дерево (AST)\n";
+                    out_file << "    TokenWalker walker = TokenWalker(&preprocessed_tokens);\n";
+                    out_file << "    ASTGenerator generator = ASTGenerator(walker, file_path);\n";
+                    out_file << "    generator.parse();\n\n";
+
+                    out_file << "    // Забираем полученные узлы\n";
+                    out_file << "    auto nodes = std::move(generator.nodes);\n\n";
+
+                    out_file << "    // ---------- Этап 4: Инициализация памяти и стандартных типов ----------\n";
+                    out_file << "    // Создаём глобальную память и регистрируем встроенные типы (Int, String, ...)\n";
+                    out_file << "    auto g_memory = new Memory();\n";
+                    out_file << "    GenerateStandartTypes(g_memory, \"" << args_parser.file_path << "\");\n\n";
+
+                    out_file << "    // ---------- Этап 5: Выполнение программы ----------\n";
+                    out_file << "    // Запускаем все инструкции на исполнение\n";
+                    out_file << "    run_with(&nodes, g_memory);\n\n";
+
+                    out_file << "    return 0;\n";
+                    out_file << "}\n";
+                }
 
                 out_file.close();
 

@@ -113,9 +113,13 @@ std::vector<Token> processIncludes(const std::vector<Token>& tokens) {
             
             const Token& dir = stream.peek();
             
+            
+            
             if (dir.value == "include") {
                 stream.next(); // 'include'
                 processIncludeDirective(stream, output);
+            } else if (dir.value != "include" && dir.value != "define" && dir.value != "macro") {
+                throw Error("unsupported directive: " + dir.value, dir.pif, ErrorTypes::PREPROCESSOR, "");
             } else {
                 // Оставляем #define и #macro для второго прохода
                 output.push_back(tok);        // '#'
@@ -158,6 +162,9 @@ std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
             
             if (!stream.hasNext() || stream.peek().type != TokenType::LITERAL) {
                 output.push_back(tok);
+                
+                throw Error("waited directive", stream.peek().pif, ErrorTypes::PREPROCESSOR, "");
+            
                 continue;
             }
             

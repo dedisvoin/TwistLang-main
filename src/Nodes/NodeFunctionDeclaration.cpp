@@ -2,7 +2,7 @@
 #include "../twist-args.cpp"
 #include "../twist-structs.cpp"
 #include "../twist-functions.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 
 #pragma once
 
@@ -31,17 +31,26 @@ struct NodeFunctionDeclaration : public Node { NO_EVAL
         this->NODE_TYPE = NodeTypes::NODE_FUNCTION_DECLARATION;
     }
 
-    static Type extract_type_from_value(const Value& val, const Token& start_token, const Token& end_token, const string& entity_name) {
+    Type extract_return_type_from_value(const Value& val) {
         if (val.type == STANDART_TYPE::TYPE) {
             return any_cast<Type>(val.data);
         }
-        else if (!STANDART_TYPE::TYPES.is_sub_type(val.type)) {
-            // Это структура
-            return any_cast<Struct>(val.data).type;
+        // Проверка на структуру
+        // else if (!STANDART_TYPE::TYPES.is_sub_type(val.type)) {
+        //     return any_cast<Struct>(val.data).type;
+        // }
+        throw ERROR_THROW::WaitedFuncReturnTypeSpecifier(start_return_token, end_return_token, val.type);
+    }
+
+    Type extract_arg_type_from_value(const Value& val, string arg) {
+        if (val.type == STANDART_TYPE::TYPE) {
+            return any_cast<Type>(val.data);
         }
-        // Иначе – ошибка: значение не является типом
-        cout << "ERROR_TYPE" << endl;
-        // return Type(); // unreachable
+        // Проверка на структуру
+        // else if (!STANDART_TYPE::TYPES.is_sub_type(val.type)) {
+        //     return any_cast<Struct>(val.data).type;
+        // }
+        throw ERROR_THROW::WaitedFuncArgumentTypeSpecifier(start_args_token, end_args_token, arg);
     }
 
     Type construct_type(Memory* _memory) {
@@ -49,19 +58,15 @@ struct NodeFunctionDeclaration : public Node { NO_EVAL
         Type ret_type;
         if (return_type) {
             auto ret_val = return_type->eval_from(_memory);
-            ret_type = extract_type_from_value(ret_val, start_return_token, end_return_token, "return type");
+            ret_type = extract_return_type_from_value(ret_val);
         }
 
         // Собираем типы аргументов
         vector<Type> arg_types;
         for (size_t i = 0; i < args.size(); ++i) {
             auto arg = args[i];
-            if (!arg->type_expr) {
-                // По логике парсера type_expr всегда присутствует, но на всякий случай
-                ERROR::WaitedFuncTypeArgumentTypeSpecifier(start_args_token, end_args_token, arg->name);
-            }
             auto arg_val = arg->type_expr->eval_from(_memory);
-            Type t = extract_type_from_value(arg_val, start_args_token, end_args_token, "argument '" + arg->name + "'");
+            Type t = extract_arg_type_from_value(arg_val, args[i]->name);
             arg_types.push_back(t);
         }
 
@@ -76,9 +81,8 @@ struct NodeFunctionDeclaration : public Node { NO_EVAL
     void exec_from(Memory* _memory) override {
         Type function_type = construct_type(_memory);
         
-
         auto new_function_memory = new Memory();
-        //_memory.link_objects(*new_function_memory);
+        _memory->link_objects(new_function_memory);
         
         auto func = NewFunction(name, new_function_memory, body, args, return_type, function_type, start_args_token, end_args_token, start_return_token, end_return_token);
         

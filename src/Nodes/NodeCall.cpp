@@ -11,6 +11,25 @@
 #include <any>
 #include <cstdint>
 
+#define MAX_RECURSION 100
+
+// ---------- защита от переполнения стека вызовов ----------
+static int recursion_depth = 0;   // общий для всех функций/лямбд
+
+struct RecursionGuard {
+    const Token& start;
+    const Token& end;
+    RecursionGuard(const Token& s, const Token& e) : start(s), end(e) {
+        
+        if (recursion_depth >= MAX_RECURSION) {
+            throw ERROR_THROW::MaxRecursionDepthExceeded(start, end);
+        }
+        ++recursion_depth;
+    }
+    ~RecursionGuard() { --recursion_depth; }
+};
+// ----------------------------------------------------------
+
 
 struct NodeCall : public Node { NO_EXEC
     Node* callable;
@@ -119,89 +138,89 @@ struct NodeCall : public Node { NO_EXEC
     }
 
     Value call_function(Value &value, Memory* _memory) {
+        
         auto func = any_cast<Function*>(value.data);
-        _memory->link_objects(func->memory);
-        Memory saved_mem = *func->memory;
-        func->memory->add_object_in_func(func->name, value, value.type, false, false, false, true);
 
-        size_t arg_idx = 0;  // текущий индекс в списке переданных аргументов args
+        // 1. Создаём новую память для этого вызова
+        Memory call_memory;
 
-        // Проходим по всем объявленным параметрам функции
+        // 2. Линкуем в неё глобальные объекты из «статической» памяти функции
+        func->memory->link_objects(&call_memory);
+
+        // 3. Добавляем саму функцию в call_memory (для рекурсивных вызовов)
+        call_memory.add_object(func->name, value, value.type,
+                            true, true, true, true, false);
+
+        
+
+        size_t arg_idx = 0;
+
+        // 4. Обрабатываем параметры, как и раньше, но кладём всё в call_memory
         for (size_t param_idx = 0; param_idx < func->arguments.size(); ++param_idx) {
             Arg* param = func->arguments[param_idx];
 
             if (!param->is_variadic) {
-                // --- Обычный (не variadic) параметр ---
+                // --- Обычный параметр ---
                 Value arg_value = NewNull();
-
                 if (arg_idx < args.size()) {
                     arg_value = args[arg_idx]->eval_from(_memory);
                     ++arg_idx;
-                }
-                else if (param->default_parameter) {
+                } else if (param->default_parameter) {
                     arg_value = param->default_parameter->eval_from(_memory);
-                }
-                else {
-                    ERROR::MissingFuncArgument(start_callable, end_callable,
+                } else {
+                    throw ERROR_THROW::FuncArgumentMissing(start_callable, end_callable,
                         func->start_args_token, func->end_args_token,
                         param->name, param_idx);
                 }
+
                 Type expected;
-                // Проверка типа
                 if (param->type_expr) {
-
                     auto expected_type_val = param->type_expr->eval_from(func->memory);
-
                     expected = extract_type_from_value(expected_type_val,
-                                         func->start_args_token, func->end_args_token,
-                                         "parameter '" + param->name + "'");
+                                        func->start_args_token, func->end_args_token,
+                                        "parameter '" + param->name + "'");
                     if (!arg_value.type.is_sub_type(expected)) {
-                        ERROR::InvalidFuncArgumentType(start_callable, end_callable,
+                        throw ERROR_THROW::InvalidFuncArgumentType(start_callable, end_callable,
                             func->start_args_token, func->end_args_token,
-                            expected, arg_value.type, param->name);
+                            expected, arg_value.type, param->name, func->name);
                     }
                 }
-                if (func->memory->check_literal(param->name)) {
-                    MemoryObject* existing = func->memory->get_variable(param->name);
-                    if (existing->modifiers.is_global) {
-                        ERROR::ArgumentShadowsGlobal(start_callable, end_callable, func->name, param->name);
-                    }
+
+                // Проверка на перекрытие глобала (теперь внутри call_memory)
+                if (call_memory.check_literal(param->name)) {
+                    MemoryObject* existing = call_memory.get_variable(param->name);
+                    if (existing->modifiers.is_global)
+                        throw ERROR_THROW::FuncArgumentShadowsGlobal(start_callable, end_callable,
+                            func->name, param->name);
                 }
-                func->memory->add_object_in_func(param->name, arg_value, expected,
+
+                call_memory.add_object_in_func(param->name, arg_value, expected,
                     param->is_const, param->is_static,
                     param->is_final, param->is_global);
-            }
-            else {
-                // --- Variadic параметр ---
+            } else {
+                // --- Variadic параметр (логика та же, адресация call_memory) ---
                 int64_t variadic_size = 0;
-
-                // Определяем размер variadic-блока
-                if (param->variadic_size) {   // фиксированный размер
-                    Value size_val = param->variadic_size->eval_from(_memory);
-                    if (size_val.type != STANDART_TYPE::INT) {
-                        ERROR::InvalidVariadicSizeExpression(start_callable, end_callable,
-                            size_val.type.pool);
-                    }
+                if (param->variadic_size) {
+                    Value size_val = param->variadic_size->eval_from(&call_memory);
+                    if (size_val.type != STANDART_TYPE::INT) 
+                        throw ERROR_THROW::InvalidFuncVariadicSizeExpression(start_callable, end_callable, size_val.type);
+                    
                     variadic_size = any_cast<int64_t>(size_val.data);
                     if (variadic_size < 0) {
-                        ERROR::InvalidVariadicSizeExpression(start_callable, end_callable,
-                            "negative size");
+                        throw ERROR_THROW::InvalidFuncVariadicSize(start_callable, end_callable, variadic_size);
                     }
-                }
-                else {   // динамический размер – все оставшиеся аргументы
+                } else {
                     variadic_size = args.size() - arg_idx;
                 }
 
-                // Проверяем, хватает ли переданных аргументов
                 if (arg_idx + variadic_size > args.size()) {
-                    ERROR::MissingFuncArgument(start_callable, end_callable,
+                    throw ERROR_THROW::FuncArgumentMissing(start_callable, end_callable,
                         func->start_args_token, func->end_args_token,
                         param->name, param_idx);
                 }
 
-                // Собираем значения в массив
                 vector<Value> elements;
-                Type element_type;   // будет определён ниже, если есть type_expr
+                Type element_type;
                 bool has_explicit_type = (param->type_expr != nullptr);
 
                 if (has_explicit_type) {
@@ -211,18 +230,14 @@ struct NodeCall : public Node { NO_EXEC
 
                 for (int64_t i = 0; i < variadic_size; ++i) {
                     Value elem = args[arg_idx + i]->eval_from(_memory);
-
-                    // Проверка типа элемента
                     if (has_explicit_type && !elem.type.is_sub_type(element_type)) {
-                        ERROR::InvalidVariadicArgumentType(start_callable, end_callable,
-                            element_type.pool, elem.type.pool, i);
+                        throw ERROR_THROW::InvalidFuncVariadicArgType(start_callable, end_callable,
+                            element_type.pool, elem.type.pool, param->name);
                     }
-
                     elements.push_back(elem);
                 }
                 arg_idx += variadic_size;
 
-                // Создаём тип массива
                 string elem_type_str = has_explicit_type ? element_type.pool : "auto";
                 string array_type_str;
                 if (param->variadic_size) {
@@ -231,34 +246,33 @@ struct NodeCall : public Node { NO_EXEC
                     array_type_str = "[" + elem_type_str + ", ~]";
                 }
                 Type array_type(array_type_str);
-
-                // Формируем значение-массив
                 Array arr(array_type, std::move(elements));
                 Value array_value(array_type, std::move(arr));
 
-                if (func->memory->check_literal(param->name)) {
-                    MemoryObject* existing = func->memory->get_variable(param->name);
-                    if (existing->modifiers.is_global) {
-                        ERROR::ArgumentShadowsGlobal(start_callable, end_callable, func->name, param->name);
-                    }
+                if (call_memory.check_literal(param->name)) {
+                    MemoryObject* existing = call_memory.get_variable(param->name);
+                    if (existing->modifiers.is_global) 
+                        throw ERROR_THROW::FuncArgumentShadowsGlobal(start_callable, end_callable,
+                            func->name, param->name);
+                    
                 }
 
-                // Добавляем в память функции под именем параметра
-                func->memory->add_object_in_func(param->name, array_value, array_value.type,
+                call_memory.add_object_in_func(param->name, array_value, array_value.type,
                     param->is_const, param->is_static,
                     param->is_final, param->is_global);
             }
         }
 
-        // Проверка, что не осталось лишних аргументов
         if (arg_idx < args.size()) {
-            ERROR::InvalidFuncArgumentCount(start_callable, end_callable,
-                func->start_args_token, func->end_args_token,
-                arg_idx, args.size());
+            throw ERROR_THROW::InvalidFuncArgumentCount(start_callable, end_callable,
+                func->start_args_token, func->end_args_token, func->name,
+                func->arguments.size(), args.size());
         }
-        
+
+        // 5. Выполняем тело функции в её собственной call_memory
         try {
-            ((Node*)(func->body))->exec_from(func->memory);
+            
+            ((Node*)(func->body))->exec_from(&call_memory);
             return NewNull();
         }
         catch (Error err) {
@@ -270,24 +284,22 @@ struct NodeCall : public Node { NO_EXEC
                 string saved_message = err.message;
                 err.message = "...";
                 throw ERROR_THROW::CallError(start_callable, end_callable, func->name, new Error(err), err.message_type, saved_message);
-                
             }
             throw ERROR_THROW::CallError(start_callable, end_callable, func->name, new Error(err), err.message_type);
         }
         catch (Return _value) {
+            // Проверка возвращаемого типа (по‑прежнему используется func->memory для вычисления типа)
             if (func->return_type) {
                 auto expected_ret = func->return_type->eval_from(func->memory);
                 Type expected = extract_type_from_value(expected_ret,
-                                         func->start_return_type_token, func->end_return_type_token,
-                                         "return type");
+                                    func->start_return_type_token, func->end_return_type_token,
+                                    "return type");
                 if (!_value.value.type.is_sub_type(expected)) {
-                    ERROR::InvalidLambdaReturnType(start_callable, end_callable,
+                    throw ERROR_THROW::InvalidFuncReturnType(start_callable, end_callable,
                         func->start_return_type_token, func->end_return_type_token,
                         expected, _value.value.type);
                 }
             }
-
-            *func->memory = saved_mem;
             return _value.value;
         }
     }
@@ -366,8 +378,6 @@ struct NodeCall : public Node { NO_EXEC
 
         auto value = callable->eval_from(_memory);
 
-
-
         // if (value.type == STANDART_TYPE::METHOD) {
         //     auto method = any_cast<Method>(value.data);
         //     auto saved_memory = method.func->memory;
@@ -386,6 +396,7 @@ struct NodeCall : public Node { NO_EXEC
             return call_string(value, _memory);
         }
         else if (value.type.is_func()) {
+            RecursionGuard guard(start_callable, end_callable);  // <<< контроль глубины
             return call_function(value, _memory);
         }
         else if (!value.type.is_sub_type(STANDART_TYPE::TYPES)) {

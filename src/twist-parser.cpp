@@ -217,7 +217,7 @@ struct ASTGenerator {
         }
 
 
-        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("typeof") && walker.CheckValue("(", 1)) {
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("typeof")) {
             return ParseTypeof();
         }
 
@@ -225,7 +225,7 @@ struct ASTGenerator {
             return ParseNew();
         }
 
-        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("sizeof") && walker.CheckValue("(", 1)) {
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("sizeof")) {
             return ParseSizeof();
         }
 
@@ -417,12 +417,15 @@ struct ASTGenerator {
         if (current.type == TokenType::L_CURVE_BRACKET) {
             return ParseBlock();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "out") {
             return ParseOut();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "outln") {
             return ParseOutLn();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "assert") {
             return ParseAssert();
         }
@@ -434,6 +437,7 @@ struct ASTGenerator {
         if (current.type == TokenType::KEYWORD && current.value == "struct") {
             return ParseStructDecl();
         }
+
         // block declaration
         if ((current.type == TokenType::KEYWORD) &&
             (current.value == "final" || current.value == "const" ||
@@ -446,21 +450,27 @@ struct ASTGenerator {
             walker.before();
             // Если не блочная декларация, продолжаем как обычно
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "let") {
             return ParseVariableDecl();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "final") {
             return ParseFinalVariableDecl();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "static") {
             return ParseStaticVariableDecl();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "const") {
             return ParseConstVariableDecl();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "global") {
             return ParseGlobalVariableDecl();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "private") {
             return ParsePrivateVariableDecl();
         }
@@ -476,24 +486,31 @@ struct ASTGenerator {
         if (current.type == TokenType::KEYWORD && current.value == "namespace") {
             return ParseNameSpaceDecl();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "if") {
             return ParseIf();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "del") {
             return ParseDelete();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "while") {
             return ParseWhile();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "do") {
             return ParseDoWhile();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "for") {
             return ParseFor();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "break") {
             return ParseBreak();
         }
+
         if (current.type == TokenType::KEYWORD && current.value == "continue") {
             return ParseContinue();
         }
@@ -502,6 +519,9 @@ struct ASTGenerator {
             return ParseEcho();
         }
 
+        if (walker.CheckValue(";")) {
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "statement");
+        }
         
         // Общий случай: выражение, которое может быть присваиванием или expression statement
         auto start_left_value_token = *walker.get();
@@ -560,10 +580,11 @@ struct ASTGenerator {
     }
 
     inline void parse() {
-
-
         while (!walker.isEnd()) {
             auto stmt = parse_statement();
+            if (!stmt) {
+                throw ERROR_THROW::UnexpectedToken(*walker.get(), "statement");
+            }
             if (stmt) {
                 this->nodes.push_back(std::move(stmt));
             }
@@ -839,26 +860,29 @@ Node* ASTGenerator::ParseFuncDecl() {
     }
 
     Token end_args_token = *walker.get(-1);
-    Token start_return_token = *walker.get();
+    Token return_type_start_token = *walker.get();
     Node* return_type_expr = nullptr;
 
-    if (walker.CheckValue("-")) {
-        walker.next();
-        if (walker.CheckValue(">")) {
-            walker.next(); // pass "->" token
-            start_return_token = *walker.get();
-            return_type_expr = parse_expression();
-            if (!return_type_expr)
-                throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
-        } else {
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "syntax: -> type expression");
-        }
-    }
+    if (!(walker.CheckValue("-") && walker.CheckType(TokenType::OPERATOR)))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "syntax: -> type expression");
+    walker.next();
+    if (!(walker.CheckType(TokenType::R_TRIANGLE_BRACKET)))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "syntax: -> type expression");
+    walker.next();
 
-    Token end_return_token = *walker.get(-1);
-    auto statement = parse_statement();
+    return_type_start_token = *walker.get();
+    return_type_expr = parse_expression();
+    Token return_type_end_token = *walker.get(-1);
 
-    return new NodeFunctionDeclaration(name, arguments, return_type_expr, statement, start_args_token, end_args_token, start_return_token, end_return_token);
+    if (!return_type_expr)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "return type expression");
+
+    
+    auto body = parse_statement();
+    if (!body)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "body");
+
+    return new NodeFunctionDeclaration(name, arguments, return_type_expr, body, start_args_token, end_args_token, return_type_start_token, return_type_end_token);
 }
 
 
@@ -1039,7 +1063,7 @@ Node* ASTGenerator::ParseCall(Node* expr, Token start, Token end) {
     return new NodeCall(expr, arguments, start, end);
 }
 
-// PASS (NO FINAL)
+// PASS 
 Node* ASTGenerator::ParseLambda() {
     walker.next(); // pass 'lambda' token
     Token start_args_token = *walker.get();
@@ -1148,7 +1172,7 @@ Node* ASTGenerator::ParseLambda() {
     // парсим тело
     auto body = parse_expression();
     if (!body)
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "lambda body");
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "body");
 
     if (!walker.CheckValue("}"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "'}'");
@@ -1241,13 +1265,15 @@ Node* ASTGenerator::ParseInput() {
 // PASS
 Node* ASTGenerator::ParseTypeof() {
     walker.next(); // pass 'typeof' token
-    walker.next(); // pass '(' token
+    if (!walker.CheckValue("("))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "'('");
+    walker.next();
 
     auto expr_token = *walker.get();
     auto expr = parse_expression();
 
     if (!walker.CheckValue(")"))
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "')' after typeof");
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
     walker.next();
     return new NodeTypeof(expr, expr_token);
 }
@@ -1255,7 +1281,9 @@ Node* ASTGenerator::ParseTypeof() {
 // PASS
 Node* ASTGenerator::ParseSizeof() {
     walker.next(); // pass 'sizeof' token
-    walker.next(); // pass '(' token
+    if (!walker.CheckValue("("))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "'('");
+    walker.next();
 
     auto expr_token = *walker.get();
     auto expr = parse_expression();
@@ -1277,7 +1305,7 @@ Node* ASTGenerator::ParseAddressOf() {
     return new NodeAddressOf(expr, start, end);
 }
 
-
+// PASS
 Node* ASTGenerator::ParseDereference() {
     walker.next(); // pass '*' token
     
@@ -1289,7 +1317,6 @@ Node* ASTGenerator::ParseDereference() {
     return new NodeDereference(expr, start_token, end_token);
     
 }
-
 
 // PASS
 Node* ASTGenerator::ParseBlockDecl(string modifier) {
@@ -1362,7 +1389,13 @@ Node* ASTGenerator::ParseFor() {
 
     auto init_state = parse_statement();
 
+    if (!init_state)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "init statement");
+
     auto check_expr = parse_expression();
+
+    if (!check_expr)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "check expression");
 
     if (!walker.CheckValue(";"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
@@ -1378,13 +1411,18 @@ Node* ASTGenerator::ParseFor() {
     walker.next();
 
     auto body_token = *walker.get();
+
     auto body = parse_statement();
+
+    if (!body) 
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "body");
 
     return new NodeFor(init_state, check_expr, update_state, body, body_token);
 }
 
 // PASS
 Node* ASTGenerator::ParseWhile() {
+    auto start_token = *walker.get();
     walker.next(); // pass 'while' token
 
     if (!walker.CheckValue("("))
@@ -1392,21 +1430,20 @@ Node* ASTGenerator::ParseWhile() {
     walker.next();
 
     auto expr = parse_expression();
+    if (!expr) 
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "check expression");
 
     if (!walker.CheckValue(")"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
     walker.next();
+    auto end_token = *walker.get(-1);
 
-
-    auto body_token = *walker.get();
+    
     auto body = parse_statement();
-
     if (!body)
-        throw ERROR_THROW::UnexpectedToken(body_token, "statement");
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "body");
 
-    if (body)
-
-    return new NodeWhile(expr, body, body_token);
+    return new NodeWhile(expr, body, start_token, end_token);
 }
 
 // PASS
@@ -1414,11 +1451,15 @@ Node* ASTGenerator::ParseDoWhile() {
     walker.next(); // pass 'do' token
 
     auto body_token = *walker.get();
-    auto state = parse_statement();
+    auto body = parse_statement();
 
-    if (state->NODE_TYPE != NODE_BLOCK_OF_NODES)
-        throw ERROR_THROW::UnexpectedToken(body_token, "block of statements");
+    if (!body)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "body");
 
+    if (body->NODE_TYPE != NODE_BLOCK_OF_NODES)
+        throw ERROR_THROW::InvalidNodeType(body_token, get_node_type_name(NODE_BLOCK_OF_NODES), get_node_type_name(body->NODE_TYPE));
+
+    Token start_token = *walker.get();
     if (!walker.CheckValue("while"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "'while'");
     walker.next();
@@ -1428,12 +1469,20 @@ Node* ASTGenerator::ParseDoWhile() {
     walker.next();
 
     auto expr = parse_expression();
+    if (!expr) 
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+    
 
     if (!walker.CheckValue(")"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
     walker.next();
+    Token end_token = *walker.get(-1);
 
-    return new NodeDoWhile(expr, state);
+    if (!walker.CheckValue(";"))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
+    walker.next();
+
+    return new NodeDoWhile(expr, body, start_token, end_token);
 }
 
 
@@ -1441,19 +1490,16 @@ Node* ASTGenerator::ParseDelete() {
     walker.next(); // pass 'del' token
 
     Token start_token = *walker.get();
-
-    // Парсим выражение, которое нужно удалить
-    auto target_expr = parse_expression();
-
+    auto expr = parse_expression();
     Token end_token = *walker.get(-1);
 
     if (!walker.CheckValue(";"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
-
     walker.next(); // pass ';'
 
-    return new NodeDelete(target_expr, start_token, end_token);
+    return new NodeDelete(expr, start_token, end_token);
 }
+
 
 Node* ASTGenerator::ParseObjectResolution(Node* expression) {
     while (walker.CheckValue(".")) {
@@ -1477,6 +1523,7 @@ Node* ASTGenerator::ParseObjectResolution(Node* expression) {
     }
     return expression;
 }
+
 
 // PASS
 Node* ASTGenerator::ParseNameResolution(Node* expression) {
@@ -1534,12 +1581,12 @@ Node* ASTGenerator::ParseIfExpr() {
 
     Node* else_expr = nullptr;
     if (walker.CheckValue("else")) {
-        walker.next();
+        walker.next(); // pass "else" token
         if (!walker.CheckType(TokenType::L_CURVE_BRACKET))
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "else expression: {expr}");
-        walker.next();
-        else_expr = parse_expression();
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "else expression: { expr }");
+        walker.next(); // pass '{"
 
+        else_expr = parse_expression();
         if (!else_expr)
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
 
@@ -1550,6 +1597,7 @@ Node* ASTGenerator::ParseIfExpr() {
 
     return new NodeIfExpr(eq_expr, true_expr, else_expr);
 }
+
 
 // PASS
 Node* ASTGenerator::ParseIf() {
@@ -1565,27 +1613,29 @@ Node* ASTGenerator::ParseIf() {
 
     if (!walker.CheckType(TokenType::R_BRACKET))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), ")");
-
     walker.next();
 
-    auto true_state = parse_statement();
-    if (!true_state)
-        throw ERROR_THROW::UnexpectedToken(*walker.get(), "statement");
+    auto true_body = parse_statement();
+    if (!true_body)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "body");
 
-    Node* else_state = nullptr;
+    Node* else_body = nullptr;
     if (walker.CheckValue("else")) {
-        walker.next();
-        else_state = parse_statement();
-        if (!else_state)
-            throw ERROR_THROW::UnexpectedToken(*walker.get(), "statement or statement block");
+        walker.next(); // pass 'else' token
+
+        else_body = parse_statement();
+        if (!else_body)
+            throw ERROR_THROW::UnexpectedToken(*walker.get(), "else body");
     }
 
-    return new NodeIf(eq_expr, true_state, else_state);
+    return new NodeIf(eq_expr, true_body, else_body);
 }
 
 // PASS
 Node* ASTGenerator::ParseBlock() {
     walker.next(); // pass '{'
+
+
     vector<Node*> nodes_array;
     if (walker.CheckType(TokenType::R_CURVE_BRACKET)) {
         walker.next(); // pass '}'

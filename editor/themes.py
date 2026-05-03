@@ -8,7 +8,7 @@ THEMES = {
         "colors": {
             "bg": QColor("#eff1f5"),
             "fg": QColor("#4c4f69"),
-            "title_bg": QColor("#dce0e8"),
+            "title_bg": QColor("#d0d5de"),
             "title_bg_darker": QColor("#c9cdd8"),
             "title_fg": QColor("#4c4f69"),
             "title_border": QColor("#bcc0cc"),
@@ -55,7 +55,7 @@ THEMES = {
         "colors": {
             "bg": QColor("#f4f1f8"),
             "fg": QColor("#4a4560"),
-            "title_bg": QColor("#e8e3f0"),
+            "title_bg": QColor("#dbd6e3"),
             "title_bg_darker": QColor("#dcd6e8"),
             "title_fg": QColor("#4a4560"),
             "title_border": QColor("#c8c0d8"),
@@ -102,7 +102,7 @@ THEMES = {
         "colors": {
             "bg": QColor("#ffffff"),
             "fg": QColor("#202020"),
-            "title_bg": QColor("#f5f5f5"),
+            "title_bg": QColor("#e3e0e0"),
             "title_bg_darker": QColor("#e8e8e8"),
             "title_fg": QColor("#202020"),
             "title_border": QColor("#d0d0d0"),
@@ -149,7 +149,7 @@ THEMES = {
         "colors": {
             "bg": QColor("#eff1f5"),
             "fg": QColor("#4c4f69"),
-            "title_bg": QColor("#e6e9ef"),
+            "title_bg": QColor("#d3d6dd"),
             "title_bg_darker": QColor("#dce0e8"),
             "title_fg": QColor("#4c4f69"),
             "title_border": QColor("#ccd0da"),
@@ -196,7 +196,7 @@ THEMES = {
         "colors": {
             "bg": QColor("#f8f4ed"),
             "fg": QColor("#3c3c3c"),
-            "title_bg": QColor("#e9e3d9"),
+            "title_bg": QColor("#dbd6cd"),
             "title_bg_darker": QColor("#ded8ce"),
             "title_fg": QColor("#3c3c3c"),
             "title_border": QColor("#d0cabc"),
@@ -243,7 +243,7 @@ THEMES = {
         "colors": {
             "bg": QColor("#fdf6e3"),
             "fg": QColor("#657b83"),
-            "title_bg": QColor("#eee8d5"),
+            "title_bg": QColor("#ded8c6"),
             "title_bg_darker": QColor("#ddd6c3"),
             "title_fg": QColor("#586e75"),
             "title_border": QColor("#93a1a1"),
@@ -290,7 +290,7 @@ THEMES = {
         "colors": {
             "bg": QColor("#ffffff"),
             "fg": QColor("#000000"),
-            "title_bg": QColor("#f0f0f0"),
+            "title_bg": QColor("#d4d2d2"),
             "title_bg_darker": QColor("#dddddd"),
             "title_fg": QColor("#000000"),
             "title_border": QColor("#cccccc"),
@@ -337,7 +337,7 @@ THEMES = {
         "colors": {
             "bg": QColor("#fafafa"),
             "fg": QColor("#5c6166"),
-            "title_bg": QColor("#e9e9e9"),
+            "title_bg": QColor("#d8d5d5"),
             "title_bg_darker": QColor("#d8d8d8"),
             "title_fg": QColor("#5c6166"),
             "title_border": QColor("#abb0b6"),
@@ -384,7 +384,7 @@ THEMES = {
         "colors": {
             "bg": QColor("#fef6e4"),
             "fg": QColor("#5c6a72"),
-            "title_bg": QColor("#f0e8d8"),
+            "title_bg": QColor("#dbd4c5"),
             "title_bg_darker": QColor("#e0d8c8"),
             "title_fg": QColor("#5c6a72"),
             "title_border": QColor("#d0d8d0"),
