@@ -1125,7 +1125,7 @@ n = <span class="number">0</span>;
             <div class="download-card">
                 <i class="fab fa-windows" style="font-size: 2.5rem; color: var(--download-icon-color);"></i>
                 <h3 style="margin: 0.5rem 0;">Lumen IDE для Windows 64-bit</h3>
-                <p style="margin-bottom: 0.5rem; color: var(--download-text);">Версия 1.05b — первая стабильная сборка</p>
+                <p style="margin-bottom: 0.5rem; color: var(--download-text);">Версия 0.18r — первая стабильная сборка</p>
                 <div class="platform-note"><i class="fas fa-check-circle"></i> Поддерживаемая платформа: Windows 10/11 (64-bit)</div>
                 <div style="margin: 1.5rem 0;">
                     <button id="windowsDownloadBtn" class="big-download-btn"><i class="fas fa-download"></i> Скачать Lumen IDE для Windows 64-bit</button>
@@ -1377,9 +1377,24 @@ n = <span class="number">0</span>;
         });
     });
 
-    document.getElementById('windowsDownloadBtn')?.addEventListener('click', () => {
-        alert("Скачивание Lumen IDE v1.05b для Windows 64-bit\nРазмер: ~85 MB\nУстановщик готов к запуску.");
-    });
+    document.getElementById('windowsDownloadBtn')?.addEventListener('click', (e) => {
+    // Предотвращаем стандартное поведение если нужно
+    e?.preventDefault();
+    
+    // 🔹 ССЫЛКА НА СКАЧИВАНИЕ — замените на вашу
+    const downloadUrl = 'https://raw.githubusercontent.com/dedisvoin/TwistLang-main/main/Lumen%200.18r-installer.exe';
+    // Создаём временную ссылку для надёжного скачивания
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = 'LumenIDE_0.18r_Win64.exe';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // 📊 Опционально: аналитика
+    console.log('Download started:', downloadUrl);
+});
 
     const scrollBtn = document.getElementById('scrollTopBtn');
     let scrollTicking = false;
