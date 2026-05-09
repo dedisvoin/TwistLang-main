@@ -471,4 +471,8 @@ namespace ERROR_THROW {
     Error ArrayInvalidIndexType(const Token& index_start, const Token& index_end, const Type& actual_type) {
         return Error("Array index must be of type `Int`, got `" + actual_type.pool + "`", index_start.pif, index_end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
     }
+
+    Error ArrayInvalidElementType(const Token& start, const Token& end, const Type expected_type, const Type actual_type, size_t index) {
+        return Error("Array waited element of type `" + expected_type.pool + "`, but found element of type `" + actual_type.pool + "` at index " + to_string(index), start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+    }
 }

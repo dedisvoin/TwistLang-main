@@ -10,7 +10,219 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        * {
+
+        :root {
+            /* ─────────────────────────────────────────────────────────
+            🔹 БАЗОВЫЕ ЦВЕТА (светлая тема)
+            ───────────────────────────────────────────────────────── */
+            --color-base-bg: #eff1f5;              /* Фон страницы — светло-серый */
+            --color-base-text: #4c4f69;            /* Основной текст — тёмно-синий */
+            --color-base-text-muted: #9ca0b0;      /* Вторичный текст */
+            --color-base-text-dim: #6c6f85;        /* Третичный текст */
+            --color-base-text-bright: #4c4f69;     /* Заголовки */
+
+            /* ─────────────────────────────────────────────────────────
+            🔹 ИНТЕРФЕЙС
+            ───────────────────────────────────────────────────────── */
+            /* Навбар */
+            --color-navbar-bg: rgba(208, 213, 222, 0.9);    /* #d0d5de */
+            --color-navbar-border: #bcc0cc;
+            --color-navbar-text: #4c4f69;
+            --color-navbar-hover: #8839ef;                  /* акцент */
+            --color-navbar-mobile-bg: rgba(208, 213, 222, 0.98);
+            --color-navbar-mobile-border: #bcc0cc;
+
+            /* Карточки */
+            --color-card-bg: rgba(255, 255, 255, 0.85);
+            --color-card-border: #bcc0cc;
+            --color-card-shadow-sm: 0 4px 6px -1px rgba(76, 79, 105, 0.1);
+            --color-card-shadow-md: 0 10px 15px -3px rgba(76, 79, 105, 0.15);
+
+            /* Flip-карты */
+            --color-card-front-bg-1: rgba(255, 255, 255, 0.95);
+            --color-card-front-bg-2: rgba(236, 239, 245, 0.9);
+            --color-card-front-border: rgba(136, 57, 239, 0.3);
+            --color-card-front-icon: #268bd2;
+            --color-card-front-title-1: #8839ef;
+            --color-card-front-title-2: #268bd2;
+            --color-card-front-text: #6c6f85;
+            --color-card-back-bg: rgba(255, 255, 255, 0.98);
+            --color-card-back-border: rgba(38, 139, 210, 0.3);
+            --color-card-label: #9ca0b0;
+            --color-card-value: #4c4f69;
+            --color-card-desc: #6c6f85;
+            --color-card-icon: #268bd2;
+            --color-card-tap-hint: rgba(38, 139, 210, 0.7);
+
+            /* Кнопки */
+            --color-btn-primary-bg: #8839ef;
+            --color-btn-primary-text: #eff1f5;
+            --color-btn-primary-hover: #7565e0;
+            --color-btn-outline-bg: rgba(255, 255, 255, 0.7);
+            --color-btn-outline-border: #bcc0cc;
+            --color-btn-outline-text: #4c4f69;
+            --color-btn-outline-hover-border: #8839ef;
+            --color-btn-outline-hover-text: #8839ef;
+
+            /* Скачивание */
+            --color-download-card-bg: rgba(255, 255, 255, 0.8);
+            --color-download-card-border: #bcc0cc;
+            --color-download-card-watermark: rgba(136, 57, 239, 0.08);
+            --color-download-icon: #8839ef;
+            --color-download-text: #6c6f85;
+            --color-platform-note-bg: rgba(236, 239, 245, 0.9);
+
+            /* Бейджи */
+            --color-badge-bg: rgba(255, 255, 255, 0.8);
+            --color-badge-border: #bcc0cc;
+            --color-badge-windows-1: #8839ef;
+            --color-badge-windows-2: #268bd2;
+            --color-badge-windows-text: #eff1f5;
+            --color-stable-badge-bg: rgba(136, 57, 239, 0.15);
+            --color-stable-badge-text: #4c4f69;
+
+            /* Specs */
+            --color-specs-card-bg: rgba(255, 255, 255, 0.85);
+            --color-specs-card-border: #bcc0cc;
+            --color-specs-icon-bg: rgba(136, 57, 239, 0.1);
+            --color-specs-label: #6c6f85;
+            --color-specs-value: #4c4f69;
+            --color-specs-desc: #6c6f85;
+
+            /* Подвал */
+            --color-footer-border: #bcc0cc;
+            --color-footer-bg: #dce0e8;
+            --color-footer-text: #6c6f85;
+
+            /* Ресурсы */
+            --color-resource-link: #4c4f69;
+            --color-resource-link-hover: #8839ef;
+            --color-resource-link-hover-bg: rgba(136, 57, 239, 0.1);
+
+            /* Кнопка "наверх" */
+            --color-scroll-top-bg: rgba(136, 57, 239, 0.9);
+            --color-scroll-top-text: #eff1f5;
+            --color-scroll-top-hover: #7565e0;
+
+            /* Стат-бейджи */
+            --color-stat-badge-bg: rgba(255, 255, 255, 0.9);
+            --color-stat-badge-border: #bcc0cc;
+            --color-stat-badge-text: #4c4f69;
+
+            /* ─────────────────────────────────────────────────────────
+            🔹 ПОДСВЕТКА СИНТАКСИСА (Solarized-inspired palette)
+            ───────────────────────────────────────────────────────── */
+            --color-code-card-bg: rgba(255, 255, 255, 0.9);
+            --color-code-card-border: #bcc0cc;
+            --color-code-card-hover-border: rgba(136, 57, 239, 0.4);
+            --color-code-header-border: #dce0e8;
+            --color-code-header-icon: #8839ef;
+            --color-code-header-title: #4c4f69;
+            --color-code-tag-bg: rgba(136, 57, 239, 0.12);
+            --color-code-tag-text: #8839ef;
+            --color-code-body-text: #4c4f69;
+            --color-code-section-intro: #6c6f85;
+
+            /* Токены */
+            --color-code-keyword: #859900;      /* let, const, if... — оливковый */
+            --color-code-type: #b58900;         /* Int, String... — золотой */
+            --color-code-string: #2aa198;       /* "строки" — бирюзовый */
+            --color-code-number: #d33682;       /* числа — малиновый */
+            --color-code-comment: #93a1a1;      /* комментарии — серо-голубой */
+            --color-code-func: #155e93;         /* функции — синий */
+            --color-code-op: #657b83;           /* операторы — серый */
+
+            /* ─────────────────────────────────────────────────────────
+            🔹 ДЕКОРАТИВНЫЕ ЭЛЕМЕНТЫ
+            ───────────────────────────────────────────────────────── */
+            /* Арабески */
+            --color-arabesque-1: rgba(136, 57, 239, 0.04);
+            --color-arabesque-2: rgba(38, 139, 210, 0.04);
+            --color-arabesque-opacity: 0.6;
+            --color-arabesque-svg-stroke: %238839ef;
+            --color-arabesque-svg-opacity: 0.15;
+            --color-arabesque-before-opacity: 0.25;
+
+            /* Blur-круги (адаптированы под светлую тему) */
+            --gradient-blur-1: radial-gradient(circle, #8839ef, #268bd2);
+            --gradient-blur-2: radial-gradient(circle, #859900, #2aa198);
+            --gradient-blur-3: radial-gradient(circle, #cb4b16, #b58900);
+            --gradient-blur-4: radial-gradient(circle, #268bd2, #2aa198);
+            --gradient-blur-5: radial-gradient(circle, #6c71c4, #8839ef);
+            --opacity-blur-1: 0.12;
+            --opacity-blur-2: 0.10;
+            --opacity-blur-3: 0.08;
+            --opacity-blur-4: 0.07;
+            --opacity-blur-5: 0.06;
+
+            /* Сеть */
+            --color-network-particle: rgba(136, 57, 239, 0.5);
+            --color-network-line-r: 136;
+            --color-network-line-g: 57;
+            --color-network-line-b: 239;
+            --opacity-network: 0.35;
+
+            /* Логотип и заголовки */
+            --gradient-logo-1: #8839ef;
+            --gradient-logo-2: #268bd2;
+            --gradient-h1-1: #8839ef;
+            --gradient-h1-2: #268bd2;
+            --color-h2: #4c4f69;
+            --color-hero-text: #6c6f85;
+
+            /* ─────────────────────────────────────────────────────────
+            🔹 СОСТОЯНИЯ И СТАТУСЫ
+            ───────────────────────────────────────────────────────── */
+            --color-error: #f35815;
+            --color-warning: #ffc413;
+            --color-success: #a6e3a1;
+            --color-info: #268bd2;
+
+            /* Выделение и курсор */
+            --color-caret: #1e1e2e;
+            --color-caret-line: #e6e9ef;
+            --color-margin-bg: #dce0e8;
+            --color-margin-fg: #6c6f85;
+            --color-selection-bg: #acb0be;
+            --color-selection-fg: #1e1e2e;
+            --color-brace-bg: rgba(136, 57, 239, 0.33);
+            --color-brace-fg: #8839ef;
+
+            /* Автосохранение */
+            --color-autosave-on: #a6e3a1;
+            --color-autosave-off: #f38ba8;
+            --color-echo: #9ca0b0;
+
+            /* Дерево файлов */
+            --color-tree-hover-bg: #e6e9ef;
+            --color-tree-hover-fg: #4c4f69;
+            --color-tree-selection-bg: #dce0e8;
+            --color-tree-selection-fg: #4c4f69;
+            --color-tree-edit-bg: #eff1f5;
+            --color-tree-edit-fg: #4c4f69;
+
+            /* Статус-бар (тёмный для контраста) */
+            --color-status-bg: #2d2d3a;
+            --color-status-border: #4c4f69;
+
+            /* Доп. токены */
+            --color-directive: #cb4b16;
+            --color-macro-bg: rgba(136, 57, 239, 0.08);
+            --color-namespace: #268bd2;
+            --color-special: #d33682;
+            --color-object: #2a9781;
+            --color-modifier: #6c71c4;
+            --color-literal: #dc322f;
+
+            /* Прозрачности */
+            --backdrop-blur-sm: blur(4px);
+            --backdrop-blur-md: blur(8px);
+            --backdrop-blur-lg: blur(12px);
+            --backdrop-blur-xl: blur(16px);
+        }
+
+        /* ==================== СБРОС ==================== */
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -18,14 +230,17 @@
 
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: #1e1e2e;
-            color: #cdd6f4;
+            background-color: var(--color-base-bg);
+            color: var(--color-base-text);
             line-height: 1.5;
             scroll-behavior: smooth;
             position: relative;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Статичный фон */
         .arabesque-bg {
             position: fixed;
             top: 0;
@@ -35,9 +250,9 @@
             z-index: -1;
             pointer-events: none;
             background-image: 
-                repeating-linear-gradient(45deg, rgba(137, 180, 250, 0.03) 0px, rgba(137, 180, 250, 0.03) 2px, transparent 2px, transparent 8px),
-                repeating-linear-gradient(135deg, rgba(203, 166, 247, 0.03) 0px, rgba(203, 166, 247, 0.03) 2px, transparent 2px, transparent 8px);
-            opacity: 0.5;
+                repeating-linear-gradient(45deg, var(--color-arabesque-1) 0px, var(--color-arabesque-1) 2px, transparent 2px, transparent 8px),
+                repeating-linear-gradient(135deg, var(--color-arabesque-2) 0px, var(--color-arabesque-2) 2px, transparent 2px, transparent 8px);
+            opacity: var(--color-arabesque-opacity);
         }
         .arabesque-bg::before {
             content: "";
@@ -46,10 +261,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><path fill="none" stroke="%2389b4fa" stroke-width="0.6" d="M50,10 L60,25 L50,40 L40,25 Z M50,10 L40,25 L30,40 L40,55 L50,70 L60,55 L70,40 L60,25 Z M50,40 L60,55 L50,70 L40,55 Z M30,40 L40,55 L30,70 L20,55 Z M70,40 L60,55 L70,70 L80,55 Z M50,70 L60,85 L50,100 L40,85 Z M50,70 L40,85 L30,100 L40,115 L50,130 L60,115 L70,100 L60,85 Z"/></svg>');
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><path fill="none" stroke="var(--color-arabesque-svg-stroke)" stroke-width="0.6" d="M50,10 L60,25 L50,40 L40,25 Z M50,10 L40,25 L30,40 L40,55 L50,70 L60,55 L70,40 L60,25 Z M50,40 L60,55 L50,70 L40,55 Z M30,40 L40,55 L30,70 L20,55 Z M70,40 L60,55 L70,70 L80,55 Z M50,70 L60,85 L50,100 L40,85 Z M50,70 L40,85 L30,100 L40,115 L50,130 L60,115 L70,100 L60,85 Z"/></svg>');
             background-repeat: repeat;
             background-size: 60px 60px;
-            opacity: 0.2;
+            opacity: var(--color-arabesque-before-opacity);
             pointer-events: none;
         }
 
@@ -63,18 +278,17 @@
             overflow: hidden;
             pointer-events: none;
         }
-
         .blur-circle {
             position: absolute;
             border-radius: 50%;
             filter: blur(80px);
-            will-change: transform;
+            will-change: auto;
         }
-        .blur-circle-1 { background: radial-gradient(circle, #cba6f7, #89b4fa); opacity: 0.2; }
-        .blur-circle-2 { background: radial-gradient(circle, #f5c2e7, #b4befe); opacity: 0.18; }
-        .blur-circle-3 { background: radial-gradient(circle, #94e2d5, #f9e2af); opacity: 0.15; }
-        .blur-circle-4 { background: radial-gradient(circle, #f38ba8, #a6e3a1); opacity: 0.12; }
-        .blur-circle-5 { background: radial-gradient(circle, #89b4fa, #cba6f7); opacity: 0.1; }
+        .blur-circle-1 { background: var(--gradient-blur-1); opacity: var(--opacity-blur-1); }
+        .blur-circle-2 { background: var(--gradient-blur-2); opacity: var(--opacity-blur-2); }
+        .blur-circle-3 { background: var(--gradient-blur-3); opacity: var(--opacity-blur-3); }
+        .blur-circle-4 { background: var(--gradient-blur-4); opacity: var(--opacity-blur-4); }
+        .blur-circle-5 { background: var(--gradient-blur-5); opacity: var(--opacity-blur-5); }
 
         #networkCanvas {
             position: fixed;
@@ -82,31 +296,13 @@
             left: 0;
             width: 100%;
             height: 100%;
-            display: block;
+            display: none;
             z-index: -1;
             pointer-events: none;
-            opacity: 0.45;
+            opacity: var(--opacity-network);
         }
-
-        @media (max-width: 768px) {
-            #networkCanvas {
-                display: none;
-            }
-        }
-
-        :root {
-            --bg-primary: #1e1e2e;
-            --bg-secondary: #181825;
-            --accent: #89b4fa;
-            --accent-dark: #6c96d4;
-            --accent-purple: #cba6f7;
-            --text-primary: #cdd6f4;
-            --text-secondary: #a6adc8;
-            --border-light: #45475a;
-            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-            --radius-card: 1rem;
-            --transition: all 0.2s ease;
+        @media (min-width: 769px) {
+            #networkCanvas { display: block; }
         }
 
         .container {
@@ -122,33 +318,19 @@
             position: relative;
         }
 
+        h2 { color: var(--color-h2); }
+
         @media (max-width: 768px) {
-            section {
-                padding: 3rem 0;
-            }
-            .container {
-                padding: 0 1.2rem;
-            }
-            h1 {
-                font-size: 2rem !important;
-                line-height: 1.3 !important;
-            }
-            h2 {
-                font-size: 1.6rem;
-            }
-            h3 {
-                font-size: 1.3rem;
-            }
-            .hero-stats {
-                gap: 0.8rem;
-            }
-            .stat-badge {
-                font-size: 0.75rem;
-                padding: 0.4rem 0.8rem;
-            }
+            section { padding: 3rem 0; }
+            .container { padding: 0 1.2rem; }
+            h1 { font-size: 2rem !important; line-height: 1.3 !important; }
+            h2 { font-size: 1.6rem; }
+            h3 { font-size: 1.3rem; }
+            .hero-stats { gap: 0.8rem; }
+            .stat-badge { font-size: 0.75rem; padding: 0.4rem 0.8rem; }
         }
 
-        /* Flip-карты: десктопное поведение (hover) */
+        /* Flip-карты */
         .flip-card {
             background-color: transparent;
             width: 100%;
@@ -156,6 +338,7 @@
             perspective: 1500px;
             cursor: pointer;
             min-height: 280px;
+            -webkit-tap-highlight-color: transparent;
         }
         .flip-card-inner {
             position: relative;
@@ -164,22 +347,23 @@
             text-align: center;
             transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
             transform-style: preserve-3d;
-            border-radius: var(--radius-card);
+            border-radius: 1rem;
             transform: rotateY(180deg);
+            will-change: transform;
         }
-        .flip-card:hover .flip-card-inner {
-            transform: rotateY(0deg);
-        }
+        .flip-card.flipped .flip-card-inner { transform: rotateY(0deg); }
         .flip-card-front, .flip-card-back {
             position: absolute;
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
-            border-radius: var(--radius-card);
+            -webkit-backface-visibility: hidden;
+            border-radius: 1rem;
             padding: 1.5rem;
-            backdrop-filter: blur(8px);
-            background: rgba(30, 30, 46, 0.85);
-            border: 1px solid rgba(69, 71, 90, 0.5);
+            backdrop-filter: var(--backdrop-blur-md);
+            -webkit-backdrop-filter: var(--backdrop-blur-md);
+            background: var(--color-card-bg);
+            border: 1px solid var(--color-card-border);
             transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
@@ -187,68 +371,63 @@
         }
         .flip-card-front {
             transform: rotateY(180deg);
-            background: linear-gradient(135deg, rgba(30, 30, 46, 0.9), rgba(49, 50, 68, 0.85));
-            border-color: rgba(137, 180, 250, 0.4);
+            background: linear-gradient(135deg, var(--color-card-front-bg-1), var(--color-card-front-bg-2));
+            border-color: var(--color-card-front-border);
             text-align: center;
             align-items: center;
             gap: 0.8rem;
         }
-        .flip-card-front i {
-            font-size: 3rem;
-            color: var(--accent);
-        }
+        .flip-card-front i { font-size: 3rem; color: var(--color-btn-primary-hover); }
         .flip-card-front h4 {
             font-size: 1.3rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #89b4fa, #cba6f7);
+            background: var(--color-btn-primary-hover);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
-        .flip-card-front p {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
+        .flip-card-front p { font-size: 0.85rem; color: var(--color-card-front-text); }
         .flip-card-back {
             transform: rotateY(0deg);
-            background: rgba(30, 30, 46, 0.94);
-            border-color: rgba(137, 180, 250, 0.3);
+            background: var(--color-card-back-bg);
+            border-color: var(--color-card-back-border);
             text-align: left;
             justify-content: center;
         }
-        .card-icon {
-            font-size: 2rem;
-            color: var(--accent);
-            margin-bottom: 1rem;
-        }
+        .card-icon { font-size: 2rem; color: var(--color-btn-primary-hover); margin-bottom: 1rem; }
         .card-label {
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-weight: 600;
-            color: var(--text-secondary);
+            color: var(--color-card-label);
             margin-bottom: 0.25rem;
         }
         .card-value {
             font-size: 1.2rem;
             font-weight: 700;
-            color: var(--text-primary);
+            color: var(--color-card-value);
             line-height: 1.3;
             margin-bottom: 0.5rem;
         }
-        .card-desc {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
+        .card-desc { font-size: 0.85rem; color: var(--color-card-desc); }
+        .tap-hint {
+            display: none;
+            font-size: 0.7rem;
+            color: var(--color-card-tap-hint);
+            margin-top: 0.5rem;
+            font-style: italic;
+            text-align: center;
         }
 
-        /* Мобильное поведение: переворот при скролле (класс .flipped) */
+        @media (min-width: 769px) {
+            .flip-card:hover .flip-card-inner { transform: rotateY(0deg); }
+            .flip-card.flipped .flip-card-inner { transform: rotateY(0deg); }
+        }
         @media (max-width: 768px) {
-            .flip-card:hover .flip-card-inner {
-                transform: rotateY(180deg); /* отключаем hover */
-            }
-            .flip-card.flipped .flip-card-inner {
-                transform: rotateY(0deg);
-            }
+            .flip-card:hover .flip-card-inner { transform: rotateY(180deg); }
+            .flip-card.flipped .flip-card-inner { transform: rotateY(0deg); }
+            .tap-hint { display: block; }
         }
 
         .features-grid, .ide-grid {
@@ -259,33 +438,21 @@
         }
 
         @media (max-width: 640px) {
-            .features-grid, .ide-grid {
-                gap: 1.5rem;
-            }
-            .flip-card {
-                min-height: 260px;
-            }
-            .flip-card-front, .flip-card-back {
-                padding: 1rem;
-            }
-            .flip-card-front i {
-                font-size: 2.5rem;
-            }
-            .flip-card-front h4 {
-                font-size: 1.1rem;
-            }
-            .card-value {
-                font-size: 1rem;
-            }
-            .card-desc {
-                font-size: 0.8rem;
-            }
+            .features-grid, .ide-grid { gap: 1.5rem; }
+            .flip-card { min-height: 260px; }
+            .flip-card-front, .flip-card-back { padding: 1rem; }
+            .flip-card-front i { font-size: 2.5rem; }
+            .flip-card-front h4 { font-size: 1.1rem; }
+            .card-value { font-size: 1rem; }
+            .card-desc { font-size: 0.8rem; }
         }
 
+        /* Навбар */
         .navbar {
-            backdrop-filter: blur(16px);
-            background: rgba(24, 24, 37, 0.9);
-            border-bottom: 1px solid rgba(69, 71, 90, 0.8);
+            backdrop-filter: var(--backdrop-blur-lg);
+            -webkit-backdrop-filter: var(--backdrop-blur-lg);
+            background: var(--color-navbar-bg);
+            border-bottom: 1px solid var(--color-navbar-border);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -304,39 +471,24 @@
             gap: 8px;
             font-size: 1.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #89b4fa, #cba6f7);
+            background: linear-gradient(135deg, var(--gradient-logo-1), var(--gradient-logo-2));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
-        .logo-icon {
-            font-size: 1.5rem;
-        }
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
+        .logo-icon { font-size: 1.5rem; }
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
         .nav-links a {
             text-decoration: none;
-            color: #cdd6f4;
+            color: var(--color-navbar-text);
             font-weight: 500;
-            transition: var(--transition);
+            transition: all 0.2s ease;
             font-size: 0.95rem;
         }
-        .nav-links a:hover {
-            color: #89b4fa;
-        }
-        .menu-icon {
-            display: none;
-            font-size: 1.6rem;
-            cursor: pointer;
-            color: #cdd6f4;
-        }
+        .nav-links a:hover { color: var(--color-navbar-hover); }
+        .menu-icon { display: none; font-size: 1.6rem; cursor: pointer; color: var(--color-navbar-text); }
         @media (max-width: 768px) {
-            .nav-container {
-                padding: 0.8rem 1rem;
-            }
+            .nav-container { padding: 0.8rem 1rem; }
             .nav-links {
                 display: none;
                 flex-direction: column;
@@ -344,26 +496,21 @@
                 top: 65px;
                 left: 0;
                 width: 100%;
-                background: rgba(24, 24, 37, 0.98);
-                backdrop-filter: blur(20px);
+                background: var(--color-navbar-mobile-bg);
+                backdrop-filter: var(--backdrop-blur-xl);
+                -webkit-backdrop-filter: var(--backdrop-blur-xl);
                 padding: 1.5rem;
                 gap: 1.2rem;
-                box-shadow: var(--shadow-md);
-                border-bottom: 1px solid #45475a;
+                box-shadow: var(--color-card-shadow-md);
+                border-bottom: 1px solid var(--color-navbar-mobile-border);
                 text-align: center;
             }
-            .nav-links.active {
-                display: flex;
-            }
-            .menu-icon {
-                display: block;
-            }
-            .nav-links a {
-                font-size: 1.1rem;
-                padding: 0.5rem;
-            }
+            .nav-links.active { display: flex; }
+            .menu-icon { display: block; }
+            .nav-links a { font-size: 1.1rem; padding: 0.5rem; }
         }
 
+        /* Кнопки */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -371,7 +518,7 @@
             padding: 0.75rem 1.5rem;
             border-radius: 40px;
             font-weight: 600;
-            transition: var(--transition);
+            transition: all 0.2s ease;
             cursor: pointer;
             border: none;
             font-family: inherit;
@@ -379,27 +526,22 @@
             text-decoration: none;
         }
         .btn-primary {
-            background: #89b4fa;
-            color: #1e1e2e;
-            box-shadow: var(--shadow-sm);
+            background: var(--color-btn-primary-bg);
+            color: var(--color-btn-primary-text);
+            box-shadow: var(--color-card-shadow-sm);
         }
-        .btn-primary:hover {
-            background: #6c96d4;
-            transform: translateY(-2px);
-        }
+        .btn-primary:hover { background: var(--color-btn-primary-hover); transform: translateY(-2px); }
         .btn-outline {
-            background: rgba(30, 30, 46, 0.7);
-            backdrop-filter: blur(4px);
-            border: 1px solid #45475a;
-            color: #cdd6f4;
+            background: var(--color-btn-outline-bg);
+            backdrop-filter: var(--backdrop-blur-sm);
+            -webkit-backdrop-filter: var(--backdrop-blur-sm);
+            border: 1px solid var(--color-btn-outline-border);
+            color: var(--color-btn-outline-text);
         }
-        .btn-outline:hover {
-            border-color: #89b4fa;
-            color: #89b4fa;
-        }
+        .btn-outline:hover { border-color: var(--color-btn-outline-hover-border); color: var(--color-btn-outline-hover-text); }
         .big-download-btn {
-            background: #89b4fa;
-            color: #1e1e2e;
+            background: var(--color-btn-primary-bg);
+            color: var(--color-btn-primary-text);
             padding: 1rem 2rem;
             font-size: 1.1rem;
             font-weight: 700;
@@ -407,29 +549,25 @@
             display: inline-flex;
             align-items: center;
             gap: 12px;
-            transition: var(--transition);
+            transition: all 0.2s ease;
             cursor: pointer;
             border: none;
         }
-        .big-download-btn:hover {
-            background: #6c96d4;
-            transform: scale(1.02);
-        }
+        .big-download-btn:hover { background: var(--color-btn-primary-hover); transform: scale(1.02); }
         @media (max-width: 480px) {
-            .btn, .big-download-btn {
-                padding: 0.6rem 1.2rem;
-                font-size: 0.85rem;
-            }
+            .btn, .big-download-btn { padding: 0.6rem 1.2rem; font-size: 0.85rem; }
         }
 
+        /* Скачивание */
         .download-card {
             position: relative;
             border-radius: 2rem;
             padding: 2rem;
             text-align: center;
-            backdrop-filter: blur(8px);
-            background: rgba(30, 30, 46, 0.75);
-            border: 1px solid rgba(69, 71, 90, 0.5);
+            backdrop-filter: var(--backdrop-blur-md);
+            -webkit-backdrop-filter: var(--backdrop-blur-md);
+            background: var(--color-download-card-bg);
+            border: 1px solid var(--color-download-card-border);
             margin: 2rem 0;
             overflow: hidden;
         }
@@ -443,7 +581,7 @@
             font-family: monospace;
             font-size: 1.2rem;
             font-weight: bold;
-            color: rgba(137, 180, 250, 0.08);
+            color: var(--color-download-card-watermark);
             white-space: nowrap;
             overflow: hidden;
             pointer-events: none;
@@ -456,31 +594,28 @@
         .platform-note {
             margin-top: 1rem;
             padding: 0.5rem 1rem;
-            background: rgba(49, 50, 68, 0.8);
-            backdrop-filter: blur(4px);
+            background: var(--color-platform-note-bg);
+            backdrop-filter: var(--backdrop-blur-sm);
+            -webkit-backdrop-filter: var(--backdrop-blur-sm);
             border-radius: 40px;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
             font-size: 0.85rem;
         }
-        .badge-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin: 1.5rem 0;
-        }
+        .badge-list { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
         .badge-tech {
             padding: 0.3rem 1rem;
             border-radius: 30px;
             font-size: 0.8rem;
-            backdrop-filter: blur(4px);
-            background: rgba(30, 30, 46, 0.75);
-            border: 1px solid rgba(69, 71, 90, 0.5);
+            backdrop-filter: var(--backdrop-blur-sm);
+            -webkit-backdrop-filter: var(--backdrop-blur-sm);
+            background: var(--color-badge-bg);
+            border: 1px solid var(--color-badge-border);
         }
         .windows-only, .hybrid-badge {
-            background: linear-gradient(135deg, #89b4fa, #cba6f7);
-            color: #1e1e2e;
+            background: linear-gradient(135deg, var(--color-badge-windows-1), var(--color-badge-windows-2));
+            color: var(--color-badge-windows-text);
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
             font-size: 0.7rem;
@@ -495,9 +630,10 @@
         .specs-card {
             border-radius: 1.25rem;
             padding: 1.25rem;
-            backdrop-filter: blur(4px);
-            background: rgba(30, 30, 46, 0.7);
-            border: 1px solid rgba(69, 71, 90, 0.5);
+            backdrop-filter: var(--backdrop-blur-sm);
+            -webkit-backdrop-filter: var(--backdrop-blur-sm);
+            background: var(--color-specs-card-bg);
+            border: 1px solid var(--color-specs-card-border);
             display: flex;
             align-items: center;
             gap: 1rem;
@@ -506,7 +642,7 @@
         .specs-icon {
             width: 48px;
             height: 48px;
-            background: rgba(137, 180, 250, 0.15);
+            background: var(--color-specs-icon-bg);
             border-radius: 1rem;
             display: flex;
             align-items: center;
@@ -514,65 +650,50 @@
             font-size: 1.5rem;
             flex-shrink: 0;
         }
-        .specs-content {
-            flex: 1;
-        }
-        .specs-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            font-weight: 600;
-            color: #a6adc8;
-        }
-        .specs-value {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #cdd6f4;
-        }
-        .specs-desc {
-            font-size: 0.8rem;
-            color: #a6adc8;
-            margin-top: 0.25rem;
-        }
+        .specs-content { flex: 1; }
+        .specs-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: var(--color-specs-label); }
+        .specs-value { font-size: 1rem; font-weight: 700; color: var(--color-specs-value); }
+        .specs-desc { font-size: 0.8rem; color: var(--color-specs-desc); margin-top: 0.25rem; }
         footer {
-            border-top: 1px solid rgba(69, 71, 90, 0.6);
+            border-top: 1px solid var(--color-footer-border);
             padding: 2rem 0;
             text-align: center;
             font-size: 0.85rem;
-            backdrop-filter: blur(4px);
-            background: rgba(24, 24, 37, 0.7);
+            backdrop-filter: var(--backdrop-blur-sm);
+            -webkit-backdrop-filter: var(--backdrop-blur-sm);
+            background: var(--color-footer-bg);
         }
+        footer p { color: var(--color-footer-text); }
         .reveal {
             opacity: 0;
             transform: translateY(20px);
             transition: 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
         .resource-link {
             display: inline-flex;
             align-items: center;
             gap: 0.75rem;
             font-size: 1.2rem;
             text-decoration: none;
-            color: #cdd6f4;
+            color: var(--color-resource-link);
             padding: 0.5rem 1rem;
             border-radius: 40px;
-            transition: var(--transition);
+            transition: all 0.2s ease;
         }
         .resource-link:hover {
-            color: #89b4fa;
+            color: var(--color-resource-link-hover);
             transform: translateY(-2px);
-            background: rgba(137, 180, 250, 0.1);
+            background: var(--color-resource-link-hover-bg);
         }
         .scroll-top {
             position: fixed;
             bottom: 2rem;
             right: 2rem;
-            background: rgba(137, 180, 250, 0.85);
-            backdrop-filter: blur(8px);
-            color: #1e1e2e;
+            background: var(--color-scroll-top-bg);
+            backdrop-filter: var(--backdrop-blur-md);
+            -webkit-backdrop-filter: var(--backdrop-blur-md);
+            color: var(--color-scroll-top-text);
             width: 48px;
             height: 48px;
             border-radius: 50%;
@@ -586,14 +707,169 @@
             z-index: 99;
             border: none;
             font-size: 1.2rem;
+            will-change: auto;
         }
-        .scroll-top.visible {
-            opacity: 1;
-            visibility: visible;
+        .scroll-top.visible { opacity: 1; visibility: visible; }
+        .scroll-top:hover { background: var(--color-scroll-top-hover); transform: translateY(-3px); }
+
+        /* Карточки кода */
+        .code-examples-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+
+/* Карточка кода — гибкая ширина */
+.code-card {
+    flex: 1 1 380px;           /* grow, shrink, basis */
+    max-width: 100%;
+    min-width: 280px;          /* минимальная ширина карточки */
+    
+    backdrop-filter: var(--backdrop-blur-md);
+    -webkit-backdrop-filter: var(--backdrop-blur-md);
+    background: var(--color-code-card-bg);
+    border: 1px solid var(--color-code-card-border);
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    
+    display: flex;
+    flex-direction: column;
+}
+
+/* Hover-эффект */
+.code-card:hover {
+    border-color: var(--color-code-card-hover-border);
+    box-shadow: 0 8px 25px rgba(76, 79, 105, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Заголовок карточки */
+.code-card-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-code-header-border);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;            /* не сжимать */
+}
+.code-card-header i { color: var(--color-code-header-icon); font-size: 1.2rem; }
+.code-card-header h4 { 
+    font-size: 1rem; 
+    font-weight: 600; 
+    color: var(--color-code-header-title); 
+    flex: 1; 
+    min-width: 0;              /* позволяет тексту обрезаться */
+}
+.code-tag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    background: var(--color-code-tag-bg);
+    color: var(--color-code-tag-text);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+/* Тело карточки с кодом */
+.code-card-body {
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1 1 auto;            /* растягивается по контенту */
+    min-height: 200px;         /* минимальная высота для визуального баланса */
+}
+.code-card-body pre {
+    margin: 0;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--color-code-body-text);
+    white-space: pre;
+    tab-size: 2;
+}
+
+/* Синтаксис */
+.code-card-body pre .keyword { color: var(--color-code-keyword); font-weight: 500; }
+.code-card-body pre .type { color: var(--color-code-type); }
+.code-card-body pre .string { color: var(--color-code-string); }
+.code-card-body pre .number { color: var(--color-code-number); }
+.code-card-body pre .comment { color: var(--color-code-comment); font-style: italic; }
+.code-card-body pre .func { color: var(--color-code-func); }
+.code-card-body pre .op { color: var(--color-code-op); }
+
+/* Вступление к секции */
+.code-section-intro {
+    max-width: 720px;
+    margin-bottom: 1rem;
+    color: var(--color-code-section-intro);
+    font-size: 1.05rem;
+}
+
+/* ─────────────────────────────────────────────────────────
+   📱 АДАПТИВНОСТЬ
+   ───────────────────────────────────────────────────────── */
+
+/* Планшеты: 2 колонки */
+@media (max-width: 1024px) {
+    .code-card {
+        flex: 1 1 calc(50% - 1.5rem);  /* две карточки в ряд с учётом gap */
+    }
+}
+
+/* Мобильные: 1 колонка */
+@media (max-width: 640px) {
+    .code-examples-grid {
+        gap: 1rem;
+    }
+    .code-card {
+        flex: 1 1 100%;          /* полная ширина */
+        min-width: unset;
+    }
+    .code-card-body pre {
+        font-size: 0.7rem;
+    }
+    .code-card-body {
+        min-height: 180px;
+    }
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 360px) {
+    .code-card-header {
+        padding: 0.8rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .code-card-header h4 {
+        font-size: 0.9rem;
+        width: 100%;
+    }
+    .code-tag {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.5rem;
+    }
+}
+
+        /* Стат-бейджи */
+        .stat-badge {
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            backdrop-filter: var(--backdrop-blur-sm);
+            -webkit-backdrop-filter: var(--backdrop-blur-sm);
+            background: var(--color-stat-badge-bg);
+            border: 1px solid var(--color-stat-badge-border);
+            color: var(--color-stat-badge-text);
         }
-        .scroll-top:hover {
-            background: #89b4fa;
-            transform: translateY(-3px);
+
+        /* Утилиты выделения */
+        ::selection {
+            background: var(--color-selection-bg);
+            color: var(--color-selection-fg);
         }
     </style>
 </head>
@@ -601,11 +877,11 @@
 
 <div class="arabesque-bg"></div>
 <div class="blur-bg">
-    <div class="blur-circle blur-circle-1"></div>
-    <div class="blur-circle blur-circle-2"></div>
-    <div class="blur-circle blur-circle-3"></div>
-    <div class="blur-circle blur-circle-4"></div>
-    <div class="blur-circle blur-circle-5"></div>
+    <div class="blur-circle blur-circle-1" style="left:-100px;top:-100px;width:450px;height:450px"></div>
+    <div class="blur-circle blur-circle-2" style="left:calc(100vw - 500px);top:calc(100vh - 500px);width:550px;height:550px"></div>
+    <div class="blur-circle blur-circle-3" style="left:50vw;top:30vh;width:400px;height:400px"></div>
+    <div class="blur-circle blur-circle-4" style="left:20vw;top:60vh;width:380px;height:380px"></div>
+    <div class="blur-circle blur-circle-5" style="left:70vw;top:20vh;width:420px;height:420px"></div>
 </div>
 <canvas id="networkCanvas"></canvas>
 
@@ -615,11 +891,10 @@
             <i class="fas fa-lightbulb logo-icon"></i>
             <span>Lumen</span>
         </div>
-        <div class="menu-icon" id="menuToggle">
-            <i class="fas fa-bars"></i>
-        </div>
+        <div class="menu-icon" id="menuToggle"><i class="fas fa-bars"></i></div>
         <div class="nav-links" id="navLinks">
             <a href="#features">Возможности</a>
+            <a href="#examples">Примеры</a>
             <a href="#ide">Lumen IDE</a>
             <a href="#docs">Документация</a>
             <a href="#download" class="btn btn-outline" style="padding:0.5rem 1.2rem">Скачать</a>
@@ -632,18 +907,13 @@
         <div class="container reveal">
             <div class="hero-wrapper" style="display: flex; align-items: center; gap: 3rem; flex-wrap: wrap;">
                 <div class="hero-content" style="flex: 1; min-width: 280px;">
-                    <h1 style="font-size: 3rem; line-height: 1.2;"><span style="color: #cba6f7;">Lumen</span> <span style="color: #89b4fa;">·</span> <span style="color: #cba6f7;">Скорость C++</span> <br> <span style="color: #89b4fa;">Простота Python</span></h1>
-                    <p style="font-size: 1.2rem; margin: 1.5rem 0; color: #a6adc8;">Современный компилируемый язык с гибридной типизацией для обучения школьников системному мышлению. Сочетает мощь низкоуровневого кода и чистоту высокоуровневых абстракций.</p>
+                    <h1 style="font-size: 3rem; line-height: 1.2;"><span style="color: var(--h1-color-1);">Lumen</span> <span style="color: var(--h1-color-2);">·</span> <span style="color: var(--h1-color-1);">Мощность C++</span> <br> <span style="color: var(--h1-color-2);">Простота Python</span></h1>
+                    <p style="font-size: 1.2rem; margin: 1.5rem 0; color: var(--hero-text);">Современный интерпретируемый язык с гибридной типизацией для обучения школьников системному мышлению. Сочетает мощь низкоуровневого кода и чистоту высокоуровневых абстракций.</p>
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                         <a href="#download" class="btn btn-primary"><i class="fas fa-download"></i> Скачать Lumen IDE</a>
-                        <a href="#" class="btn btn-outline"><i class="fas fa-book"></i> Документация</a>
+                       
                     </div>
-                    <div class="hero-stats" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem;">
-                        <span class="stat-badge"><i class="fas fa-bolt"></i> Компилируемый</span>
-                        <span class="stat-badge"><i class="fas fa-adjust"></i> Гибридная типизация</span>
-                        <span class="stat-badge"><i class="fas fa-brain"></i> Умные указатели</span>
-                        <span class="stat-badge"><i class="fas fa-lambda"></i> Функции высшего порядка</span>
-                    </div>
+                    
                 </div>
                 <div class="hero-image" style="flex: 1; min-width: 300px;">
                     <div class="custom-image-container" style="border-radius: 1rem; overflow: hidden; box-shadow: var(--shadow-md); background: rgba(0,0,0,0.2);">
@@ -658,12 +928,194 @@
         <div class="container">
             <h2>Возможности языка Lumen</h2>
             <div class="features-grid">
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-shield-alt"></i><h4>Безопасные указатели</h4><p>Контроль памяти без GC</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-shield-alt"></i></div><div class="card-label">Управление памятью</div><div class="card-value">Безопасные указатели</div><div class="card-desc">*auto, static, move, copy — контроль памяти без GC, как в Rust, но с простым синтаксисом.</div></div></div></div>
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-layer-group"></i><h4>Функции высшего порядка</h4><p>Замыкания, фабрики</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-layer-group"></i></div><div class="card-label">Функциональное программирование</div><div class="card-value">Функции высшего порядка</div><div class="card-desc">Замыкания (global), функции как объекты, фабрики — мощь функционального стиля.</div></div></div></div>
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-cogs"></i><h4>Макросы</h4><p>Генерация кода на лету</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-cogs"></i></div><div class="card-label">Метапрограммирование</div><div class="card-value">Макросы и генерация кода</div><div class="card-desc">#macro, #define для кодогенерации и гибкости без потери производительности.</div></div></div></div>
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-cubes"></i><h4>Пространства имён</h4><p>Модульность без классов</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-cubes"></i></div><div class="card-label">Модульность</div><div class="card-value">Пространства имён</div><div class="card-desc">Модульность через namespace, ООП-подобный синтаксис без классов.</div></div></div></div>
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-globe"></i><h4>Глобальный контекст</h4><p>Состояние в замыканиях</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-globe"></i></div><div class="card-label">Замыкания</div><div class="card-value">Глобальный контекст</div><div class="card-desc">global для замыканий и фабрик — сохранение состояния с первого класса.</div></div></div></div>
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-code"></i><h4>Гибридная типизация</h4><p>Статика + вывод типов</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-code"></i></div><div class="card-label">Типизация</div><div class="card-value">Гибридная типизация</div><div class="card-desc">Статическая типизация с auto-выводом — безопасность типов без избыточности.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-shield-alt"></i><h4>Безопасные указатели</h4><p>Контроль памяти без GC</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-shield-alt"></i></div><div class="card-label">Управление памятью</div><div class="card-value">Безопасные указатели</div><div class="card-desc">*auto, static, move, copy — контроль памяти без GC, как в Rust, но с простым синтаксисом.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-layer-group"></i><h4>Функции высшего порядка</h4><p>Замыкания, фабрики</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-layer-group"></i></div><div class="card-label">Функциональное программирование</div><div class="card-value">Функции высшего порядка</div><div class="card-desc">Замыкания (global), функции как объекты, фабрики — мощь функционального стиля.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-cogs"></i><h4>Макросы</h4><p>Генерация кода на лету</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-cogs"></i></div><div class="card-label">Метапрограммирование</div><div class="card-value">Макросы и генерация кода</div><div class="card-desc">#macro, #define для кодогенерации и гибкости без потери производительности.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-cubes"></i><h4>Пространства имён</h4><p>Модульность без классов</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-cubes"></i></div><div class="card-label">Модульность</div><div class="card-value">Пространства имён</div><div class="card-desc">Модульность через namespace, ООП-подобный синтаксис без классов.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-globe"></i><h4>Глобальный контекст</h4><p>Состояние в замыканиях</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-globe"></i></div><div class="card-label">Замыкания</div><div class="card-value">Глобальный контекст</div><div class="card-desc">global для замыканий и фабрик — сохранение состояния с первого класса.</div></div></div></div>
+                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-code"></i><h4>Гибридная типизация</h4><p>Статика + вывод типов</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-code"></i></div><div class="card-label">Типизация</div><div class="card-value">Гибридная типизация</div><div class="card-desc">Статическая типизация с auto-выводом — безопасность типов без избыточности.</div></div></div></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="examples" class="reveal">
+        <div class="container">
+            <h2>Примеры кода на Lumen</h2>
+            <p class="code-section-intro">От простых конструкций до продвинутых паттернов — посмотрите, насколько выразителен Lumen.</p>
+            <div class="code-examples-grid">
+                <div class="code-card"><div class="code-card-header"><i class="fas fa-cube"></i><h4>Переменные и типы</h4><span class="code-tag">Основы</span></div><div class="code-card-body"><pre><span class="comment">// Динамическая переменная</span>
+<span class="keyword">let</span> a = <span class="number">10</span>;
+
+<span class="comment">// Статическая типизация</span>
+<span class="keyword">static let</span> name: <span class="type">String</span> = <span class="string">"Ivan"</span>;
+
+<span class="comment">// Константа с автовыводом</span>
+<span class="keyword">const static let</span> Pi: <span class="type">auto</span> = <span class="number">3.141592</span>;
+
+<span class="comment">// Union-тип</span>
+<span class="keyword">let</span> Number = <span class="type">Int</span> | <span class="type">Double</span>;
+<span class="keyword">static let</span> n: <span class="type">Number</span> = <span class="number">3.14</span>;
+
+<span class="comment">// Указатели</span>
+<span class="keyword">static let</span> n_ptr: <span class="type">ptr</span> = <span class="op">&</span>n;
+<span class="keyword">let</span> n_new = <span class="op">*</span>n_ptr;
+
+<span class="comment">// Массивы</span>
+<span class="keyword">let</span> arr = {<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>};
+<span class="keyword">let</span> typed_arr = [<span class="type">Int</span>, <span class="number">10</span>]{<span class="number">10</span>, <span class="number">20</span>};</pre></div></div>
+                <div class="code-card"><div class="code-card-header"><i class="fas fa-code-branch"></i><h4>Управляющие конструкции</h4><span class="code-tag">Поток</span></div><div class="code-card-body"><pre><span class="comment">// if как выражение</span>
+<span class="keyword">let</span> a = <span class="keyword">if</span>(n == <span class="number">10</span>) { <span class="string">"+"</span> } 
+        <span class="keyword">else</span> { <span class="string">"-"</span> };
+
+<span class="comment">// Групповые модификаторы</span>
+<span class="keyword">const</span> {
+    <span class="keyword">let</span> a = <span class="number">10</span>;
+    <span class="keyword">let</span> b = <span class="keyword">true</span>;
+}
+
+<span class="comment">// Циклы</span>
+<span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i < <span class="number">10</span>; i = i + <span class="number">1</span>;) {
+    <span class="func">outln</span> i;
+}
+
+n = <span class="number">0</span>;
+<span class="keyword">do</span> {
+    n = n + <span class="number">1</span>;
+} <span class="keyword">while</span> (n < <span class="number">10</span>);</pre></div></div>
+                <div class="code-card"><div class="code-card-header"><i class="fas fa-globe"></i><h4>Замыкания и фабрики</h4><span class="code-tag">Функции</span></div><div class="code-card-body"><pre><span class="comment">// Фабрика счётчиков</span>
+<span class="keyword">let</span> counter = <span class="func">lambda</span>() -> <span class="type">Lambda</span> {
+    <span class="keyword">namespace</span> {
+        <span class="keyword">global let</span> count = <span class="keyword">new</span> <span class="number">0</span>;
+        
+        <span class="keyword">let</span> increment = <span class="func">lambda</span>() -> <span class="type">Int</span> {
+            <span class="keyword">namespace</span> {
+                <span class="op">*</span>count = (<span class="op">*</span>count) + <span class="number">1</span>;
+                <span class="keyword">let</span> result = <span class="op">*</span>count;
+            }::result
+        };
+    }::increment
+};
+
+<span class="keyword">let</span> next = counter();
+<span class="keyword">let</span> next2 = counter();
+<span class="func">outln</span> next();  <span class="comment">// 1</span>
+<span class="func">outln</span> next();  <span class="comment">// 2</span>
+<span class="func">outln</span> next2(); <span class="comment">// 1</span>
+<span class="func">outln</span> next();  <span class="comment">// 3</span></pre></div></div>
+                <div class="code-card"><div class="code-card-header"><i class="fas fa-clock"></i><h4>Ленивые вычисления</h4><span class="code-tag">Паттерны</span></div><div class="code-card-body"><pre><span class="keyword">struct</span> <span class="type">Lazy</span> {
+    <span class="keyword">static let</span> _computation: <span class="type">Lambda</span>?;
+    <span class="keyword">let</span> _result;
+    <span class="keyword">static let</span> _evaluated: <span class="type">Bool</span> = <span class="keyword">false</span>;
+    
+    <span class="keyword">func</span> <span class="func">force</span>() -> <span class="type">auto</span> {
+        <span class="keyword">if</span> (!<span class="keyword">this</span>._evaluated) {
+            <span class="keyword">this</span>._result = <span class="keyword">this</span>._computation();
+            <span class="keyword">this</span>._evaluated = <span class="keyword">true</span>;
+        }
+        <span class="keyword">ret</span> <span class="keyword">this</span>._result;
+    }
+}
+
+<span class="keyword">let</span> heavy = <span class="type">Lazy</span>(<span class="func">lambda</span>() -> <span class="type">Int</span> {
+    <span class="keyword">namespace</span> {
+        <span class="func">outln</span> <span class="string">"Computing..."</span>;
+    }::<span class="number">42</span>
+});
+
+<span class="func">outln</span> heavy.force(); <span class="comment">// Computing... 42</span>
+<span class="func">outln</span> heavy.force(); <span class="comment">// 42 (кэшировано)</span></pre></div></div>
+                <div class="code-card"><div class="code-card-header"><i class="fas fa-box"></i><h4>Структуры и ООП</h4><span class="code-tag">Данные</span></div><div class="code-card-body"><pre><span class="keyword">struct</span> <span class="type">Person</span> {
+    <span class="keyword">static let</span> name: <span class="type">String</span>?;
+    <span class="keyword">static let</span> age: <span class="type">Int</span>?;
+    
+    <span class="keyword">func</span> <span class="func">__init__</span>(name: <span class="type">String</span>, age: <span class="type">Int</span>) 
+            -> <span class="func">typeof</span>(<span class="type">Person</span>) {
+        <span class="keyword">this</span>.name = name;
+        <span class="keyword">this</span>.age = age;
+        <span class="keyword">ret</span> <span class="keyword">this</span>;
+    }
+    
+    <span class="keyword">func</span> <span class="func">to_string</span>() -> <span class="type">String</span> {
+        <span class="keyword">ret</span> <span class="string">"Name: "</span> + <span class="keyword">this</span>.name;
+    }
+}
+
+<span class="keyword">let</span> p1 = <span class="type">Person</span>(<span class="string">"Ivan"</span>, <span class="number">19</span>);
+<span class="func">echo</span> p1.to_string();</pre></div></div>
+                <div class="code-card"><div class="code-card-header"><i class="fas fa-trash-alt"></i><h4>Управление памятью</h4><span class="code-tag">Система</span></div><div class="code-card-body"><pre><span class="comment">// Выделение</span>
+<span class="keyword">let</span> p = <span class="keyword">new</span> <span class="number">10</span>;
+<span class="keyword">let</span> p2 = <span class="keyword">new</span><<span class="keyword">const</span>> <span class="string">"locked"</span>;
+<span class="keyword">let</span> p3 = <span class="keyword">new</span><<span class="func">static</span>(<span class="type">auto</span>), <span class="keyword">const</span>> <span class="number">3.14</span>;
+
+<span class="comment">// Удаление</span>
+<span class="keyword">let</span> a = <span class="number">100</span>;
+<span class="keyword">let</span> a_ptr = <span class="op">&</span>a;
+<span class="keyword">del</span> <span class="op">*</span>a_ptr; <span class="comment">// зануляет значение</span>
+<span class="func">echo</span> <span class="op">*</span>a_ptr; <span class="comment">// null</span>
+<span class="comment">// *a_ptr = 10; // ОШИБКА: адрес заблокирован</span>
+
+<span class="comment">// Удаление переменной из скоупа</span>
+<span class="keyword">del</span> a; <span class="comment">// a больше не существует</span></pre></div></div>
+                <div class="code-card"><div class="code-card-header"><i class="fas fa-filter"></i><h4>Функциональный стиль</h4><span class="code-tag">FP</span></div><div class="code-card-body"><pre><span class="comment">// map для массива</span>
+<span class="keyword">let</span> map = <span class="func">lambda</span>(arr: [<span class="type">auto</span>, ~], 
+            f: <span class="type">Lambda</span>) -> [<span class="type">auto</span>, ~] {
+    <span class="keyword">namespace</span> {
+        <span class="keyword">let</span> result = {};
+        <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i < arr::len(); i = i + <span class="number">1</span>;) {
+            result::push(f(arr[i]));
+        };
+    }::result
+};
+
+<span class="keyword">let</span> numbers = {<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>};
+<span class="keyword">let</span> doubled = map(numbers, 
+    <span class="func">lambda</span>(x: <span class="type">Int</span>) -> <span class="type">Int</span> { x <span class="op">*</span> <span class="number">2</span> });
+<span class="comment">// {2, 4, 6, 8, 10}</span></pre></div></div>
+                <div class="code-card"><div class="code-card-header"><i class="fas fa-archive"></i><h4>Пространства имён</h4><span class="code-tag">Модули</span></div><div class="code-card-body"><pre><span class="comment">// Именованное пространство</span>
+<span class="keyword">namespace</span> <span class="type">std</span> {
+    <span class="keyword">let</span> a = <span class="number">10</span>;
+    <span class="keyword">private let</span> p = <span class="number">10</span>;
+}
+
+<span class="func">outln</span> <span class="type">std</span>::a;
+<span class="type">std</span>::a = <span class="number">100</span>;
+
+<span class="comment">// Анонимное пространство</span>
+<span class="keyword">let</span> a = <span class="keyword">namespace</span> {
+    <span class="keyword">let</span> kill = <span class="number">10</span>;
+};
+<span class="func">outln</span> a::kill;
+
+<span class="comment">// С одним значением</span>
+<span class="keyword">final namespace</span> <span class="type">A</span> <span class="keyword">let</span> B = <span class="number">1000</span>;</pre></div></div>
+                <div class="code-card"><div class="code-card-header"><i class="fas fa-link"></i><h4>Композиция функций</h4><span class="code-tag">Архитектура</span></div><div class="code-card-body"><pre><span class="comment">// Композиция функций</span>
+<span class="keyword">let</span> compose = <span class="func">lambda</span>(
+    f: <span class="type">Func</span>(<span class="type">Int</span>)-><span class="type">Int</span>, 
+    g: <span class="type">Func</span>(<span class="type">Int</span>)-><span class="type">Int</span>
+) -> <span class="type">Func</span>(<span class="type">Int</span>)-><span class="type">Int</span> {
+    <span class="keyword">ret</span> <span class="func">lambda</span>(x: <span class="type">Int</span>) -> <span class="type">Int</span> {
+        <span class="keyword">namespace</span> {
+            <span class="keyword">let</span> intermediate = f(x);
+        }::g(intermediate)
+    };
+};
+
+<span class="keyword">let</span> double = <span class="func">lambda</span>(x: <span class="type">Int</span>) -> <span class="type">Int</span> { x <span class="op">*</span> <span class="number">2</span> };
+<span class="keyword">let</span> square = <span class="func">lambda</span>(x: <span class="type">Int</span>) -> <span class="type">Int</span> { x <span class="op">*</span> x };
+
+<span class="keyword">let</span> pipeline = compose(double, square);
+<span class="func">outln</span> pipeline(<span class="number">5</span>); <span class="comment">// (5*2)^2 = 100</span></pre></div></div>
+                <div class="code-card"><div class="code-card-header"><i class="fas fa-magic"></i><h4>Метапрограммирование</h4><span class="code-tag">Макросы</span></div><div class="code-card-body"><pre><span class="comment">// Макрос для дебага</span>
+#<span class="type">macro</span> debug_expr(expr) {
+    <span class="func">outln</span> <span class="string">"[DEBUG] "</span> + 
+           <span class="func">String</span>(<span class="op">#</span>expr) + 
+           <span class="string">" = "</span> + <span class="func">String</span>(expr);
+}
+
+<span class="keyword">let</span> x = <span class="number">42</span>;
+<span class="keyword">let</span> y = <span class="number">100</span>;
+<span class="func">debug_expr</span>(x + y); 
+<span class="comment">// [DEBUG] x + y = 142</span></pre></div></div>
             </div>
         </div>
     </section>
@@ -671,65 +1123,151 @@
     <section id="download" class="reveal">
         <div class="container">
             <div class="download-card">
-                <i class="fab fa-windows" style="font-size: 2.5rem; color: #89b4fa;"></i>
+                <i class="fab fa-windows" style="font-size: 2.5rem; color: var(--download-icon-color);"></i>
                 <h3 style="margin: 0.5rem 0;">Lumen IDE для Windows 64-bit</h3>
-                <p style="margin-bottom: 0.5rem; color: #a6adc8;">Версия 1.05b — первая стабильная сборка</p>
-                <div class="platform-note">
-                    <i class="fas fa-check-circle"></i> Поддерживаемая платформа: Windows 10/11 (64-bit)
-                </div>
+                <p style="margin-bottom: 0.5rem; color: var(--download-text);">Версия 1.05b — первая стабильная сборка</p>
+                <div class="platform-note"><i class="fas fa-check-circle"></i> Поддерживаемая платформа: Windows 10/11 (64-bit)</div>
                 <div style="margin: 1.5rem 0;">
                     <button id="windowsDownloadBtn" class="big-download-btn"><i class="fas fa-download"></i> Скачать Lumen IDE для Windows 64-bit</button>
                 </div>
-                <p style="font-size: 0.85rem; color: #a6adc8;"><i class="fas fa-info-circle"></i> Установщик включает компилятор Lumen, Lumen IDE и все необходимые компоненты</p>
+                <p style="font-size: 0.85rem; color: var(--download-text);"><i class="fas fa-info-circle"></i> Установщик включает компилятор Lumen, Lumen IDE и все необходимые компоненты</p>
             </div>
+            
         </div>
     </section>
 
     <section id="ide" class="reveal">
-        <div class="container">
-            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; margin-bottom: 0.5rem;">
-                <h2><i class="fas fa-lightbulb"></i> Lumen IDE</h2>
-                <span class="windows-only"><i class="fab fa-windows"></i> Windows 64-bit</span>
-                <span class="hybrid-badge"><i class="fas fa-code"></i> Гибридная типизация</span>
+    <div class="container">
+        
+        <!-- Заголовок секции -->
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; margin-bottom: 1rem;">
+            <h1><i class="fas fa-lightbulb"></i> Lumen IDE</h2>
+        </div>
+        
+        <!-- Двухколоночная раскладка: контент + изображение -->
+        <div class="ide-layout" style="display: flex; align-items: flex-start; gap: 3rem; flex-wrap: wrap;">
+            
+            <!-- Левая колонка: контент -->
+            <div class="ide-content" style="flex: 1; min-width: 280px;">
+                
+                <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">
+                    <strong>Integrated Development Environment for Lumen</strong>
+                </p>
+                <p style="max-width: 720px; color: var(--color-base-text-muted); margin-bottom: 1.5rem; line-height: 1.7;">
+    Lumen IDE — легкая, но мощная среда разработки, написанная на Python + PyQt6. 
+    Не требует настройки. Кастомный лексер, языковой сервер 
+    и удобное автодополнение. Интерфейс интуитивен: дерево файлов, 
+    контекстные подсказки и навигация экономят время. Встроенный отладчик помогает находить ошибки без сложной конфигурации. Мгновенная компиляция 
+    «на лету» показывает результат изменений сразу — идеально для обучения. 
+    Поддержка большого количества тем позволяет кастомизировать редактор индивидуально под каждого.
+</p>
+                
+                <!-- Бейджи технологий -->
+                <div class="badge-list" style="display: flex; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 2rem;">
+                    <span class="badge-tech"><i class="fab fa-python"></i> Python + PyQt6</span>
+                    <span class="badge-tech"><i class="fas fa-code"></i> QScintilla</span>
+                    <span class="badge-tech"><i class="fas fa-brain"></i> Language Server</span>
+                    <span class="badge-tech"><i class="fas fa-save"></i> Автосохранение</span>
+                    <span class="badge-tech"><i class="fab fa-windows"></i> Windows 64-bit Only</span>
+                    <span class="badge-tech"><i class="fas fa-adjust"></i> Гибридная типизация</span>
+                </div>
+                <!-- Поддержка языков интерфейса -->
+<div class="language-support" style="
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--color-badge-bg);
+    border: 1px solid var(--color-badge-border);
+    border-radius: 30px;
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+">
+
+    <span style="color: var(--color-base-text); font-weight: 500;">Языки интерфейса:</span>
+    <div style="display: flex; gap: 0.3rem;">
+        <span style="
+            padding: 0.2rem 0.6rem;
+            background: var(--color-badge-bg);
+            color: var(--color-base-text);
+            border: 1px solid var(--color-badge-border);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        ">RU</span>
+        <span style="
+            padding: 0.2rem 0.6rem;
+            background: var(--color-badge-bg);
+            color: var(--color-base-text);
+            border: 1px solid var(--color-badge-border);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        ">EN</span>
+    </div>
+    <span style="color: var(--color-base-text-muted); font-size: 0.75rem; margin-left: 0.5rem;">
+        <i class="fas fa-sync-alt"></i> Переключение в настройках
+    </span>
+</div>
+                
+            
+                
             </div>
-            <p style="font-size: 1.1rem;"><strong>Integrated Development Environment for Lumen</strong></p>
-            <p style="max-width: 720px; margin-top: 0.5rem; color: #a6adc8;">Lumen IDE — легкая, но мощная среда разработки, написанная на Python + PyQt6. Не требует настройки: установил и пиши код. Кастомный лексер, языковой сервер и автодополнение с иконками типов.</p>
-            <div class="badge-list">
-                <span class="badge-tech"><i class="fab fa-python"></i> Python + PyQt6</span>
-                <span class="badge-tech"><i class="fas fa-code"></i> QScintilla</span>
-                <span class="badge-tech"><i class="fas fa-brain"></i> Language Server</span>
-                <span class="badge-tech"><i class="fas fa-save"></i> Автосохранение</span>
-                <span class="badge-tech"><i class="fab fa-windows"></i> Windows 64-bit Only</span>
-                <span class="badge-tech"><i class="fas fa-adjust"></i> Гибридная типизация</span>
-            </div>
-            <h3 style="margin: 2rem 0 1rem;">Ключевые возможности IDE</h3>
-            <div class="ide-grid">
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-paint-roller"></i><h4>Подсветка синтаксиса</h4><p>Не просто текст, а магия</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-paint-roller"></i></div><div class="card-label">Визуализация кода</div><div class="card-value">Подсветка синтаксиса</div><div class="card-desc">Кастомный лексер для всех конструкций Lumen позволяет подсвечивать каждую лексему языка по отдельности.</div></div></div></div>
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-lightbulb"></i><h4>Автодополнение</h4><p>Иконки типов, подсказки</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-lightbulb"></i></div><div class="card-label">IntelliSense</div><div class="card-value">Автодополнение кода</div><div class="card-desc">Подсказки с иконками типов (K, M, T, L, D, S, F) на основе анализа.</div></div></div></div>
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-server"></i><h4>Языковой сервер</h4><p>Анализ в реальном времени</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-server"></i></div><div class="card-label">Анализ кода</div><div class="card-value">Языковой сервер</div><div class="card-desc">Фоновая проверка ошибок, семантический анализ в реальном времени. Это позволяет увидеть результат программы не запуская ее.</div></div></div></div>
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-bug"></i><h4>Визуализация ошибок</h4><p>Ошибка? — не беда</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-bug"></i></div><div class="card-label">Диагностика</div><div class="card-value">Визуализация ошибок</div><div class="card-desc">Подсветка на полях, всплывающие подсказки с пояснением прямо в строках кода.</div></div></div></div>
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-outdent"></i><h4>Сворачивание кода <span class="beta-badge" style="background:rgba(203,166,247,0.2); border-color:#cba6f7; margin-left:0.3rem;">Beta</span></h4><p>Code folding</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-outdent"></i></div><div class="card-label">Навигация</div><div class="card-value">Сворачивание кода <span class="beta-badge">Beta</span></div><div class="card-desc">Code folding для удобной навигации в больших файлах.</div></div></div></div>
-                <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-palette"></i><h4>Кастомное меню / темы</h4><p>Светлая / тёмная тема</p></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-palette"></i></div><div class="card-label">Интерфейс</div><div class="card-value">Кастомное меню / темы</div><div class="card-desc">Закругленные меню, анимированные кнопки, большое количество красивых тем.</div></div></div></div>
-            </div>
-            <div class="specs-wrapper" style="margin-top: 2rem;">
-                <div class="specs-title" style="display: flex; align-items: center; gap: 0.75rem; font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem;"><i class="fas fa-microchip"></i><span>Технические характеристики Lumen IDE</span></div>
-                <div class="specs-grid">
-                    <div class="specs-card"><div class="specs-icon"><i class="fas fa-tag"></i></div><div class="specs-content"><div class="specs-label">Версия</div><div class="specs-value">1.05b <span style="background: #89b4fa20; padding:0.1rem 0.4rem; border-radius:20px;">Stable</span></div><div class="specs-desc">Первая стабильная сборка</div></div></div>
-                    <div class="specs-card"><div class="specs-icon"><i class="fab fa-python"></i></div><div class="specs-content"><div class="specs-label">Технологии</div><div class="specs-value">Python 3.10+ · PyQt6 · QScintilla</div><div class="specs-desc">Современный стек</div></div></div>
-                    <div class="specs-card"><div class="specs-icon"><i class="fab fa-windows"></i></div><div class="specs-content"><div class="specs-label">Платформа</div><div class="specs-value">Windows 10 / 11 (64-bit)</div><div class="specs-desc">Оптимизирован</div></div></div>
-                    <div class="specs-card"><div class="specs-icon"><i class="fas fa-memory"></i></div><div class="specs-content"><div class="specs-label">Системные требования</div><div class="specs-value">2 ГБ ОЗУ · 100 МБ диска</div><div class="specs-desc">Легковесная среда</div></div></div>
+            
+            <!-- Правая колонка: изображение -->
+            <div class="ide-image" style="flex: 1; min-width: 300px; display: flex; align-items: flex-start;">
+                <div class="ide-screenshot-container" style="
+                    width: 100%;
+                    border-radius: 0.2rem;
+                    overflow: hidden;
+                    box-shadow: var(--color-card-shadow-md);
+                    background: linear-gradient(135deg, var(--color-card-front-bg-1), var(--color-card-front-bg-2));
+                    border: 1px solid var(--color-card-front-border);
+                    position: relative;
+                ">
+                    
+                    
+                    <img src="img1.png" alt="Lumen IDE Interface" style="width:100%; display:block;">
                 </div>
             </div>
+            
         </div>
-    </section>
+        <!-- Заголовок возможностей -->
+                <h3 style="margin: 2rem 0 1rem; font-size: 1.3rem;">Ключевые возможности IDE</h3>
+                
+                <!-- Сетка flip-карточек -->
+                <div class="ide-grid">
+                    <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-paint-roller"></i><h4>Подсветка синтаксиса</h4><p>Не просто текст, а магия</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-paint-roller"></i></div><div class="card-label">Визуализация кода</div><div class="card-value">Подсветка синтаксиса</div><div class="card-desc">Кастомный лексер для всех конструкций Lumen позволяет подсвечивать каждую лексему языка по отдельности.</div></div></div></div>
+                    <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-lightbulb"></i><h4>Автодополнение</h4><p>Иконки типов, подсказки</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-lightbulb"></i></div><div class="card-label">IntelliSense</div><div class="card-value">Автодополнение кода</div><div class="card-desc">Подсказки с иконками типов (K, M, T, L, D, S, F) на основе анализа.</div></div></div></div>
+                    <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-server"></i><h4>Языковой сервер</h4><p>Анализ в реальном времени</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-server"></i></div><div class="card-label">Анализ кода</div><div class="card-value">Языковой сервер</div><div class="card-desc">Фоновая проверка ошибок, семантический анализ в реальном времени. Это позволяет увидеть результат программы не запуская ее.</div></div></div></div>
+                    <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-bug"></i><h4>Визуализация ошибок</h4><p>Ошибка? — не беда</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-bug"></i></div><div class="card-label">Диагностика</div><div class="card-value">Визуализация ошибок</div><div class="card-desc">Подсветка на полях, всплывающие подсказки с пояснением прямо в строках кода.</div></div></div></div>
+                    <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-outdent"></i><h4>Сворачивание кода</h4><p>Code folding</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-outdent"></i></div><div class="card-label">Навигация</div><div class="card-value">Сворачивание кода</div><div class="card-desc">Code folding для удобной навигации в больших файлах.</div></div></div></div>
+                    <div class="flip-card"><div class="flip-card-inner"><div class="flip-card-front"><i class="fas fa-palette"></i><h4>Кастомное меню / темы</h4><p>Светлая / тёмная тема</p><span class="tap-hint">Нажмите, чтобы узнать подробнее</span></div><div class="flip-card-back"><div class="card-icon"><i class="fas fa-palette"></i></div><div class="card-label">Интерфейс</div><div class="card-value">Кастомное меню / темы</div><div class="card-desc">Закругленные меню, анимированные кнопки, большое количество красивых тем.</div></div></div></div>
+                </div>
+                
+                <!-- Технические характеристики -->
+                <div class="specs-wrapper" style="margin-top: 2.5rem;">
+                    <div class="specs-title" style="display: flex; align-items: center; gap: 0.75rem; font-size: 1.3rem; font-weight: 700; margin-bottom: 1.25rem;">
+                        <i class="fas fa-microchip"></i>
+                        <span>Технические характеристики</span>
+                    </div>
+                    <div class="specs-grid">
+                        <div class="specs-card"><div class="specs-icon"><i class="fas fa-tag"></i></div><div class="specs-content"><div class="specs-label">Версия</div><div class="specs-value">1.05b <span style="background: var(--color-stable-badge-bg); padding:0.1rem 0.4rem; border-radius:20px; font-size:0.7rem;">Stable</span></div><div class="specs-desc">Первая стабильная сборка</div></div></div>
+                        <div class="specs-card"><div class="specs-icon"><i class="fab fa-python"></i></div><div class="specs-content"><div class="specs-label">Технологии</div><div class="specs-value">Python 3.10+ · PyQt6 · QScintilla</div><div class="specs-desc">Современный стек</div></div></div>
+                        <div class="specs-card"><div class="specs-icon"><i class="fab fa-windows"></i></div><div class="specs-content"><div class="specs-label">Платформа</div><div class="specs-value">Windows 10 / 11 (64-bit)</div><div class="specs-desc">Оптимизирован</div></div></div>
+                        <div class="specs-card"><div class="specs-icon"><i class="fas fa-memory"></i></div><div class="specs-content"><div class="specs-label">Системные требования</div><div class="specs-value">2 ГБ ОЗУ · 100 МБ диска</div><div class="specs-desc">Легковесная среда</div></div></div>
+                    </div>
+                </div>
+    </div>
+</section>
 
     <section id="docs" class="reveal">
         <div class="container" style="text-align: center;">
-            <h2>Сообщество и ресурсы</h2>
+            <h2>Ссылки разработчика</h2>
             <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; margin: 2rem 0;">
-                <a href="#" class="resource-link"><i class="fab fa-github fa-lg"></i> GitHub</a>
-                <a href="#" class="resource-link"><i class="fab fa-telegram fa-lg"></i> Telegram</a>
-                <a href="#" class="resource-link"><i class="fab fa-vk fa-lg"></i> VK</a>
+                <a href="https://github.com/dedisvoin" class="resource-link"><i class="fab fa-github fa-lg"></i> GitHub</a>
+                <a href="https://t.me/Mo9l_qeBo4KA_9lHgEPE" class="resource-link"><i class="fab fa-telegram fa-lg"></i> Telegram</a>
+                <a href="https://vk.com/kotorogo_tak_lybit_cmertb" class="resource-link"><i class="fab fa-vk fa-lg"></i> VK</a>
             </div>
         </div>
     </section>
@@ -743,99 +1281,89 @@
 <button class="scroll-top" id="scrollTopBtn"><i class="fas fa-arrow-up"></i></button>
 
 <script>
-    // Анимация частиц только для ширины > 768px (на мобильных canvas скрыт через CSS)
-    if (window.innerWidth > 768) {
+    const isMobile = window.innerWidth <= 768;
+    
+    if (!isMobile) {
         const canvas = document.getElementById('networkCanvas');
-        if (canvas) {
-            let ctx = canvas.getContext('2d');
-            let particles = [];
-            const particleCount = 70;
-            const connectionDistance = 150;
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const particleCount = 50;
+        const connectionDistance = 130;
+        let animFrameId;
+        const rootStyle = getComputedStyle(document.documentElement);
+        const lineR = parseInt(rootStyle.getPropertyValue('--network-line-r').trim()) || 198;
+        const lineG = parseInt(rootStyle.getPropertyValue('--network-line-g').trim()) || 160;
+        const lineB = parseInt(rootStyle.getPropertyValue('--network-line-b').trim()) || 246;
 
-            function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-            class Particle {
-                constructor(x, y, vx, vy) { this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.radius = 1.2; }
-                update() {
-                    this.x += this.vx; this.y += this.vy;
-                    if (this.x < 0) { this.x = 0; this.vx = -this.vx; }
-                    if (this.x > canvas.width) { this.x = canvas.width; this.vx = -this.vx; }
-                    if (this.y < 0) { this.y = 0; this.vy = -this.vy; }
-                    if (this.y > canvas.height) { this.y = canvas.height; this.vy = -this.vy; }
-                }
-                draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fillStyle = '#89b4fa'; ctx.fill(); }
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = 1;
             }
-            function initParticles() {
-                particles = [];
-                for (let i = 0; i < particleCount; i++) {
-                    let x = Math.random() * canvas.width, y = Math.random() * canvas.height;
-                    let vx = (Math.random() - 0.5) * 0.6, vy = (Math.random() - 0.5) * 0.6;
-                    particles.push(new Particle(x, y, vx, vy));
-                }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if (this.x < 0 || this.x > canvas.width) this.vx = -this.vx;
+                if (this.y < 0 || this.y > canvas.height) this.vy = -this.vy;
             }
-            function drawLines() {
-                for (let i = 0; i < particles.length; i++) {
-                    for (let j = i + 1; j < particles.length; j++) {
-                        let dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
-                        let distance = Math.sqrt(dx * dx + dy * dy);
-                        if (distance < connectionDistance) {
-                            let opacity = 0.08 * (1 - distance / connectionDistance);
-                            ctx.beginPath();
-                            ctx.moveTo(particles[i].x, particles[i].y);
-                            ctx.lineTo(particles[j].x, particles[j].y);
-                            ctx.strokeStyle = `rgba(137, 180, 250, ${opacity * 1.2})`;
-                            ctx.lineWidth = 0.8;
-                            ctx.stroke();
-                        }
+            draw() { 
+                ctx.beginPath(); 
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); 
+                ctx.fillStyle = rootStyle.getPropertyValue('--network-particle-color').trim();
+                ctx.fill(); 
+            }
+        }
+
+        function initParticles() { particles = Array.from({ length: particleCount }, () => new Particle()); }
+
+        function drawLines() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = dx * dx + dy * dy;
+                    if (dist < connectionDistance * connectionDistance) {
+                        const opacity = 0.06 * (1 - Math.sqrt(dist) / connectionDistance);
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(${lineR}, ${lineG}, ${lineB}, ${opacity})`;
+                        ctx.lineWidth = 0.6;
+                        ctx.stroke();
                     }
                 }
             }
-            function animateNetwork() {
-                if (!ctx) return;
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                for (let p of particles) { p.update(); p.draw(); }
-                drawLines();
-                requestAnimationFrame(animateNetwork);
-            }
-            window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
-            resizeCanvas(); initParticles(); animateNetwork();
         }
-    }
 
-    // Анимация размытых кругов
-    const circles = document.querySelectorAll('.blur-circle');
-    const circleParams = [
-        { x: -100, y: -100, size: 450, vx: 0.2, vy: 0.15, angle: 0, minSize: 350, maxSize: 600 },
-        { x: window.innerWidth - 500, y: window.innerHeight - 500, size: 550, vx: -0.2, vy: 0.25, angle: 0.5, minSize: 450, maxSize: 700 },
-        { x: window.innerWidth * 0.5, y: window.innerHeight * 0.3, size: 400, vx: 0.25, vy: -0.2, angle: 1, minSize: 320, maxSize: 550 },
-        { x: window.innerWidth * 0.2, y: window.innerHeight * 0.6, size: 380, vx: 0.15, vy: 0.3, angle: 1.5, minSize: 300, maxSize: 500 },
-        { x: window.innerWidth * 0.7, y: window.innerHeight * 0.2, size: 420, vx: -0.25, vy: -0.18, angle: 2, minSize: 350, maxSize: 580 }
-    ];
-    function updateCircles() {
-        const width = window.innerWidth, height = window.innerHeight;
-        circles.forEach((circle, index) => {
-            const p = circleParams[index];
-            if (!p) return;
-            p.x += p.vx; p.y += p.vy;
-            p.angle += 0.008;
-            let sizeFactor = 0.7 + Math.sin(p.angle) * 0.3;
-            let newSize = p.minSize + (p.maxSize - p.minSize) * sizeFactor;
-            if (p.x < -newSize * 0.4) p.x = -newSize * 0.4;
-            if (p.x > width - newSize * 0.4) p.x = width - newSize * 0.4;
-            if (p.y < -newSize * 0.4) p.y = -newSize * 0.4;
-            if (p.y > height - newSize * 0.4) p.y = height - newSize * 0.4;
-            circle.style.left = p.x + 'px'; circle.style.top = p.y + 'px';
-            circle.style.width = newSize + 'px'; circle.style.height = newSize + 'px';
+        function animateNetwork() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            drawLines();
+            animFrameId = requestAnimationFrame(animateNetwork);
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) cancelAnimationFrame(animFrameId);
+            else animFrameId = requestAnimationFrame(animateNetwork);
         });
-        requestAnimationFrame(updateCircles);
-    }
-    updateCircles();
 
-    // Мобильное меню
+        resizeCanvas(); initParticles(); animFrameId = requestAnimationFrame(animateNetwork);
+        
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => { resizeCanvas(); initParticles(); }, 200);
+        });
+    }
+
     const menuToggle = document.getElementById('menuToggle');
     const navLinksMenu = document.getElementById('navLinks');
-    if (menuToggle) menuToggle.addEventListener('click', () => navLinksMenu.classList.toggle('active'));
+    menuToggle?.addEventListener('click', () => navLinksMenu.classList.toggle('active'));
 
-    // Плавная прокрутка
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function(e) {
             const targetId = this.getAttribute('href');
@@ -844,69 +1372,53 @@
             if (target) {
                 e.preventDefault();
                 target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                if (navLinksMenu.classList.contains('active')) navLinksMenu.classList.remove('active');
+                navLinksMenu.classList.remove('active');
             }
         });
     });
 
-    // Скачивание
     document.getElementById('windowsDownloadBtn')?.addEventListener('click', () => {
         alert("Скачивание Lumen IDE v1.05b для Windows 64-bit\nРазмер: ~85 MB\nУстановщик готов к запуску.");
     });
 
-    // Кнопка вверх
     const scrollBtn = document.getElementById('scrollTopBtn');
-    window.addEventListener('scroll', () => scrollBtn.classList.toggle('visible', window.scrollY > 300));
+    let scrollTicking = false;
+    window.addEventListener('scroll', () => {
+        if (!scrollTicking) {
+            requestAnimationFrame(() => {
+                scrollBtn.classList.toggle('visible', window.scrollY > 300);
+                scrollTicking = false;
+            });
+            scrollTicking = true;
+        }
+    });
     scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
-    // Анимация появления
+    const revealElements = document.querySelectorAll('.reveal');
     const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-    document.querySelectorAll('.reveal').forEach(el => { if(el.getBoundingClientRect().top < window.innerHeight-100) el.classList.add('visible'); });
-
-    // Мобильные карточки: переворот при прокрутке, когда карточка находится в центральной зоне (y > 200 и y < window.innerHeight - 200)
-    if (window.innerWidth <= 768) {
-        const flipCards = document.querySelectorAll('.flip-card');
-        // Храним флаг, была ли карточка уже перевёрнута
-        const flippedStatus = new Map();
-        
-        function checkAndFlipCards() {
-            const viewportHeight = window.innerHeight;
-            const topMargin = 200;
-            const bottomMargin = 200;
-            
-            flipCards.forEach(card => {
-                if (flippedStatus.get(card)) return; // уже перевернута
-                
-                const rect = card.getBoundingClientRect();
-                const cardTop = rect.top;
-                const cardBottom = rect.bottom;
-                
-                // Условие: верхняя граница карточки ниже topMargin и нижняя граница выше (viewportHeight - bottomMargin)
-                if (cardTop > topMargin && cardBottom < viewportHeight - bottomMargin) {
-                    card.classList.add('flipped');
-                    flippedStatus.set(card, true);
-                }
-            });
-        }
-        
-        // Используем throttle для оптимизации
-        let ticking = false;
-        window.addEventListener('scroll', () => {
-            if (!ticking) {
-                requestAnimationFrame(() => {
-                    checkAndFlipCards();
-                    ticking = false;
-                });
-                ticking = true;
-            }
+        entries.forEach(e => { 
+            if(e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); }
         });
-        
-        // Проверяем сразу после загрузки
-        window.addEventListener('load', checkAndFlipCards);
-        checkAndFlipCards(); // дополнительно на случай, если load уже произошёл
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+    revealElements.forEach(el => revealObserver.observe(el));
+    revealElements.forEach(el => { if(el.getBoundingClientRect().top < window.innerHeight) el.classList.add('visible'); });
+
+    const flipCards = document.querySelectorAll('.flip-card');
+    flipCards.forEach(card => {
+        card.addEventListener('click', function(e) {
+            if (!isMobile) return;
+            e.preventDefault();
+            this.classList.toggle('flipped');
+        });
+    });
+
+    if (!isMobile) {
+        flipCards.forEach(card => {
+            card.addEventListener('click', function() { this.classList.toggle('flipped'); });
+            card.addEventListener('mouseleave', function() {
+                setTimeout(() => { if (!card.matches(':hover')) card.classList.remove('flipped'); }, 150);
+            });
+        });
     }
 </script>
 </body>

@@ -313,7 +313,8 @@ struct NodeCall : public Node { NO_EXEC
         auto new_memory = new Memory();
         _memory->link_objects(new_memory);
         struct_builder->memory->copy_objects(*new_memory);
-        
+        auto new_struct = NewStruct(new_memory, struct_builder->name);
+        new_memory->add_object_in_struct("this", new_struct, false, false, false, true);
         
         if (struct_builder->body)
             struct_builder->body->exec_from(new_memory);
@@ -322,7 +323,15 @@ struct NodeCall : public Node { NO_EXEC
         
         
         // Создаём новую структуру с той же памятью и именем
-        auto new_struct = NewStruct(new_memory, struct_builder->name);
+
+        if (new_memory->check_literal("__init__")) {
+            auto &builder = new_memory->get_variable("__init__")->value;
+            auto value = call_function(builder, new_memory);
+            return value;
+        }
+        
+        
+        
         
         return new_struct;
     }

@@ -2544,8 +2544,8 @@ class TwistLangLexer(QsciLexerCustom):
         }
         self.modifiers = {'const', 'static', 'global', 'final', 'private'}
         self.types = {'Int', 'Bool', 'String', 'Char', 'Null', 'Double',
-                      'Namespace', 'Func', 'Lambda', 'auto', "Type"}
-        self.literals = {'true', 'false', 'null', 'self'}
+                      'Namespace', 'Func', 'Lambda', 'auto', "Type", "ptr"}
+        self.literals = {'true', 'false', 'null', 'self', 'this'}
         self.directives = {'#define', '#macro', '#include'}
         self.special_keywords = {'new', 'del', 'typeof', 'sizeof', 'out', 'outln', 'input', 'exit'}
 
@@ -2643,7 +2643,7 @@ class TwistLangLexer(QsciLexerCustom):
 
         # Для define-макросов - жирный (без подчеркивания, чтобы не конфликтовало)
         define_font = QFont(safe_font)
-        define_font.setItalic(True)
+        define_font.setUnderline(True)
         self.setFont(define_font, self.STYLE_DEFINE_MACRO)
 
     def styleText(self, start: int, end: int):
@@ -4041,6 +4041,7 @@ class TwistLangEditor(FramelessMainWindow):
         self.preview_hide_timer.timeout.connect(self._check_preview_hide)
 
         #self._setup_window()
+        self.setGeometry(100, 100, 1200, 800)
         self._setup_ui()
         self.setAcceptDrops(True)
         #self.setTitleBar(self.title_bar)
@@ -4066,7 +4067,7 @@ class TwistLangEditor(FramelessMainWindow):
     def _setup_window(self):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setGeometry(100, 100, 1200, 800)
+        
         
 
     def _rebuild_menus(self):
@@ -4847,6 +4848,9 @@ class TwistLangEditor(FramelessMainWindow):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla):
                 editor.set_folding_visible(enabled)
+                # Применяем цвета иконок при включении сворачивания
+                if enabled:
+                    self._apply_fold_marker_colors(editor)
 
         state_text = Strings.get("code_folding_on") if enabled else Strings.get("code_folding_off")
         self.show_status_message(state_text, 2000)
@@ -5178,6 +5182,7 @@ class TwistLangEditor(FramelessMainWindow):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla):
                 editor.repaint()
+                
 
         self.welcome_widget.update()
         self.file_explorer.update_theme()
@@ -5292,6 +5297,9 @@ class TwistLangEditor(FramelessMainWindow):
         if not is_python and not is_cpp:
             self._setup_autocompletion_icons(editor, new_lexer)
 
+        # Настройка цветов для всех иконок сворачивания
+        self._apply_fold_marker_colors(editor)
+        
         # Настройка цветов для сворачивания кода
         editor.setFoldMarginColors(colors["margin_bg"], colors["margin_bg"])
 
@@ -5300,6 +5308,35 @@ class TwistLangEditor(FramelessMainWindow):
             editor.error_tooltip.set_text(current_text, colors, editor.error_tooltip._last_error_type)
         self._apply_global_font_to_all_editors()
         editor.repaint()
+
+    def _apply_fold_marker_colors(self, editor: CustomScintilla):
+        """Apply fold marker colors to a single editor"""
+        colors = THEMES[self.current_theme]["colors"]
+        
+        fold_icon_color = QColor(colors["bg"])         # Цвет символов +/− (иконок)
+        fold_margin_bg = QColor(colors["title_fg"])    # Цвет фона поля сворачивания
+
+        def to_scintilla_color(qcolor):
+            return qcolor.red() | (qcolor.green() << 8) | (qcolor.blue() << 16)
+
+        icon_color_int = to_scintilla_color(fold_icon_color)
+        bg_color_int = to_scintilla_color(fold_margin_bg)
+
+        # Правильные индексы маркеров сворачивания в Scintilla
+        FOLD_MARKERS = {
+            'FOLDER':        25,  # Закрытый узел
+            'FOLDEROPEN':    26,  # Открытый узел
+            'FOLDERSUB':     27,  # Вертикальная линия внутри
+            'FOLDERTAIL':    28,  # Нижний "хвостик" линии
+            'FOLDEROPENMID': 29,  # Открытый узел в середине дерева
+            'FOLDERMIDTAIL': 30,  # Середина вертикальной линии
+            'FOLDEREND':     31   # Последний узел ветки
+        }
+
+        # Красим ВСЕ маркеры сворачивания (и передний, и задний план)
+        for marker_num in FOLD_MARKERS.values():
+            editor.SendScintilla(2041, marker_num, icon_color_int)  # SCI_MARKERSETFORE
+            editor.SendScintilla(2042, marker_num, bg_color_int)    # SCI_MARKERSETBACK
 
     def restart_language_server(self):
         editor = self.current_editor()
@@ -5577,6 +5614,10 @@ class TwistLangEditor(FramelessMainWindow):
         self._update_editor_theme(editor)
 
         editor.set_folding_visible(self.folding_toggle.isChecked())
+        
+        # Добавить эту строку - применить цвета, если сворачивание включено
+        if self.folding_toggle.isChecked():
+            self._apply_fold_marker_colors(editor)
 
         editor.set_error_text_visible(self.error_text_visible)
 

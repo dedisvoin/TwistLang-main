@@ -645,6 +645,11 @@ void GenerateStandartTypes(Memory* g_memory, string g_file_name) {
     g_memory->add_object("auto",OBJ_TYPE_AUTO);
     STATIC_MEMORY.register_object(OBJ_TYPE_AUTO);
 
+    auto OBJ_TYPE_PTR = CreateMemoryObject(NewType("ptr"), STANDART_TYPE::TYPE, g_memory,
+        true, true, true, true, false);
+    g_memory->add_object("ptr",OBJ_TYPE_PTR);
+    STATIC_MEMORY.register_object(OBJ_TYPE_AUTO);
+
     auto __TWIST_FILE__ = CreateMemoryObject(Value(STANDART_TYPE::STRING, string(g_file_name)), STANDART_TYPE::STRING, g_memory,
         true, true, true, true, false);
     g_memory->add_object("__FILE__", __TWIST_FILE__);
@@ -2069,7 +2074,16 @@ Node* ASTGenerator::ParseStructDecl() {
     string name = walker.get()->value;
     walker.next();
 
+    if (walker.CheckValue(";")) {
+        walker.next();
+        return new NodeStructDeclaration(nullptr, name, token);
+    }
+
     auto body = parse_statement();
+
+    if (!body) 
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "body or ';'");
+    
 
     return new NodeStructDeclaration(body, name, token);
 }

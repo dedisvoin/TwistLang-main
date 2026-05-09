@@ -30,7 +30,7 @@ struct NodeStructDeclaration : public Node { NO_EVAL
         any_cast<Struct*>(new_struct.data)->body = body;
         
         // 2. Теперь добавляем объект в память структуры (копия будет иметь тот же shared_ptr)
-        new_struct_memory->add_object_in_struct("Person", new_struct, false, false, false, true);
+        new_struct_memory->add_object_in_struct(name, new_struct, false, false, false, true);
 
         // 3. Линкуем глобальные объекты
         _memory->link_objects(new_struct_memory);

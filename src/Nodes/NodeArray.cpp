@@ -1,5 +1,5 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 #include "../twist-array.cpp"
 
 struct NodeArray : public Node { NO_EXEC
@@ -34,9 +34,9 @@ struct NodeArray : public Node { NO_EXEC
             T = any_cast<Type>(static_type->eval_from(_memory).data);
             for (int i = 0; i < elements.size(); i++) {
                 auto value = get<0>(elements[i])->eval_from(_memory);
-                if (!IsTypeCompatible(T.parse_array_type().first, value.type)) {
-                    ERROR::InvalidArrayElementType(get<1>(elements[i]), get<2>(elements[i]), T.pool, value.type.pool, i);
-                }
+                if (!IsTypeCompatible(T.parse_array_type().first, value.type)) 
+                    throw ERROR_THROW::ArrayInvalidElementType(get<1>(elements[i]), get<2>(elements[i]), T.pool, value.type.pool, i);
+                
                 evaled_elements.push_back(value);
             }
         }
