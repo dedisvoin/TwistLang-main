@@ -1,8 +1,14 @@
 main.twist
 tokens.txt
 .vs
+
 .vscode
+
+.examples
+
 __pycache__
 dbg
 LumenIDE.exe
 compile.py
+cursovaya.txt
+

@@ -419,6 +419,11 @@ namespace ERROR_THROW {
         return err;
     }
 
+    Error VariableShadowsGlobal(const Token& call_start, const string& arg_name) {
+        Error err = Error("Variable '" + arg_name + "' shadows a global variable with the same name", call_start.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
     Error MaxRecursionDepthExceeded(const Token& start, const Token& end) {
         Error err = Error("Maximum recursion depth exceeded", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
@@ -474,5 +479,9 @@ namespace ERROR_THROW {
 
     Error ArrayInvalidElementType(const Token& start, const Token& end, const Type expected_type, const Type actual_type, size_t index) {
         return Error("Array waited element of type `" + expected_type.pool + "`, but found element of type `" + actual_type.pool + "` at index " + to_string(index), start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+    }
+
+    Error InvalidDereferenceAddres(const Token& start, const Token& end) {
+        return Error("Ivalid dereference addres", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
     }
 }

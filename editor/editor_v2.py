@@ -46,7 +46,7 @@ MIN_FONT_SIZE = 8
 
 APP_ICON_PATH = r"data\app_icon.svg"
 
-DEFAULT_THEME = "Lumen Classic"
+DEFAULT_THEME = "Catppuccin Mocha"
 WINDOW_MIN_WIDTH = 400
 WINDOW_MIN_HEIGHT = 300
 TITLE_BAR_HEIGHT = 32

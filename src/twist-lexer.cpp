@@ -830,9 +830,7 @@ struct Lexer {
             }
 
             // Handle dereference
-            if (current_char == "*" &&
-                (this->pos + 1 >= this->main_file_size ||
-                 !UTF8Helper::isDigit(this->file_data, this->pos + 1))) {
+            if (current_char == "*") {
                 parse_dereference();
                 continue;
             }

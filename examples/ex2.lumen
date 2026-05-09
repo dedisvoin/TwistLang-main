@@ -1,36 +1,4 @@
-struct Lazy {
-    static let _computation: Lambda?;
-    let _result;
-    static let _evaluated: Bool = false;
-    
-    func __init__(computation: Lambda) -> typeof(Lazy) {
-        this._computation = computation;
-        ret this;
-    }
-    
-    func force() -> auto {
-        if (!this._evaluated) {
-            this._result = this._computation();
-            this._evaluated = true;
-        }
-        ret this._result;
-    }
-    
-    func map(f: Lambda) -> typeof(Lazy) {
-        let self = this;  // захватываем текущий экземпляр
-        ret Lazy(lambda() -> auto {
-            f(self::force())
-        });
-    }
-}
-
-let heavy = Lazy(lambda() -> Int { 
-namespace {
-    outln "Computing...";
-    let res = 42;
-}::res
-});
-
-outln "Before force";
-outln heavy.force();  // "Computing..." \n 42
-outln heavy.force();  // 42 (без "Computing...")
+let a = 10;
+let a = &a;
+*a = 100;
+echo a;

@@ -33,8 +33,7 @@ struct NodeVariableEqual : public Node { NO_EVAL
             auto address = any_cast<int>(left_value.data);
 
             if (!STATIC_MEMORY.is_registered(address)){
-                cout << "ERROR ADDR " << address << endl;
-                exit(-1);
+                throw ERROR_THROW::InvalidDereferenceAddres(start_left_value_token, end_left_value_token);
             }
     
             auto object = STATIC_MEMORY.get_by_address(address);

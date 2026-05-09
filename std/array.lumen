@@ -86,7 +86,7 @@ struct Array {
     }
 
     // Добавление элемента в массив
-    func append(obj: T) -> Null {
+    func append(obj: T) -> type {
         // Проверяем не заполнен ли массив
         if (this._pos >= (this._size))
             // assert false вызывает ошибку с сообщением
@@ -98,6 +98,7 @@ struct Array {
         
         // Увеличиваем счётчик позиции
         this._pos = this._pos + 1;
+        ret this;
     }
     
     // Получение элемента по индексу

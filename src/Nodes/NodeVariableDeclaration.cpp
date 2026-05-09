@@ -71,6 +71,9 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
             if (_memory->is_final(var_name)) {
                 throw ERROR_THROW::VariableAlreadyDefined(decl_token);
             }
+            //if (_memory->is_global(var_name)) {
+            //    throw ERROR_THROW::VariableShadowsGlobal(decl_token, var_name);
+            //}
             auto addr = _memory->get_variable(var_name)->address;
             STATIC_MEMORY.unregister_object(addr);
             _memory->delete_variable(var_name);
