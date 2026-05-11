@@ -30,6 +30,9 @@ struct NodeVariableEqual : public Node { NO_EVAL
         
         if (variable->NODE_TYPE == NODE_DEREFERENCE) {
             auto left_value = ((NodeDereference*)variable)->expr->eval_from(_memory);
+            if (!left_value.type.is_pointer()) {
+                throw ERROR_THROW::UndereferencableValue(start_left_value_token, end_left_value_token, left_value.type);
+            }
             auto address = any_cast<int>(left_value.data);
 
             if (!STATIC_MEMORY.is_registered(address)){

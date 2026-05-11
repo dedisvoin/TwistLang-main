@@ -25,8 +25,7 @@ struct NodeDereference : public Node { NO_EXEC
             return NewType(MakePointerType(any_cast<Type>(value.data)));
         }
         if (!value.type.is_sub_type(STANDART_TYPE::TYPES)) {
-            Type T = MakePointerType(any_cast<Struct>(value.data).type);
-            return Value(STANDART_TYPE::TYPE, T);
+            return NewType(MakePointerType(any_cast<Struct*>(value.data)->type));
         }
         throw ERROR_THROW::UndereferencableValue(start, end, value.type);
     }

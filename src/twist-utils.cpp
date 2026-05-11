@@ -91,7 +91,7 @@ namespace MESSAGE_TYPES {
     string WARNING = "[ " + TM::YELLOW + "wrn" + TM::RESET + " ] ";
     string ERROR = "[ " + TM::RED + TM::BOLD + "err" + TM::RESET + " ] ";
     string SUCCESS = "[ " + TM::GREEN + "yes" + TM::RESET + " ] ";
-    string NOTE = "[ " + TM::BLACK + "msg" + TM::RESET + " ]";
+    string NOTE = "[ " + TM::BLACK + "msg" + TM::RESET + " ] ";
 }
 
 #define MT MESSAGE_TYPES
@@ -132,6 +132,14 @@ void _PREPROCESSED_FILE_SAVED(string file_name) {
 /* Tokens file saved */
 void _TOKENS_FILE_SAVED(string file_name) {
     cout << MT::SUCCESS + "Tokens file '" + file_name + "' saved." << endl;
+}
+
+void _COMPILATION_CPP_FILE_GENERATED(string file_name) {
+    cout << MT::SUCCESS + "Compile: '" + file_name + "' file generated" << endl;
+}
+
+void _COMPILATION_STARTED() {
+    cout << MT::NOTE + "Compile: Start generate .exe file..." << endl;
 }
 
 

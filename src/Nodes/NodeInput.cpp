@@ -29,54 +29,15 @@ struct NodeInput : public Node { NO_EXEC
             string _input;
             getline(cin, _input);
 
-            if (_input.empty())
+            if (_input.empty()) 
                 return NewNull();
-
-            if (_input.length() == 1) {
-                // Один символ - может быть char или digit
-                char* ch = new char(_input[0]);
-                if (isdigit(*ch)) {
-                    auto value = NewInt(atoi(ch));
-                    delete ch;
-                    return value;
-                }
-                else {
-                    auto value = NewChar(*ch);
-                    delete ch;
-                    return value;
-                }
-            } else {
-                bool isNumber = true;
-                bool isDOuble = false;
-                for (char c : _input) {
-                    if (!isdigit(c) && c != '.') {
-                        isNumber = false;
-                        break;
-                    }
-                    if (c == '.') isDOuble = true;
-                }
-                if (isNumber) {
-                    if (isDOuble) {
-                        std::istringstream iss(_input.c_str());
-                        iss.imbue(std::locale::classic()); // принудительно меняем локаль с точкой
-                        NUMBER_ACCURACY val;
-                        if (!(iss >> val)) 
-                            return NewString(_input);
-                            
-                        auto value = NewDouble(val);
-                        return value;
-                    } else {
-                        auto value = NewInt(atoi(_input.c_str()));
-                        return value;
-                    }
-                } else {
-                    auto value = NewString(_input);
-                    return value;
-                }
-            }
+            
+            auto value = NewString(_input);
+            return NewString(_input);
+            
         #else
             ERROR_THROW::InputWarning(start_token, end_token).Write();
-            return NewString("  ");
+            return NewNull();
         #endif
 
     }

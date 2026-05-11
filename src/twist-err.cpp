@@ -229,7 +229,7 @@ namespace ERROR_THROW {
     }
 
     Error InputWarning(const Token& start, const Token& end) {
-        Error err = Error("Input is run time instruction. Default return - ''", start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+        Error err = Error("Input is run time instruction. Default return - null", start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
         err.message_type = 1;
         return err;
     }
@@ -466,6 +466,31 @@ namespace ERROR_THROW {
 
     Error InvalidStringArgumentCount(const Token& start_args, const Token& end_args, size_t found) {
         Error err = Error("'String' expected 1 argument, but found " + to_string(found), start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidPtrArgumentCount(const Token& start_args, const Token& end_args, size_t found) {
+        Error err = Error("'ptr' expected 1 argument[`Int`] or two arguments[`Int`, `Type`], but found " + to_string(found) + " arguments", start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidPtrFirstArgumentType(const Token& start_args, const Token& end_args, Type type) {
+        Error err = Error("'ptr' expected first argument `Int`, but found " + type.pool, start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidPtrSecondArgumentType(const Token& start_args, const Token& end_args, Type type) {
+        Error err = Error("'ptr' expected second argument `Type`, but found " + type.pool, start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidIntArgumentType(const Token& start_args, const Token& end_args, Type type) {
+        Error err = Error("'Int' expected one of arguments `Int`, `Double`, `String`, `Char`, but found " + type.pool, start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidIntArgumentCount(const Token& start_args, const Token& end_args, size_t found) {
+        Error err = Error("'Int' expected 1 argument, but found " + to_string(found), start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
 

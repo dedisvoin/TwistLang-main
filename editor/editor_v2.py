@@ -1215,7 +1215,6 @@ class FileExplorer(QWidget):
 
 class ErrorOverviewPanel(QWidget):
     """Панель, отображающая ошибки для текущего активного файла."""
-
     error_clicked = pyqtSignal(str, int, int)
 
     def __init__(self, parent=None):
@@ -1224,7 +1223,14 @@ class ErrorOverviewPanel(QWidget):
         self.model = QStandardItemModel(0, 4, self)
         self.update_language()
         self.tree.setModel(self.model)
-        self.tree.doubleClicked.connect(self._on_clicked)
+        
+        # ИЗМЕНЕНО: используем одинарный клик вместо двойного, и ClickFocus вместо NoFocus
+        # NoFocus ломает отрисовку выделения, что вызывает мерцание при зажатии
+        self.tree.clicked.connect(self._on_clicked)
+        self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.tree.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection) # Блокирует мульти-выделение при драге
+        
+        self._errors_cache = []
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
@@ -1237,83 +1243,79 @@ class ErrorOverviewPanel(QWidget):
         self.tree.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tree.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tree.setSortingEnabled(False)
+        self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # Не крадёт фокус при клике
+        self.tree.setUniformRowHeights(True)
+        
         self.tree.header().setStretchLastSection(True)
-        self.tree.header().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
-
-        # Отключаем захват фокуса, чтобы клик не уводил курсор из редактора
-        self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.tree.header().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        self.tree.header().setSectionsClickable(False)
 
         tree_font = QFont(UI_FONT_NAME, 10)
         self.tree.setFont(tree_font)
-        self.tree.header().setFont(tree_font)
-
         layout.addWidget(self.tree)
 
     def set_errors(self, file_path: str, errors: List):
         self.model.removeRows(0, self.model.rowCount())
-        short_name = os.path.basename(file_path) if file_path else "Unknown"
+        self._errors_cache.clear()
 
+        short_name = os.path.basename(file_path) if file_path else "Unknown"
         window = self.window()
-        if window and hasattr(window, 'current_theme'):
-            colors = THEMES[window.current_theme]["colors"]
-        else:
-            colors = {
-                "error": QColor("#ff5050"),
-                "warning": QColor("#ffc850"),
-                "echo": QColor("#cecece")
-            }
+        colors = THEMES[window.current_theme]["colors"] if window and hasattr(window, 'current_theme') else {
+            "error": QColor("#ff5050"), "warning": QColor("#ffc850"), "echo": QColor("#cecece")
+        }
 
         for err in errors:
+            self._errors_cache.append((file_path, err))
+
+            # 1. Файл
             file_item = QStandardItem(short_name)
-            file_item.setData(file_path, Qt.ItemDataRole.UserRole)
             file_item.setToolTip(file_path)
 
+            # 2. Строка
             line_item = QStandardItem(str(err.line + 1))
-            line_item.setData(max(0, err.start_col - 1), Qt.ItemDataRole.UserRole + 1)
+            line_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
+            # 3. Тип
             type_str = err.type.name.capitalize()
-            
             type_item = QStandardItem(type_str)
+            type_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
             if err.type == ErrorType.ERROR:
-                error_color = QColor(colors.get("error", QColor("#ff5050")))
+                accent = QColor(colors.get("error", "#ff5050"))
             elif err.type == ErrorType.WARNING:
-                error_color = QColor(colors.get("warning", QColor("#ffc850")))
+                accent = QColor(colors.get("warning", "#ffc850"))
             else:
-                error_color = QColor(colors.get("echo", QColor("#cecece")))
+                accent = QColor(colors.get("echo", "#cecece"))
 
-            # Устанавливаем цвет текста и полупрозрачный фон
-            type_item.setForeground(error_color)
-            bg = QColor(error_color)
+            type_item.setForeground(accent)
+            bg = QColor(accent)
             bg.setAlphaF(0.08)
-            type_item.setBackground(bg)
-            type_item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
+            # 4. Сообщение
             msg_item = QStandardItem(err.message)
-            msg_item.setForeground(colors.get("fg", QColor("#cdd6f4")))
-            msg_item.setBackground(bg)
-            file_item.setBackground(bg)
-            line_item.setBackground(bg)
+            msg_item.setToolTip(err.message)
+            msg_item.setForeground(colors.get("fg", "#cdd6f4"))
+
+            for item in [file_item, line_item, type_item, msg_item]:
+                item.setBackground(bg)
+
             self.model.appendRow([file_item, line_item, type_item, msg_item])
 
-        header = self.tree.header()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        self.tree.resizeColumnToContents(0)
-        self.tree.resizeColumnToContents(1)
-        self.tree.resizeColumnToContents(2)
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        # Автоподгонка ширин колонок после отрисовки
+        QTimer.singleShot(0, lambda: [
+            self.tree.resizeColumnToContents(0),
+            self.tree.resizeColumnToContents(1),
+            self.tree.resizeColumnToContents(2)
+        ])
 
     def _on_clicked(self, index):
         if not index.isValid():
             return
         row = index.row()
-        file_item = self.model.item(row, 0)
-        line_item = self.model.item(row, 1)
-        if file_item and line_item:
-            file_path = file_item.data(Qt.ItemDataRole.UserRole)
-            line = int(line_item.text()) - 1
-            start_col = line_item.data(Qt.ItemDataRole.UserRole + 1) or 0
-            self.error_clicked.emit(file_path, line, start_col)
+        if 0 <= row < len(self._errors_cache):
+            file_path, err = self._errors_cache[row]
+            # ИЗМЕНЕНО: передаём "чистый" 0-based индекс колонки
+            self.error_clicked.emit(file_path, err.line, max(0, err.start_col))
 
     def update_language(self):
         self.model.setHorizontalHeaderLabels([
@@ -1338,10 +1340,11 @@ class ErrorOverviewPanel(QWidget):
                 border: none;
                 font-family: {UI_FONT_NAME};
                 font-size: 10pt;
+                outline: none;
             }}
             QTreeView::item {{
-                padding-left: 8px;
-                padding-right: 8px;
+                padding: 4px 6px;
+                border-right: 1px solid {colors['title_bg'].name()};
             }}
             QTreeView::item:selected {{
                 background-color: {colors['selection_bg'].name()};
@@ -1350,11 +1353,12 @@ class ErrorOverviewPanel(QWidget):
             QHeaderView::section {{
                 background-color: {colors['title_bg'].name()};
                 color: {colors['title_fg'].name()};
-                padding: 4px;
+                padding: 4px 8px;
                 border: none;
+                border-right: 1px solid {colors['title_bg'].name()};
+     
                 font-family: {UI_FONT_NAME};
                 font-size: 10pt;
-                padding-left: 8px;
             }}
         """)
 # =============================================================================
@@ -2531,6 +2535,8 @@ class TwistLangLexer(QsciLexerCustom):
     STYLE_OBJECT = 13
     STYLE_ESCAPE = 14
     STYLE_DEFINE_MACRO = 15
+    STYLE_COMMENT_DOC = 16      # Для //! комментариев
+    STYLE_COMMENT_QUESTION = 17 # Для //? комментариев
 
     def __init__(self, parent=None, theme_name: str = DEFAULT_THEME, font_size: int = DEFAULT_FONT_SIZE):
         super().__init__(parent)
@@ -2576,7 +2582,9 @@ class TwistLangLexer(QsciLexerCustom):
             self.STYLE_SPECIAL: "Special",
             self.STYLE_OBJECT: "Object",
             self.STYLE_ESCAPE: "Escape sequence",
-            self.STYLE_DEFINE_MACRO: "Define Macro"
+            self.STYLE_DEFINE_MACRO: "Define Macro",
+            self.STYLE_COMMENT_DOC: "Documentation Comment",
+            self.STYLE_COMMENT_QUESTION: "Question Comment"
         }
         return descriptions.get(style, "")
 
@@ -2599,9 +2607,9 @@ class TwistLangLexer(QsciLexerCustom):
         safe_font = get_safe_monospace_font(MONOSPACE_FONT_NAME, self.font_size)
         
         # Сначала устанавливаем базовый шрифт для ВСЕХ стилей
-        for style in range(16):  # 0-15 все стили
+        for style in range(18):  # 0-17 все стили
             self.setFont(safe_font, style)
-            self.setPaper(colors["bg"], style)  # Явно устанавливаем фон для всех стилей
+            self.setPaper(colors["bg"], style)
 
         # Устанавливаем цвета для стилей
         style_colors = {
@@ -2621,6 +2629,8 @@ class TwistLangLexer(QsciLexerCustom):
             self.STYLE_OBJECT: colors["object"],
             self.STYLE_ESCAPE: colors["function"],
             self.STYLE_DEFINE_MACRO: colors["define_macro"],
+            self.STYLE_COMMENT_DOC: colors.get("error", QColor(255, 80, 80)),      # Красный
+            self.STYLE_COMMENT_QUESTION: colors.get("warning", QColor(255, 200, 80)), # Желтый
         }
 
         for style, color in style_colors.items():
@@ -2630,6 +2640,8 @@ class TwistLangLexer(QsciLexerCustom):
         italic_font = QFont(safe_font)
         italic_font.setItalic(True)
         self.setFont(italic_font, self.STYLE_COMMENT)
+        self.setFont(italic_font, self.STYLE_COMMENT_DOC)
+        self.setFont(italic_font, self.STYLE_COMMENT_QUESTION)
 
         bold_font = QFont(safe_font)
         bold_font.setBold(True)
@@ -2641,7 +2653,7 @@ class TwistLangLexer(QsciLexerCustom):
         modifier_font.setUnderline(True)
         self.setFont(modifier_font, self.STYLE_MODIFIER)
 
-        # Для define-макросов - жирный (без подчеркивания, чтобы не конфликтовало)
+        # Для define-макросов - жирный
         define_font = QFont(safe_font)
         define_font.setUnderline(True)
         self.setFont(define_font, self.STYLE_DEFINE_MACRO)
@@ -2663,9 +2675,8 @@ class TwistLangLexer(QsciLexerCustom):
                 parts = stripped.split()
                 if len(parts) > 1:
                     macro_name = parts[1]
-                    # Убираем возможные знаки препинания и пробелы
                     macro_name = macro_name.rstrip('=:;,(){}[] \t')
-                    if macro_name and macro_name[0].isalpha():  # Проверяем что начинается с буквы
+                    if macro_name and macro_name[0].isalpha():
                         self.define_macros.add(macro_name)
 
         text_bytes = text.encode('utf-8')
@@ -2687,18 +2698,31 @@ class TwistLangLexer(QsciLexerCustom):
             if ch_len == 0:
                 break
 
+            # Обработка комментариев (включая //! и //?)
             if ch == '/' and pos + ch_len < end:
                 next_ch, next_len = self._get_char_at(text_bytes, pos + ch_len, total_bytes)
                 if next_ch == '/':
                     expecting_namespace = False
                     j = pos
+                    comment_style = self.STYLE_COMMENT
+                    
+                    # Проверяем третий символ для //! и //?
+                    if j + ch_len + next_len < end:
+                        third_ch, third_len = self._get_char_at(text_bytes, j + ch_len + next_len, total_bytes)
+                        if third_ch == '!':
+                            comment_style = self.STYLE_COMMENT_DOC
+                            j += third_len
+                        elif third_ch == '?':
+                            comment_style = self.STYLE_COMMENT_QUESTION
+                            j += third_len
+                    
                     while j < end:
                         c, l = self._get_char_at(text_bytes, j, total_bytes)
                         if c == '\n':
                             j += l
                             break
                         j += l
-                    self.setStyling(j - pos, self.STYLE_COMMENT)
+                    self.setStyling(j - pos, comment_style)
                     pos = j
                     continue
 
@@ -2737,6 +2761,40 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
 
+            # Обработка указателей ***auto, **auto, *auto
+            if ch == '*' and pos + ch_len < end:
+                star_start = pos
+                star_count = 0
+                temp_pos = pos
+                
+                while temp_pos < end:
+                    c, l = self._get_char_at(text_bytes, temp_pos, total_bytes)
+                    if c == '*':
+                        star_count += 1
+                        temp_pos += l
+                    else:
+                        break
+                
+                if star_count > 0:
+                    c, l = self._get_char_at(text_bytes, temp_pos, total_bytes)
+                    if c == 'a':
+                        j = temp_pos
+                        while j < end:
+                            c, l = self._get_char_at(text_bytes, j, total_bytes)
+                            if not (c.isalnum() or c == '_'):
+                                break
+                            j += l
+                        word = text_bytes[temp_pos:j].decode('utf-8')
+                        if word == 'auto':
+                            self.setStyling(j - pos, self.STYLE_TYPE)
+                            pos = j
+                            continue
+                
+                expecting_namespace = False
+                self.setStyling(ch_len, self.STYLE_OPERATOR)
+                pos += ch_len
+                continue
+
             if ch.isalpha() or ch == '_' or ch == '#':
                 j = pos
                 while j < end:
@@ -2755,7 +2813,6 @@ class TwistLangLexer(QsciLexerCustom):
                     style = self.STYLE_NAMESPACE_ID
                     expecting_namespace = False
                 else:
-                    # Проверяем define-макросы в первую очередь
                     if word in self.define_macros:
                         style = self.STYLE_DEFINE_MACRO
                     elif word.startswith('#'):
@@ -2805,9 +2862,40 @@ class TwistLangLexer(QsciLexerCustom):
         
         self.update_folding_levels(start, end)
 
-    # Остальные методы остаются без изменений...
+    def _count_braces_safely(self, text: str):
+        """Подсчитывает {[( и )] игнорируя строки и однострочные комментарии."""
+        open_count = 0
+        close_count = 0
+        in_string = None
+        i = 0
+        n = len(text)
+        
+        while i < n:
+            ch = text[i]
+            if in_string:
+                # Пропускаем экранированные символы внутри строк
+                if ch == '\\' and i + 1 < n:
+                    i += 2
+                    continue
+                elif ch == in_string:
+                    in_string = None
+                i += 1
+                continue
+                
+            if ch in ('"', "'"):
+                in_string = ch
+                i += 1
+            elif ch == '/' and i + 1 < n and text[i+1] == '/':
+                break  # Остаток строки - комментарий
+            elif ch in ('{', '(', '['):
+                open_count += 1
+            elif ch in ('}', ')', ']'):
+                close_count += 1
+            i += 1
+            
+        return open_count, close_count
+
     def update_folding_levels(self, start, end):
-        # ... существующий код ...
         editor = self.editor()
         if not editor:
             return
@@ -2816,32 +2904,34 @@ class TwistLangLexer(QsciLexerCustom):
         end_line = editor.SendScintilla(editor.SCI_LINEFROMPOSITION, end)
         total_lines = editor.lines()
 
+        # Базовый уровень в Scintilla = 1024
         current_level = 1024
         if start_line > 0:
             prev_level = editor.SendScintilla(editor.SCI_GETFOLDLEVEL, start_line - 1)
             current_level = prev_level & 0x0FFF
+            # Если предыдущая строка была заголовком, мы уже внутри блока
             if prev_level & 0x2000:
                 current_level += 1
 
         for line in range(start_line, total_lines):
             text = editor.text(line)
-            open_count = text.count('{')
-            close_count = text.count('}')
+            open_count, close_count = self._count_braces_safely(text)
+            net_change = open_count - close_count
 
-            is_header = 0
-            if open_count > 0 and (open_count > close_count or text.find('{') < text.find('}') or close_count == 0):
-                is_header = 0x2000
-
+            # Заголовок (0x2000) ставится, если строка увеличивает вложенность
+            is_header = 0x2000 if net_change > 0 else 0
             new_fold_level = current_level | is_header
-            old_fold_level = editor.SendScintilla(editor.SCI_GETFOLDLEVEL, line)
 
-            if old_fold_level == new_fold_level and line > end_line:
-                break
+            # Оптимизация: останавливаемся, если вышли за пределы изменения и уровни совпадают
+            if line > end_line and net_change == 0:
+                old_fold_level = editor.SendScintilla(editor.SCI_GETFOLDLEVEL, line)
+                if old_fold_level == new_fold_level:
+                    break
 
             editor.SendScintilla(editor.SCI_SETFOLDLEVEL, line, new_fold_level)
 
-            current_level += open_count
-            current_level -= close_count
+            # Обновляем текущий уровень для следующей строки
+            current_level += net_change
             if current_level < 1024:
                 current_level = 1024
 
@@ -2870,7 +2960,6 @@ class TwistLangLexer(QsciLexerCustom):
             ch = '\ufffd'
 
         return (ch, length)
-
 class WindowBorderOverlay(QWidget):
     """Прозрачный оверлей для рисования обводки окна"""
     def __init__(self, parent=None):
@@ -3314,10 +3403,12 @@ class CustomScintilla(QsciScintilla):
         self.error_messages.clear()
         self.viewport().update()
 
+    # В CustomScintilla.add_error:
     def add_error(self, line: int, start_col: int, end_col: int, message: str, error_type: int):
-        start_col += 1
+        start_col += 1; 
         end_col += 1
-
+        # Оставляем 0-based индексацию для согласованности с QScintilla
+        
         if not isinstance(message, str):
             message = str(message)
 
@@ -3337,7 +3428,7 @@ class CustomScintilla(QsciScintilla):
 
         self.error_lines.add(line)
         self.errors.append(ErrorInfo(line, start_col, end_col, message, ErrorType(error_type)))
-
+    
     def get_line_text(self, line: int) -> str:
         try:
             start_pos = self.SendScintilla(self.SCI_POSITIONFROMLINE, line)
@@ -4082,12 +4173,6 @@ class TwistLangEditor(FramelessMainWindow):
         self.interval_actions.clear()
         self.language_actions.clear()
 
-
-        menubar = self.menuBar()
-        menubar.setVisible(False)
-
-        consolas_font = QFont(UI_FONT_NAME, 11)
-
         # File menu
         file_menu = RoundedMenu(self)
         file_menu.setTitle(Strings.get("file_menu"))
@@ -4108,6 +4193,18 @@ class TwistLangEditor(FramelessMainWindow):
 
         save_as_action = self._create_action(Strings.get("save_as"), "Ctrl+Shift+S", self.save_current_file_as)
         file_menu.addAction(save_as_action)
+
+        # Добавляем разделитель и меню примеров
+        file_menu.addSeparator()
+        
+        # Создаем подменю "Примеры"
+        examples_menu = RoundedMenu(self)
+        examples_menu.setTitle("Примеры" if Strings.current_language == Language.RUSSIAN else "Examples")
+        examples_menu.setFont(consolas_font)
+        file_menu.addMenu(examples_menu)
+        
+        # Загружаем примеры из папки examples/
+        self._load_examples_menu(examples_menu)
 
         autosave_menu = RoundedMenu(self)
         autosave_menu.setTitle(Strings.get("auto_save"))
@@ -4287,6 +4384,81 @@ class TwistLangEditor(FramelessMainWindow):
 
         self.title_bar.add_menu(menubar)
         self._update_checkmarks_after_rebuild()
+
+    def _load_examples_menu(self, examples_menu: RoundedMenu):
+        """
+        Загружает список примеров из директории examples/ и добавляет их в меню.
+        """
+        examples_dir = "examples"
+        
+        # Очищаем предыдущие действия (если есть)
+        examples_menu.clear()
+        
+        if not os.path.exists(examples_dir):
+            no_examples_action = QAction("No examples directory found", self)
+            no_examples_action.setEnabled(False)
+            no_examples_action.setFont(QFont(UI_FONT_NAME, 10))
+            examples_menu.addAction(no_examples_action)
+            return
+        
+        try:
+            # Получаем список файлов в директории examples/
+            example_files = []
+            for entry in os.listdir(examples_dir):
+                full_path = os.path.join(examples_dir, entry)
+                if os.path.isfile(full_path):
+                    example_files.append(entry)
+            
+            # Сортируем по алфавиту
+            example_files.sort()
+            
+            if not example_files:
+                no_examples_action = QAction("No examples available", self)
+                no_examples_action.setEnabled(False)
+                no_examples_action.setFont(QFont(UI_FONT_NAME, 10))
+                examples_menu.addAction(no_examples_action)
+                return
+            
+            # Добавляем каждый пример в меню
+            for example_file in example_files:
+                full_path = os.path.join(examples_dir, example_file)
+                
+                # Создаем красивое название (убираем расширение, заменяем подчеркивания)
+                display_name = os.path.splitext(example_file)[0]
+                display_name = display_name.replace('_', ' ').title()
+                
+                # Добавляем расширение для информации
+                ext = os.path.splitext(example_file)[1]
+                if ext:
+                    display_name += f" ({ext})"
+                
+                action = QAction(display_name, self)
+                action.setFont(QFont(UI_FONT_NAME, 10))
+                action.setData(full_path)  # Сохраняем полный путь в данных действия
+                action.triggered.connect(lambda checked, path=full_path: self.open_example_file(path))
+                examples_menu.addAction(action)
+                
+        except Exception as e:
+            print(f"Error loading examples: {e}")
+            error_action = QAction(f"Error: {str(e)}", self)
+            error_action.setEnabled(False)
+            error_action.setFont(QFont(UI_FONT_NAME, 10))
+            examples_menu.addAction(error_action)
+
+
+    def open_example_file(self, file_path: str):
+        """
+        Открывает файл примера. Если файл открывается впервые, показывает проводник.
+        """
+        if os.path.exists(file_path):
+            self.open_file(file_path)
+            self.show_status_message(f"Opened example: {os.path.basename(file_path)}", 2000)
+        else:
+            QMessageBox.warning(
+                self, 
+                "File Not Found", 
+                f"Example file not found:\n{file_path}"
+            )
 
     def _toggle_error_text(self, checked: bool):
         self.error_text_visible = checked
@@ -4643,26 +4815,45 @@ class TwistLangEditor(FramelessMainWindow):
         self._apply_global_font_to_all_editors()
 
     def _on_error_overview_clicked(self, file_path: str, line: int, col: int):
-        """Переход к ошибке с сохранением фокуса в редакторе."""
+        """Переход к ошибке с гарантированным фокусом и проверкой границ."""
+        if not file_path:
+            return
+
         editor = self._find_editor_by_filename(file_path)
         if editor:
             self.tab_widget.setCurrentWidget(editor)
-            editor.setCursorPosition(line, col)
-            editor.ensureLineVisible(line)
-            editor.setFocus()
-            # Дополнительный отложенный вызов гарантирует, что фокус не отберётся
-            QTimer.singleShot(0, editor.setFocus)
+            self._jump_to_position(editor, line, col)
             return
 
+        # Если файл не открыт, открываем его
         if os.path.exists(file_path):
             self.open_file(file_path)
             editor = self._find_editor_by_filename(file_path)
             if editor:
-                self.tab_widget.setCurrentWidget(editor)
-                editor.setCursorPosition(line, col)
-                editor.ensureLineVisible(line)
-                editor.setFocus()
-                QTimer.singleShot(0, editor.setFocus)
+                # Даём Scintilla время на инициализацию лексера и отрисовку
+                QTimer.singleShot(50, lambda: self._jump_to_position(editor, line, col))
+
+    # В TwistLangEditor:
+    def _jump_to_position(self, editor, line: int, col: int):
+        """Безопасный переход к строке/колонке без мерцания."""
+        total_lines = editor.lines()
+        if line < 0 or line >= total_lines:
+            line = max(0, total_lines - 1)
+
+        line_text = editor.text(line)
+        # Колонка может быть равна длине строки (позиция после последнего символа)
+        max_col = len(line_text)
+        col = min(max(0, col), max_col)
+
+        # Активируем виджет и устанавливаем курсор синхронно
+        self.tab_widget.setCurrentWidget(editor)
+        editor.setCursorPosition(line, col)
+        editor.ensureLineVisible(line)
+        editor.ensureCursorVisible()
+        
+        # Сбрасываем фокус с дерева ошибок и передаём редактору
+        self.error_overview_panel.tree.clearSelection()
+        editor.setFocus()
 
     def _update_error_overview(self):
         """Refresh error panel with errors of the current editor."""

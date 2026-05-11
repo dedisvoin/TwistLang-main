@@ -7,6 +7,7 @@
 #include "../twist-array.cpp"
 #include "../twist-namespace.cpp"
 
+
 #include "NodeReturn.cpp"
 #include <any>
 #include <cstdint>
@@ -326,8 +327,7 @@ struct NodeCall : public Node { NO_EXEC
 
         if (new_memory->check_literal("__init__")) {
             auto &builder = new_memory->get_variable("__init__")->value;
-            auto value = call_function(builder, new_memory);
-            return value;
+            return call_function(builder, _memory);;
         }
         
         
@@ -383,6 +383,47 @@ struct NodeCall : public Node { NO_EXEC
         return NewString(new_string);
     }
 
+    Value call_int(Value &value_, Memory* _memory) {
+        if (args.size() != 1)
+            throw ERROR_THROW::InvalidIntArgumentCount(start_callable, end_callable, args.size());
+
+
+        auto value = args[0]->eval_from(_memory);
+        if (value.type == STANDART_TYPE::INT) 
+            return value;
+        else if (value.type == STANDART_TYPE::DOUBLE) 
+            return NewInt(any_cast<NUMBER_ACCURACY>(value.data));
+        else if (value.type == STANDART_TYPE::STRING) 
+            return NewInt(stoll(any_cast<string&>(value.data)));
+        else if (value.type == STANDART_TYPE::CHAR) 
+            return NewInt(stoll(to_string(any_cast<char>(value.data))));
+        
+        throw ERROR_THROW::InvalidIntArgumentType(start_callable, end_callable, value.type);
+    }
+
+    Value call_ptr(Value &value_, Memory* _memory) {
+        
+       
+        auto value = args[0]->eval_from(_memory);
+
+        if (value.type != STANDART_TYPE::INT) 
+            throw ERROR_THROW::InvalidPtrFirstArgumentType(start_callable, end_callable, value.type);
+        
+        if (args.size() == 1)
+            return NewPointerValue(any_cast<int64_t>(value.data), STANDART_TYPE::NULL_T);
+        else if (args.size() == 2) {
+            auto t = args[1]->eval_from(_memory);
+            if (t.type == STANDART_TYPE::TYPE)    
+                return NewPointerValue(any_cast<int64_t>(value.data), any_cast<Type&>(t.data));
+            if (!t.type.is_sub_type(STANDART_TYPE::TYPES)) {
+                return NewPointerValue(any_cast<int64_t>(value.data), any_cast<Struct*>(t.data)->type);
+            }
+            throw ERROR_THROW::InvalidPtrSecondArgumentType(start_callable, end_callable, value.type);
+        }
+        
+        throw ERROR_THROW::InvalidPtrArgumentCount(start_callable, end_callable, args.size());
+    }
+
     Value eval_from(Memory* _memory) override {
 
         auto value = callable->eval_from(_memory);
@@ -403,6 +444,12 @@ struct NodeCall : public Node { NO_EXEC
         }
         if (value.type == STANDART_TYPE::TYPE && any_cast<Type>(value.data).pool == "String") {
             return call_string(value, _memory);
+        }
+        if (value.type == STANDART_TYPE::TYPE && any_cast<Type>(value.data).pool == "Int") {
+            return call_int(value, _memory);
+        }
+        if (value.type == STANDART_TYPE::TYPE && any_cast<Type>(value.data).pool == "ptr") {
+            return call_ptr(value, _memory);
         }
         else if (value.type.is_func()) {
             RecursionGuard guard(start_callable, end_callable);  // <<< контроль глубины

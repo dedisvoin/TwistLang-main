@@ -1,7 +1,68 @@
-let a = 10;
-let b = 20;
-let c = 30;
+struct Number {
+    global let T = typeof(Number);
 
-let p = &a;
+    static let _n: Int | Double = 0;
+    func __init__(n: Int | Double = 0) -> T {
+        this._n = n;
+        ret this;
+    }
+}
 
-echo *(p;
+#define NUMBER = Number.T | Int | Double;
+
+func sum(n1: NUMBER, n2: NUMBER) -> NUMBER {
+    if (typeof(n1) == Number.T) n1 = n1._n;
+    if (typeof(n2) == Number.T) n2 = n2._n;
+    ret n1 + n2;
+}
+
+
+#define NUMBERS = "0123456789";
+
+global func check_number(str: String) -> Bool {
+    for (let s_i = 0; s_i < sizeof(str); s_i = s_i + 1;) {
+        let found = false;
+        for (let n_i = 0; n_i < sizeof(NUMBERS); n_i = n_i + 1;) {
+            if (str[s_i] == NUMBERS[n_i]) {
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            ret false;
+        }
+    }
+    ret true;
+}
+
+
+
+func enter_number(msg: String) -> Number.T | Int {
+    let n = null;
+    while (!(typeof(n) >> (Int | Double))) {
+        let npt = input(msg);
+
+        if (typeof(npt) == Null) exit(0);
+        
+        if (typeof(npt) == String) {
+            if (!check_number(npt)) continue;
+
+        }
+        n = Int(npt);   
+        
+    }
+    
+    ret Number(n);
+}
+
+
+while (true) {
+
+    let n1 = enter_number("Enter n1: ");
+    let n2 = enter_number("Enter n2: ");
+
+    outln sum(n1, n2);
+}
+
+

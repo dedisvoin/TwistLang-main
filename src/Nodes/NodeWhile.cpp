@@ -3,7 +3,7 @@
 #include "NodeContinue.cpp"
 #include "../twist-err.cpp"
 
-#define MAX_LSP_ITER_COUNT 300
+#define MAX_LSP_ITER_COUNT 10
 
 /*
  * NodeWhile – цикл с предусловием (while).
@@ -67,35 +67,36 @@ struct NodeWhile : public Node { NO_EVAL
                 ERROR_THROW::UnusedLoopWarning(start, end).Write();
             }
         }
-        int i = 0;
-        while (true) {
-            if (condition) {
-                auto value = condition->eval_from(_memory);
-                if (value.type == STANDART_TYPE::BOOL) {
-                    if (any_cast<bool>(value.data) == false)
-                        break;
-                } else if (value.type == STANDART_TYPE::INT) {
-                    if (any_cast<int64_t>(value.data) == 0)
-                        break;
-                } else if (value.type == STANDART_TYPE::DOUBLE) {
-                    if (any_cast<NUMBER_ACCURACY>(value.data) == 0)
-                        break;
-                } else {
-                    break;
-                }
-            }
-            try {
-                body->exec_from(_memory);
-            }
-            catch (Break) { break; }
-            catch (Continue) { continue; }
+        // int i = 0;
+        // while (true) {
+        //     if (condition) {
+        //         auto value = condition->eval_from(_memory);
+        //         if (value.type == STANDART_TYPE::BOOL) {
+        //             if (any_cast<bool>(value.data) == false)
+        //                 break;
+        //         } else if (value.type == STANDART_TYPE::INT) {
+        //             if (any_cast<int64_t>(value.data) == 0)
+        //                 break;
+        //         } else if (value.type == STANDART_TYPE::DOUBLE) {
+        //             if (any_cast<NUMBER_ACCURACY>(value.data) == 0)
+        //                 break;
+        //         } else {
+        //             break;
+        //         }
+        //     }
+        //     try {
+        //         body->exec_from(_memory);
+        //     }
+        //     catch (Break) { break; }
+        //     catch (Continue) { continue; }
 
-            i++;
-            if (i > MAX_LSP_ITER_COUNT) {
-                ERROR_THROW::InfinityLoopWarning(start, end).Write();
-                break;
-            }
-        }
+        //     i++;
+        //     if (i > MAX_LSP_ITER_COUNT) {
+        //         ERROR_THROW::InfinityLoopWarning(start, end).Write();
+        //         break;
+        //     }
+        // }
+        body->exec_from(_memory);
         
 
         #endif

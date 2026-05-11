@@ -259,7 +259,9 @@ int main(int argc, char** argv) {
                 }
 
                 out_file.close();
+                _COMPILATION_CPP_FILE_GENERATED(stem);
 
+                _COMPILATION_STARTED();
                 string command = "clang -O3 -std=c++23 " + stem + " -o main.exe";
                 TimeIt("Compilation finished in ", [command](){
                     system(command.c_str());
