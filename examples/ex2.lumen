@@ -1,4 +1,7 @@
 let a = 10;
-let a = &a;
-*a = 100;
-echo a;
+let b = 20;
+let c = 30;
+
+let p = &a;
+
+echo *(p;

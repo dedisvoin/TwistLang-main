@@ -13,7 +13,7 @@
     "languages": [{
       "id": "lumen",
       "aliases": ["Lumen", "lumen"],
-      "extensions": [".twist"],
+      "extensions": [".lumen"],
       "configuration": "./language-configuration.json"
     }],
     "grammars": [{

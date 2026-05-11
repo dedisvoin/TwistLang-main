@@ -914,6 +914,29 @@
             background: var(--color-selection-bg);
             color: var(--color-selection-fg);
         }
+
+        @media (max-width: 768px) {
+            * {
+                -webkit-font-smoothing: subpixel-antialiased !important;
+            }
+            body {
+                -webkit-overflow-scrolling: touch;
+                transform: translateZ(0);
+                scroll-behavior: auto;
+            }
+            [style*="backdrop-filter"],
+            .arabesque-bg,
+            .blur-bg,
+            #networkCanvas {
+                display: none !important;
+            }
+            .section-card,
+            .code-card,
+            .flip-card {
+                transform: translateZ(0);
+                backface-visibility: hidden;
+            }
+        }
     </style>
 </head>
 <body>
@@ -939,7 +962,6 @@
             <a href="#features">Возможности</a>
             <a href="#examples">Примеры</a>
             <a href="#ide">Lumen IDE</a>
-            <a href="#docs">Документация</a>
             <a href="#download" class="btn btn-outline" style="padding:0.5rem 1.2rem">Скачать</a>
         </div>
     </div>
@@ -1306,7 +1328,7 @@ n = <span class="number">0</span>;
                         <span>Технические характеристики</span>
                     </div>
                     <div class="specs-grid">
-                        <div class="specs-card"><div class="specs-icon"><i class="fas fa-tag"></i></div><div class="specs-content"><div class="specs-label">Версия</div><div class="specs-value">1.05b <span style="background: var(--color-stable-badge-bg); padding:0.1rem 0.4rem; border-radius:20px; font-size:0.7rem;">Stable</span></div><div class="specs-desc">Первая стабильная сборка</div></div></div>
+                        <div class="specs-card"><div class="specs-icon"><i class="fas fa-tag"></i></div><div class="specs-content"><div class="specs-label">Версия</div><div class="specs-value">0.18r <span style="background: var(--color-stable-badge-bg); padding:0.1rem 0.4rem; border-radius:20px; font-size:0.7rem;">Stable</span></div><div class="specs-desc">Первая стабильная сборка</div></div></div>
                         <div class="specs-card"><div class="specs-icon"><i class="fab fa-python"></i></div><div class="specs-content"><div class="specs-label">Технологии</div><div class="specs-value">Python 3.10+ · PyQt6 · QScintilla</div><div class="specs-desc">Современный стек</div></div></div>
                         <div class="specs-card"><div class="specs-icon"><i class="fab fa-windows"></i></div><div class="specs-content"><div class="specs-label">Платформа</div><div class="specs-value">Windows 10 / 11 (64-bit)</div><div class="specs-desc">Оптимизирован</div></div></div>
                         <div class="specs-card"><div class="specs-icon"><i class="fas fa-memory"></i></div><div class="specs-content"><div class="specs-label">Системные требования</div><div class="specs-value">2 ГБ ОЗУ · 100 МБ диска</div><div class="specs-desc">Легковесная среда</div></div></div>
@@ -1332,7 +1354,7 @@ n = <span class="number">0</span>;
     
     <footer>
         <div class="container">
-            <p><i class="far fa-copyright"></i> 2025 Lumen Language & Lumen IDE. Все права защищены.</p>
+            <p><i class="far fa-copyright"></i> 2026 Lumen Language & Lumen IDE. Все права защищены.</p>
         </div>
     </footer>
 </main>

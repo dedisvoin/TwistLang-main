@@ -2,7 +2,7 @@ main.twist
 tokens.txt
 .vs
 
-.vscode
+/.vscode/
 
 .examples
 
@@ -12,3 +12,4 @@ LumenIDE.exe
 compile.py
 cursovaya.txt
 
+/Kursovaya/

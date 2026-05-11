@@ -1,6 +1,6 @@
 {
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-	"name": "Twist",
+	"name": "Lumen",
 	"patterns": [
 		{
 			"include": "#preprocessor"
@@ -76,17 +76,17 @@
 		},
 		
 		"struct-declaration": {
-			"name": "meta.struct.declaration.twist",
+			"name": "meta.struct.declaration.lumen",
 			"begin": "\\b(struct)\\b\\s+",
 			"beginCaptures": {
 				"1": {
-					"name": "keyword.control.twist"
+					"name": "keyword.control.lumen"
 				}
 			},
 			"end": "(?=\\}|\\r|\\n|$)",
 			"patterns": [
 				{
-					"name": "entity.name.struct.twist",
+					"name": "entity.name.struct.lumen",
 					"match": "[a-zA-Z_][a-zA-Z0-9_]*"
 				},
 				{
@@ -94,15 +94,15 @@
 					"end": "\\}",
 					"beginCaptures": {
 						"0": {
-							"name": "punctuation.curly.open.twist"
+							"name": "punctuation.curly.open.lumen"
 						}
 					},
 					"endCaptures": {
 						"0": {
-							"name": "punctuation.curly.close.twist"
+							"name": "punctuation.curly.close.lumen"
 						}
 					},
-					"contentName": "meta.struct.body.twist",
+					"contentName": "meta.struct.body.lumen",
 					"patterns": [
 						{
 							"include": "#preprocessor"
@@ -158,21 +158,21 @@
 		},
 		
 		"define-directive": {
-			"name": "meta.preprocessor.define.twist",
+			"name": "meta.preprocessor.define.lumen",
 			"begin": "^\\s*(#define)\\s+",
 			"beginCaptures": {
 				"1": {
-					"name": "keyword.control.directive.twist"
+					"name": "keyword.control.directive.lumen"
 				}
 			},
 			"end": "$",
 			"patterns": [
 				{
-					"name": "entity.name.constant.twist",
+					"name": "entity.name.constant.lumen",
 					"match": "[a-zA-Z_][a-zA-Z0-9_]*"
 				},
 				{
-					"name": "keyword.operator.assignment.twist",
+					"name": "keyword.operator.assignment.lumen",
 					"match": "="
 				},
 				{
@@ -194,26 +194,26 @@
 		},
 		
 		"macro-directive": {
-			"name": "meta.preprocessor.macro.twist",
+			"name": "meta.preprocessor.macro.lumen",
 			"begin": "^\\s*(#macro)\\s+",
 			"beginCaptures": {
 				"1": {
-					"name": "keyword.control.directive.twist"
+					"name": "keyword.control.directive.lumen"
 				}
 			},
 			"end": "$",
 			"patterns": [
 				{
-					"name": "entity.name.function.macro.twist",
+					"name": "entity.name.function.macro.lumen",
 					"match": "[a-zA-Z_][a-zA-Z0-9_]*"
 				},
 				{
 					"begin": "\\(",
 					"end": "\\)",
-					"contentName": "meta.function.parameters.twist",
+					"contentName": "meta.function.parameters.lumen",
 					"patterns": [
 						{
-							"name": "variable.parameter.twist",
+							"name": "variable.parameter.lumen",
 							"match": "[a-zA-Z_][a-zA-Z0-9_]*"
 						},
 						{
@@ -222,7 +222,7 @@
 					]
 				},
 				{
-					"name": "keyword.operator.assignment.twist",
+					"name": "keyword.operator.assignment.lumen",
 					"match": "="
 				},
 				{
@@ -244,11 +244,11 @@
 		},
 		
 		"include-directive": {
-			"name": "meta.preprocessor.include.twist",
+			"name": "meta.preprocessor.include.lumen",
 			"match": "^\\s*(#include)\\s+(\"[^\"]+\"|'[^']+'|[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)*)",
 			"captures": {
 				"1": {
-					"name": "keyword.control.directive.twist"
+					"name": "keyword.control.directive.lumen"
 				},
 				"2": {
 					"patterns": [
@@ -256,7 +256,7 @@
 							"include": "#strings"
 						},
 						{
-							"name": "entity.name.namespace.twist",
+							"name": "entity.name.namespace.lumen",
 							"match": "[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)*"
 						}
 					]
@@ -265,23 +265,23 @@
 		},
 		
 		"function-declaration": {
-			"name": "meta.function.declaration.twist",
+			"name": "meta.function.declaration.lumen",
 			"begin": "\\b(func)\\b\\s+",
 			"beginCaptures": {
 				"1": {
-					"name": "keyword.control.twist"
+					"name": "keyword.control.lumen"
 				}
 			},
 			"end": "(?=\\{|;|\\r|\\n)",
 			"patterns": [
 				{
-					"name": "entity.name.function.twist",
+					"name": "entity.name.function.lumen",
 					"match": "[a-zA-Z_][a-zA-Z0-9_]*"
 				},
 				{
 					"begin": "\\(",
 					"end": "\\)",
-					"contentName": "meta.function.parameters.twist",
+					"contentName": "meta.function.parameters.lumen",
 					"patterns": [
 						{
 							"match": ","
@@ -290,16 +290,16 @@
 							"match": "="
 						},
 						{
-							"name": "punctuation.separator.type.twist",
+							"name": "punctuation.separator.type.lumen",
 							"match": ":"
 						},
 						{
-							"name": "meta.type.annotation.twist",
+							"name": "meta.type.annotation.lumen",
 							"begin": "(?<=:)\\s*",
 							"end": "(?=,|=\\s*|\\))",
 							"patterns": [
 								{
-									"include": "source.twist"
+									"include": "source.lumen"
 								}
 							]
 						},
@@ -322,17 +322,17 @@
 							"include": "#operators"
 						},
 						{
-							"include": "source.twist"
+							"include": "source.lumen"
 						}
 					]
 				},
 				{
-					"name": "meta.return.type.twist",
+					"name": "meta.return.type.lumen",
 					"begin": "\\s*(->)\\s*",
 					"end": "(?=\\{|;|\\r|\\n)",
 					"patterns": [
 						{
-							"include": "source.twist"
+							"include": "source.lumen"
 						}
 					]
 				}
@@ -341,66 +341,66 @@
 		
 		"function-call": {
 			"patterns": [{
-				"name": "meta.function.call.twist",
+				"name": "meta.function.call.lumen",
 				"match": "([a-zA-Z_][a-zA-Z0-9_]*)\\s*(\\()",
 				"captures": {
 					"1": {
-						"name": "entity.name.function.twist"
+						"name": "entity.name.function.lumen"
 					},
 					"2": {
-						"name": "punctuation.parenthesis.open.twist"
+						"name": "punctuation.parenthesis.open.lumen"
 					}
 				}
 			}]
 		},
 		
 		"function-arguments": {
-			"name": "meta.function.arguments.twist",
+			"name": "meta.function.arguments.lumen",
 			"begin": "\\(",
 			"end": "\\)",
 			"beginCaptures": {
 				"0": {
-					"name": "punctuation.parenthesis.open.twist"
+					"name": "punctuation.parenthesis.open.lumen"
 				}
 			},
 			"endCaptures": {
 				"0": {
-					"name": "punctuation.parenthesis.close.twist"
+					"name": "punctuation.parenthesis.close.lumen"
 				}
 			},
 			"patterns": [
 				{
-					"include": "source.twist"
+					"include": "source.lumen"
 				}
 			]
 		},
 		
 		"keywords": {
 			"patterns": [{
-				"name": "keyword.control.twist",
+				"name": "keyword.control.lumen",
 				"match": "\\b(for|while|let|in|and|or|if|else|ret|auto|assert|lambda|break|continue|out|outln|struct|exit)\\b"
 			}]
 		},
 		
 		"input-keyword": {
 			"patterns": [{
-				"name": "support.function.input.twist",
+				"name": "support.function.input.lumen",
 				"match": "\\b(input|typeof|sizeof|exit)\\b"
 			}]
 		},
 		
 		"namespace-declaration": {
-			"name": "meta.namespace.declaration.twist",
+			"name": "meta.namespace.declaration.lumen",
 			"begin": "\\b(namespace)\\b\\s+",
 			"beginCaptures": {
 				"1": {
-					"name": "keyword.control.twist"
+					"name": "keyword.control.lumen"
 				}
 			},
 			"end": "(?=\\s*\\{|\\r|\\n|$)",
 			"patterns": [
 				{
-					"name": "entity.name.namespace.twist",
+					"name": "entity.name.namespace.lumen",
 					"match": "[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)*"
 				}
 			]
@@ -412,10 +412,10 @@
 					"match": "([a-zA-Z_][a-zA-Z0-9_]*)(::)",
 					"captures": {
 						"1": {
-							"name": "entity.name.namespace.twist"
+							"name": "entity.name.namespace.lumen"
 						},
 						"2": {
-							"name": "punctuation.separator.namespace.twist"
+							"name": "punctuation.separator.namespace.lumen"
 						}
 					}
 				}
@@ -423,22 +423,22 @@
 		},
 		
 		"modifiers": {
-			"name": "storage.modifier.twist",
+			"name": "storage.modifier.lumen",
 			"match": "\\b(global|static|const|final|private)\\b"
 		},
 		
 		"types": {
 			"patterns": [
 				{
-					"name": "storage.type.builtin.twist",
-					"match": "\\b(Int|Bool|String|Char|Null|Double|Void|Namespace|Lambda|Func|Type)\\b"
+					"name": "storage.type.builtin.lumen",
+					"match": "\\b(Int|Bool|String|Char|Null|Double|Void|Namespace|Lambda|Func|Type|ptr)\\b"
 				}
 			]
 		},
 		
 		"literals": {
 			"patterns": [{
-				"name": "constant.language.twist",
+				"name": "constant.language.lumen",
 				"match": "\\b(true|false|null|new|del)\\b"
 			}]
 		},
@@ -446,45 +446,45 @@
 		"numbers": {
 			"patterns": [
 				{
-					"name": "constant.numeric.integer.twist",
+					"name": "constant.numeric.integer.lumen",
 					"match": "\\b\\d+\\b"
 				},
 				{
-					"name": "constant.numeric.float.twist",
+					"name": "constant.numeric.float.lumen",
 					"match": "\\b\\d+\\.\\d+\\b"
 				},
 				{
-					"name": "constant.numeric.float.twist",
+					"name": "constant.numeric.float.lumen",
 					"match": "\\b\\d*\\.\\d+\\b"
 				}
 			]
 		},
 		
 		"operators": {
-			"name": "keyword.operator.twist",
+			"name": "keyword.operator.lumen",
 			"match": "[+\\-*/%=&|^!<>~?]+"
 		},
 		
 		"strings": {
 			"patterns": [
 				{
-					"name": "string.quoted.double.twist",
+					"name": "string.quoted.double.lumen",
 					"begin": "\"",
 					"end": "\"",
 					"patterns": [
 						{
-							"name": "constant.character.escape.twist",
+							"name": "constant.character.escape.lumen",
 							"match": "\\\\(x\\h{2}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.)"
 						}
 					]
 				},
 				{
-					"name": "string.quoted.single.twist",
+					"name": "string.quoted.single.lumen",
 					"begin": "'",
 					"end": "'",
 					"patterns": [
 						{
-							"name": "constant.character.escape.twist",
+							"name": "constant.character.escape.lumen",
 							"match": "\\\\(x\\h{2}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.)"
 						}
 					]
@@ -495,12 +495,12 @@
 		"comments": {
 			"patterns": [
 				{
-					"name": "comment.line.double-slash.twist",
+					"name": "comment.line.double-slash.lumen",
 					"begin": "//",
 					"end": "$"
 				},
 				{
-					"name": "comment.block.twist",
+					"name": "comment.block.lumen",
 					"begin": "/\\*",
 					"end": "\\*/"
 				}
@@ -508,27 +508,27 @@
 		},
 		
 		"object-access": {
-			"name": "meta.object.access.twist",
+			"name": "meta.object.access.lumen",
 			"match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(\\.)",
 			"captures": {
 				"1": {
 					"name": "constant.regexp"
 				},
 				"2": {
-					"name": "punctuation.separator.dot.twist"
+					"name": "punctuation.separator.dot.lumen"
 				}
 			}
 		},
 		
 		"dot-punctuation": {
 			"match": "\\.",
-			"name": "punctuation.separator.dot.twist"
+			"name": "punctuation.separator.dot.lumen"
 		},
 		
 		"identifiers": {
 			"match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b",
-			"name": "variable.other.twist"
+			"name": "variable.other.lumen"
 		}
 	},
-	"scopeName": "source.twist"
+	"scopeName": "source.lumen"
 }
