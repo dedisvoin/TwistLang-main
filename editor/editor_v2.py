@@ -3128,6 +3128,35 @@ class CustomScintilla(QsciScintilla):
         decorator_font.setItalic(True)
         lexer.setFont(decorator_font, QsciLexerPython.Decorator)
 
+    def toggle_comment(self):
+        """Toggle comment on selected lines or current line"""
+        if self.hasSelectedText():
+            line_from, _, line_to, _ = self.getSelection()
+            start_line = min(line_from, line_to)
+            end_line = max(line_from, line_to)
+        else:
+            start_line = end_line = self.getCursorPosition()[0]
+        
+        self.beginUndoAction()
+        for line in range(start_line, end_line + 1):
+            text = self.text(line)
+            stripped = text
+            
+            
+            if stripped.startswith('//'):
+                # Убираем комментарий
+                new_text = stripped[3:]
+            else:
+                # Добавляем комментарий
+                new_text = '// ' + stripped
+            
+            # Используем правильную перегрузку setSelection: line, col_start, line, col_end
+            self.setSelection(line, 0, line, len(text))
+            self.replaceSelectedText(new_text)
+        
+        self.endUndoAction()
+        self.setCursorPosition(start_line, 0)
+
     def _setup_cpp_lexer(self, lexer: QsciLexerCPP):
         """Configure C++ lexer with current theme colors"""
         if not self.main_window:
@@ -3478,6 +3507,13 @@ class CustomScintilla(QsciScintilla):
         return None
 
     def keyPressEvent(self, event):
+        # Обработка Alt+/ для комментирования строк
+        if event.key() == Qt.Key.Key_Slash and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            self.toggle_comment()
+            event.accept()
+            return
+    
+    
         pairs = {
             Qt.Key.Key_ParenLeft: ('(', ')'),
             Qt.Key.Key_BracketLeft: ('[', ']'),
@@ -3485,6 +3521,7 @@ class CustomScintilla(QsciScintilla):
             Qt.Key.Key_QuoteDbl: ('"', '"'),
             Qt.Key.Key_Apostrophe: ("'", "'")
         }
+        
 
         if event.key() in pairs:
             open_char, close_char = pairs[event.key()]
@@ -4590,6 +4627,11 @@ class TwistLangEditor(FramelessMainWindow):
                             return
                 self._hide_theme_preview()
                 self.preview_hide_timer.stop()
+    
+    def _setup_shortcuts(self):
+        QShortcut(QKeySequence("F8"), self).activated.connect(self.goto_next_error)
+        QShortcut(QKeySequence("Shift+F8"), self).activated.connect(self.goto_prev_error)
+       
 
     def _show_theme_preview(self, theme_name: str, action: QAction):
         self.preview_hide_timer.stop()

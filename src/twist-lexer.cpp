@@ -2,12 +2,12 @@
 #include "twist-utils.cpp"
 #include <string>
 #include <vector>
-
+#pragma once
 
 #define CH const string
 
 using namespace std;
-#pragma once
+
 
 // Full twist alphabet
 namespace ALPHABET {

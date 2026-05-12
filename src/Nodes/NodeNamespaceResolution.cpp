@@ -31,6 +31,8 @@ struct NodeNamespaceResolution : public Node { NO_EXEC
         // Получаем значение левой части
         Value ns_value = namespace_expr->eval_from(_memory);
 
+        
+
         // Проверяем, что это действительно Namespace
         if (ns_value.type != STANDART_TYPE::NAMESPACE)
             throw ERROR_THROW::NamespaceInvalidAccessorType(start, end, ns_value.type);

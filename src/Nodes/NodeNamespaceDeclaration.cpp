@@ -35,19 +35,24 @@ struct NodeNamespaceDeclaration : public Node { NO_EVAL
     // Линкуем глобальные объекты из родительской памяти
     _memory->link_objects(new_namespace_memory);
     
-    if (statement) {
+    if (statement) 
         statement->exec_from(new_namespace_memory);
-    }
+    
     
     // Проверяем, не было ли уже объявлено имя namespace
     if (_memory->check_literal(name)) {
-        if (_memory->is_final(name)) {
-            throw ERROR_THROW::VariableAlreadyDefined(decl_token);
+            if (_memory->is_final(name)) {
+                throw ERROR_THROW::VariableAlreadyDefined(decl_token, name);
+            }
+            if (_memory->is_global(name) && !_memory->is_shadow(name)) {
+                throw ERROR_THROW::VariableShadowsGlobal(decl_token, name);
+            }
+            auto addr = _memory->get_variable(name)->address;
+            STATIC_MEMORY.unregister_object(addr);
+            
         }
-        _memory->delete_variable(name);
-    }
     
     // Добавляем namespace в родительскую память
-    _memory->add_object(name, new_namespace, STANDART_TYPE::NAMESPACE, is_const, is_static, is_final, is_global, is_private);
+    _memory->add_object(name, new_namespace, STANDART_TYPE::NAMESPACE, is_const, is_static, is_final, is_global, is_private, is_shadow);
 }
 };

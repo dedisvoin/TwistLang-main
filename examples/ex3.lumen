@@ -1,12 +1,6 @@
-global namespace A {
+#include "../std/array.lumen";
+
+
+namespace std {
     let a = 10;
 }
-
-
-
-namespace A {
-    let a = 100;
-}
-
-
-echo A::a;

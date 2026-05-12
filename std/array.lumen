@@ -64,9 +64,9 @@ struct Array {
     }
 
     // Преобразование массива в строку (для использования в других функциях)
-    func view_to_echo() -> String {
+    func to_string() -> String {
         // Начинаем с пробела и открывающей скобки
-        let o = String(" ");
+        let o = String("");
         o = o + String("[");
         
         // Проходим по всем элементам
