@@ -2,6 +2,7 @@
 Lumen IDE - Integrated Development Environment for TwistLang
 """
 
+import ctypes
 import sys
 import os
 import subprocess
@@ -2962,34 +2963,6 @@ class TwistLangLexer(QsciLexerCustom):
             ch = '\ufffd'
 
         return (ch, length)
-class WindowBorderOverlay(QWidget):
-    """Прозрачный оверлей для рисования обводки окна"""
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-
-        main_window = self.parent()
-        if hasattr(main_window, 'current_theme'):
-            colors = THEMES[main_window.current_theme]["colors"]
-            border_color = colors.get('status_border', QColor('#FF0000')).lighter(170)
-        else:
-            border_color = QColor('#FF0000')
-
-        is_maximized = main_window.isMaximized()
-        radius = 8 if not is_maximized else 0
-
-        if not is_maximized:
-            pen = QPen(border_color, 1)
-            painter.setPen(pen)
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-
-            rect = self.rect().adjusted(0, 0, 0, 0)
-            painter.drawRoundedRect(rect, radius, radius)
-
 
 # =============================================================================
 # EDITOR
@@ -4851,9 +4824,7 @@ class TwistLangEditor(FramelessMainWindow):
 
         self._update_content_display()
 
-        self.border_overlay = WindowBorderOverlay(self)
-        self.border_overlay.setGeometry(self.rect())
-
+    
         QApplication.instance().installEventFilter(self)
 
         self._apply_global_font_to_all_editors()
@@ -5043,9 +5014,7 @@ class TwistLangEditor(FramelessMainWindow):
             if self._handle_resize_end(event):
                 return True
 
-        # Обработка изменения размера окна
-        if obj == self and event.type() == QEvent.Type.Resize:
-            self.border_overlay.setGeometry(self.rect())
+        
 
         return super().eventFilter(obj, event)
 
@@ -5705,11 +5674,17 @@ class TwistLangEditor(FramelessMainWindow):
             super().mouseReleaseEvent(event)
 
     def _toggle_maximize(self):
-        if self.title_bar.is_maximized:
-            self.showNormal()
-        else:
-            self.showMaximized()
+        hwnd = int(self.winId())
+        # 0x0112 = WM_SYSCOMMAND
+        # 0xF030 = SC_MAXIMIZE, 0xF120 = SC_RESTORE
+        command = 0xF120 if self.isMaximized() else 0xF030
+        ctypes.windll.user32.PostMessageW(hwnd, 0x0112, command, 0)
+        
+        # PostMessageW обрабатывается асинхронно. 
+        # Небольшая задержка гарантирует, что Qt и Windows уже обновили геометрию,
+        # перед тем как мы обновим иконку и border-radius в заголовке.
         self.title_bar.is_maximized = not self.title_bar.is_maximized
+        self.title_bar.update_style()
 
     def current_editor(self) -> Optional[CustomScintilla]:
         return self.tab_widget.currentWidget()
