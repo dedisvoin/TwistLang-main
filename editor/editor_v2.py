@@ -2550,7 +2550,7 @@ class TwistLangLexer(QsciLexerCustom):
             'ret', 'assert', 'lambda', 'do',
             'struct', 'namespace', 'func', 'continue', 'break'
         }
-        self.modifiers = {'const', 'static', 'global', 'final', 'private'}
+        self.modifiers = {'const', 'static', 'global', 'final', 'private', 'shadow'}
         self.types = {'Int', 'Bool', 'String', 'Char', 'Null', 'Double',
                       'Namespace', 'Func', 'Lambda', 'auto', "Type", "ptr"}
         self.literals = {'true', 'false', 'null', 'self', 'this'}

@@ -1,6 +1,5 @@
 #include "../twist-nodetemp.cpp"
 #include "../twist-args.cpp"
-#include "../twist-structs.cpp"
 #include "../twist-functions.cpp"
 #include "../twist-err.cpp"
 
@@ -17,6 +16,7 @@ struct NodeFunctionDeclaration : public Node { NO_EVAL
     bool is_const = false;
     bool is_global = false;
     bool is_private = false;
+    bool is_shadow = false;
 
     Token start_args_token;
     Token end_args_token;
@@ -86,7 +86,7 @@ struct NodeFunctionDeclaration : public Node { NO_EVAL
         
         auto func = NewFunction(name, new_function_memory, body, args, return_type, function_type, start_args_token, end_args_token, start_return_token, end_return_token);
         
-        auto object = CreateMemoryObject(func, function_type,&new_function_memory, is_const, is_static, is_final, is_global, is_private);
+        auto object = CreateMemoryObject(func, function_type,&new_function_memory, is_const, is_static, is_final, is_global, is_private, is_shadow);
         if (_memory->check_literal(name))
             _memory->delete_variable(name);
         _memory->add_object(name, object);

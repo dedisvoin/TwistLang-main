@@ -52,6 +52,7 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
     bool is_const = false;
     bool is_global = false;
     bool is_private = false;
+    bool is_shadow = false;
 
     NodeVariableDeclaration(const string& name, Node* expr, Token decl_token, Node* type_expr,
                             Token type_start_token, Token type_end_token, bool nullable, Token start_expr_token, Token end_expr_token)
@@ -66,14 +67,13 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
 
         Value value = value_expr->eval_from(_memory);
 
-
         if (_memory->check_literal(var_name)) {
             if (_memory->is_final(var_name)) {
                 throw ERROR_THROW::VariableAlreadyDefined(decl_token);
             }
-            //if (_memory->is_global(var_name)) {
-            //    throw ERROR_THROW::VariableShadowsGlobal(decl_token, var_name);
-            //}
+            if (_memory->is_global(var_name) && !_memory->is_shadow(var_name)) {
+                throw ERROR_THROW::VariableShadowsGlobal(decl_token, var_name);
+            }
             auto addr = _memory->get_variable(var_name)->address;
             STATIC_MEMORY.unregister_object(addr);
             _memory->delete_variable(var_name);
@@ -105,7 +105,7 @@ struct NodeVariableDeclaration : public Node { NO_EVAL
             }
         }
 
-        MemoryObject* object = CreateMemoryObject(value, static_type, _memory, is_const, is_static, is_final, is_global, is_private, var_name, _memory);
+        MemoryObject* object = CreateMemoryObject(value, static_type, _memory, is_const, is_static, is_final, is_global, is_private, is_shadow, var_name, _memory);
         STATIC_MEMORY.register_object(object);
         _memory->add_object(var_name, object);
     }

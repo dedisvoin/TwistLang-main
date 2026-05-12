@@ -1,14 +1,12 @@
-global let a = 10;
-global let b = 20;
-
-global namespace Global {}
-
-
-func add() -> Int {
-    Global::a = Global::a + Global::b;
+global namespace A {
+    let a = 10;
 }
 
-add();
-add();
-add();
-echo a;
+
+
+namespace A {
+    let a = 100;
+}
+
+
+echo A::a;

@@ -92,6 +92,7 @@ struct ASTGenerator {
     Node* ParseConstVariableDecl();
     Node* ParseGlobalVariableDecl();
     Node* ParsePrivateVariableDecl();
+    Node* ParseShadowVariableDecl();
     Node* ParseBlockDecl(string modifier);
 
     // Input and outputs
@@ -475,6 +476,10 @@ struct ASTGenerator {
             return ParsePrivateVariableDecl();
         }
 
+        if (current.type == TokenType::KEYWORD && current.value == "shadow") {
+            return ParseShadowVariableDecl();
+        }
+
         if (current.type == TokenType::KEYWORD && current.value == "exit") {
             return ParseExit();
         }
@@ -595,68 +600,68 @@ struct ASTGenerator {
 
 void GenerateStandartTypes(Memory* g_memory, string g_file_name) {
     auto OBJ_TYPE_INT = CreateMemoryObject(NewType("Int"), STANDART_TYPE::TYPE, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("Int",OBJ_TYPE_INT);
     STATIC_MEMORY.register_object(OBJ_TYPE_INT);
 
     auto OBJ_TYPE_DOUBLE = CreateMemoryObject(NewType("Double"), STANDART_TYPE::TYPE, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("Double",OBJ_TYPE_DOUBLE);
     STATIC_MEMORY.register_object(OBJ_TYPE_DOUBLE);
 
     auto OBJ_TYPE_CHAR = CreateMemoryObject(NewType("Char"), STANDART_TYPE::TYPE, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("Char",OBJ_TYPE_CHAR);
     STATIC_MEMORY.register_object(OBJ_TYPE_CHAR);
 
     auto OBJ_TYPE_STRING = CreateMemoryObject(NewType("String"), STANDART_TYPE::TYPE, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("String",OBJ_TYPE_STRING);
     STATIC_MEMORY.register_object(OBJ_TYPE_STRING);
 
     auto OBJ_TYPE_BOOL = CreateMemoryObject(NewType("Bool"), STANDART_TYPE::TYPE, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("Bool",OBJ_TYPE_BOOL);
     STATIC_MEMORY.register_object(OBJ_TYPE_BOOL);
 
     auto OBJ_TYPE_TYPE = CreateMemoryObject(NewType("Type"), STANDART_TYPE::TYPE, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("Type",OBJ_TYPE_TYPE);
     STATIC_MEMORY.register_object(OBJ_TYPE_TYPE);
 
     auto OBJ_TYPE_NULL = CreateMemoryObject(NewType("Null"), STANDART_TYPE::TYPE, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("Null",OBJ_TYPE_NULL);
     STATIC_MEMORY.register_object(OBJ_TYPE_NULL);
 
 
     auto OBJ_TYPE_NAMESPACE = CreateMemoryObject(NewType("Namespace"), STANDART_TYPE::TYPE, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("Namespace",OBJ_TYPE_NAMESPACE);
     STATIC_MEMORY.register_object(OBJ_TYPE_NAMESPACE);
 
     auto OBJ_TYPE_LAMBDA = CreateMemoryObject(NewType("Lambda"), STANDART_TYPE::TYPE, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("Lambda",OBJ_TYPE_LAMBDA);
     STATIC_MEMORY.register_object(OBJ_TYPE_LAMBDA);
 
     auto OBJ_TYPE_AUTO = CreateMemoryObject(NewType("auto"), STANDART_TYPE::TYPE, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("auto",OBJ_TYPE_AUTO);
     STATIC_MEMORY.register_object(OBJ_TYPE_AUTO);
 
     auto OBJ_TYPE_PTR = CreateMemoryObject(NewType("ptr"), STANDART_TYPE::TYPE, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("ptr",OBJ_TYPE_PTR);
     STATIC_MEMORY.register_object(OBJ_TYPE_AUTO);
 
     auto __TWIST_FILE__ = CreateMemoryObject(Value(STANDART_TYPE::STRING, string(g_file_name)), STANDART_TYPE::STRING, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("__FILE__", __TWIST_FILE__);
     STATIC_MEMORY.register_object(__TWIST_FILE__);
 
     auto __TWIST_ADDR__ = CreateMemoryObject(NewPointer(AddressManager::get_current_address() + 2, STANDART_TYPE::NULL_T), STANDART_TYPE::STRING, g_memory,
-        true, true, true, true, false);
+        true, true, true, true, false, false);
     g_memory->add_object("__PTR__", __TWIST_ADDR__);
     STATIC_MEMORY.register_object(__TWIST_ADDR__);
 }
@@ -1359,6 +1364,9 @@ Node* ASTGenerator::ParseBlockDecl(string modifier) {
     if (modifier == "private")
         node->is_private = true;
 
+    if (modifier == "shadow")
+        node->is_shadow = true;
+
     return node;
 }
 
@@ -1784,6 +1792,37 @@ Node* ASTGenerator::ParseVariableDecl() {
                                              type_expr, type_start_token, type_end_token, nullable, start_expr_token, end_expr_token);
 }
 
+Node* ASTGenerator::ParseShadowVariableDecl() {
+    walker.next(); // pass 'shadow' token
+
+    if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
+        !walker.CheckValue("const") && !walker.CheckValue("global") &&
+        !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
+        !walker.CheckValue("private") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("final")) {
+        throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
+    }
+
+
+    auto token = *walker.get();
+    auto decl = parse_statement();
+
+    if (decl->NODE_TYPE == NodeTypes::NODE_VARIABLE_DECLARATION) {
+        ((NodeVariableDeclaration*)decl)->is_shadow = true;
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
+        ((NodeNamespaceDeclaration*)decl)->is_shadow = true;
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_BLOCK_OF_DECLARATIONS) {
+        ((NodeBlockDecl*)decl)->is_shadow = true;
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
+        ((NodeFunctionDeclaration*)decl)->is_shadow = true;
+    } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
+        ((NodeStructDeclaration*)decl)->is_shadow = true;
+    } else {
+        throw ERROR_THROW::ExpectedDeclarationStatement(token);
+    }
+
+    return decl;
+}
 
 Node* ASTGenerator::ParseFinalVariableDecl() {
     walker.next(); // pass 'final' token
@@ -1791,7 +1830,8 @@ Node* ASTGenerator::ParseFinalVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private") && !walker.CheckValue("struct")) {
+        !walker.CheckValue("private") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("shadow")) {
         throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
 
@@ -1808,7 +1848,7 @@ Node* ASTGenerator::ParseFinalVariableDecl() {
     } else if (decl->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
         ((NodeFunctionDeclaration*)decl)->is_final = true;
         } else if (decl->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
-        ((NodeFunctionDeclaration*)decl)->is_final = true;
+        ((NodeStructDeclaration*)decl)->is_final = true;
     } else {
         throw ERROR_THROW::ExpectedDeclarationStatement(token);
     }
@@ -1823,7 +1863,8 @@ Node* ASTGenerator::ParseStaticVariableDecl() {
     if (!walker.CheckValue("final") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private") && !walker.CheckValue("struct")) {
+        !walker.CheckValue("private") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("shadow")) {
         throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
 
@@ -1853,7 +1894,8 @@ Node* ASTGenerator::ParseConstVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("final") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private") && !walker.CheckValue("struct")) {
+        !walker.CheckValue("private") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("shadow")) {
         throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
 
@@ -1884,7 +1926,8 @@ Node* ASTGenerator::ParseGlobalVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("final") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private") && !walker.CheckValue("struct")) {
+        !walker.CheckValue("private") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("shadow")) {
         throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
 
@@ -1914,7 +1957,8 @@ Node* ASTGenerator::ParsePrivateVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("final") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("global") && !walker.CheckValue("struct")) {
+        !walker.CheckValue("global") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("shadow")) {
         throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
 
@@ -2065,8 +2109,8 @@ Node* ASTGenerator::ParseGetIndex(Node* expr, Token start, Token end) {
 
 
 Node* ASTGenerator::ParseStructDecl() {
-    auto token = *walker.get();
     walker.next(); // pass 'struct'
+    auto token = *walker.get();
 
     if (!walker.CheckType(TokenType::LITERAL))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "structure name");

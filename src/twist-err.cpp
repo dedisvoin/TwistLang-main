@@ -274,6 +274,11 @@ namespace ERROR_THROW {
         return err;
     }
 
+    Error VariableAlreadyDefined(const Token& token, const string name) {
+        Error err = Error("Variable '" + name + "' already defined (as final)", token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
     Error VariableUndefined(const Token& token) {
         Error err = Error("Undefined variable '" + token.value + "'", token.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;

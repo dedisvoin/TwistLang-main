@@ -17,6 +17,7 @@ struct NodeNamespaceDeclaration : public Node { NO_EVAL
     bool is_const = false;
     bool is_global = false;
     bool is_private = false;
+    bool is_shadow = false;
 
     NodeNamespaceDeclaration(Node* statement, string name, Token decl_token) :
          statement(statement), name(name), decl_token(decl_token) {

@@ -12,6 +12,7 @@ struct NodeBlockDecl : public Node { NO_EVAL
     bool is_const = false;
     bool is_global = false;
     bool is_private = false;
+    bool is_shadow = false;
 
     vector<Node*> decls;
 
@@ -27,6 +28,7 @@ struct NodeBlockDecl : public Node { NO_EVAL
                 ((NodeVariableDeclaration*)decls[i])->is_final = ((NodeVariableDeclaration*)decls[i])->is_final | is_final;
                 ((NodeVariableDeclaration*)decls[i])->is_global = ((NodeVariableDeclaration*)decls[i])->is_global | is_global;
                 ((NodeVariableDeclaration*)decls[i])->is_private = ((NodeVariableDeclaration*)decls[i])->is_private | is_private;
+                ((NodeVariableDeclaration*)decls[i])->is_shadow = ((NodeVariableDeclaration*)decls[i])->is_shadow | is_shadow;
             }
             else if (decls[i]->NODE_TYPE == NodeTypes::NODE_NAMESPACE_DECLARATION) {
                 ((NodeNamespaceDeclaration*)decls[i])->is_const = ((NodeNamespaceDeclaration*)decls[i])->is_const | is_const;
@@ -34,6 +36,7 @@ struct NodeBlockDecl : public Node { NO_EVAL
                 ((NodeNamespaceDeclaration*)decls[i])->is_final = ((NodeNamespaceDeclaration*)decls[i])->is_final | is_final;
                 ((NodeNamespaceDeclaration*)decls[i])->is_global = ((NodeNamespaceDeclaration*)decls[i])->is_global | is_global;
                 ((NodeNamespaceDeclaration*)decls[i])->is_private = ((NodeNamespaceDeclaration*)decls[i])->is_private | is_private;
+                ((NodeNamespaceDeclaration*)decls[i])->is_shadow = ((NodeNamespaceDeclaration*)decls[i])->is_shadow | is_shadow;
             }
             else if (decls[i]->NODE_TYPE == NodeTypes::NODE_FUNCTION_DECLARATION) {
                 ((NodeFunctionDeclaration*)decls[i])->is_const = ((NodeFunctionDeclaration*)decls[i])->is_const | is_const;
@@ -41,6 +44,7 @@ struct NodeBlockDecl : public Node { NO_EVAL
                 ((NodeFunctionDeclaration*)decls[i])->is_final = ((NodeFunctionDeclaration*)decls[i])->is_final | is_final;
                 ((NodeFunctionDeclaration*)decls[i])->is_global = ((NodeFunctionDeclaration*)decls[i])->is_global | is_global;
                 ((NodeFunctionDeclaration*)decls[i])->is_private = ((NodeFunctionDeclaration*)decls[i])->is_private | is_private;
+                ((NodeFunctionDeclaration*)decls[i])->is_shadow = ((NodeFunctionDeclaration*)decls[i])->is_shadow | is_shadow;
             }
             else if (decls[i]->NODE_TYPE == NodeTypes::NODE_STRUCT_DECLARATION) {
                 ((NodeStructDeclaration*)decls[i])->is_const = ((NodeStructDeclaration*)decls[i])->is_const | is_const;
@@ -48,7 +52,9 @@ struct NodeBlockDecl : public Node { NO_EVAL
                 ((NodeStructDeclaration*)decls[i])->is_final = ((NodeStructDeclaration*)decls[i])->is_final | is_final;
                 ((NodeStructDeclaration*)decls[i])->is_global = ((NodeStructDeclaration*)decls[i])->is_global | is_global;
                 ((NodeStructDeclaration*)decls[i])->is_private = ((NodeStructDeclaration*)decls[i])->is_private | is_private;
+                ((NodeStructDeclaration*)decls[i])->is_shadow = ((NodeStructDeclaration*)decls[i])->is_shadow | is_shadow;
             }
+            
             decls[i]->exec_from(_memory);
         }
     }

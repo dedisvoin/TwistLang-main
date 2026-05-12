@@ -33,6 +33,7 @@ struct Modifiers {
     bool is_final = false;
     bool is_global = false;
     bool is_private = false;
+    bool is_shadow = false;
 };
 
 // Forward declaration
@@ -49,28 +50,33 @@ struct MemoryObject {
     Memory* owner;              // память-владелец (nullptr для безымянных)
 
     MemoryObject(Value value, Type wait_type, void* memory, Address address,
-                 bool is_const, bool is_static, bool is_final, bool is_global, bool is_private,
+                 bool is_const, 
+                 bool is_static, 
+                 bool is_final, 
+                 bool is_global, 
+                 bool is_private, 
+                 bool is_shadow,
                  const std::string& name = "", Memory* owner = nullptr)
         : value(value), wait_type(wait_type),
-          modifiers({is_const, is_static, is_final, is_global, is_private}),
+          modifiers({is_const, is_static, is_final, is_global, is_private, is_shadow}),
           memory_pointer(memory), address(address),
           var_name(name), owner(owner) {}
 };
 
 inline MemoryObject* CreateMemoryObject(Value value, Type wait_type, void* memory,
-                                        bool is_const, bool is_static, bool is_final, bool is_global, bool is_private,
+                                        bool is_const, bool is_static, bool is_final, bool is_global, bool is_private, bool is_shadow,
                                         const std::string& name = "", Memory* owner = nullptr) {
     int address = AddressManager::get_next_address();
     return new MemoryObject(value, wait_type, memory, address,
-                            is_const, is_static, is_final, is_global, is_private,
+                            is_const, is_static, is_final, is_global, is_private, is_shadow,
                             name, owner);
 }
 
 inline MemoryObject* CreateMemoryObjectWithAddress(Value value, Type wait_type, void* memory, Address address,
-                                                   bool is_const, bool is_static, bool is_final, bool is_global, bool is_private,
+                                                   bool is_const, bool is_static, bool is_final, bool is_global, bool is_private, bool is_shadow,
                                                    const std::string& name = "", Memory* owner = nullptr) {
     return new MemoryObject(value, wait_type, memory, address,
-                            is_const, is_static, is_final, is_global, is_private,
+                            is_const, is_static, is_final, is_global, is_private, is_shadow,
                             name, owner);
 }
 
@@ -81,18 +87,18 @@ struct Memory {
     void clear_unglobals();
     bool add_object(const std::string& literal, Value& value, Type wait_type,
                     bool is_const = false, bool is_static = false, bool is_final = false,
-                    bool is_global = false, bool is_private = false);
+                    bool is_global = false, bool is_private = false, bool is_shadow = false);
     bool add_object(const std::string& literal, MemoryObject* object);
     bool copy_object(const std::string& literal, Value value, Type wait_type, Address address = 0,
                      bool is_const = false, bool is_static = false, bool is_final = false,
-                     bool is_global = false, bool is_private = false);
+                     bool is_global = false, bool is_private = false, bool is_shadow = false);
     bool add_object_in_lambda(const std::string& literal, Value value, bool is_global = false);
     bool add_object_in_func(const std::string& literal, Value value, Type type,
                             bool is_const = false, bool is_static = false, bool is_final = false,
-                            bool is_global = false, bool is_private = false);
+                            bool is_global = false, bool is_private = false, bool is_shadow = false);
     bool add_object_in_struct(const std::string& literal, Value& value,
                               bool is_const = false, bool is_static = false, bool is_final = false,
-                              bool is_global = false, bool is_private = false);
+                              bool is_global = false, bool is_private = false, bool is_shadow = false);
     
     
 
@@ -147,6 +153,10 @@ struct Memory {
 
     inline bool is_global(const std::string& name) {
         return string_pool.find(name)->second->modifiers.is_global;
+    }
+
+    inline bool is_shadow(const std::string& name) {
+        return string_pool.find(name)->second->modifiers.is_shadow;
     }
 
     void delete_variable(const std::string& name);
@@ -211,10 +221,10 @@ void Memory::clear_unglobals() {
 
 bool Memory::add_object(const std::string& literal, Value& value, Type wait_type,
                         bool is_const, bool is_static, bool is_final,
-                        bool is_global, bool is_private) {
+                        bool is_global, bool is_private, bool is_shadow) {
     try {
         auto object = CreateMemoryObject(value, wait_type, this,
-                                         is_const, is_static, is_final, is_global, is_private,
+                                         is_const, is_static, is_final, is_global, is_private, is_shadow,
                                          literal, this);
         string_pool.emplace(literal, object);
         STATIC_MEMORY.register_object(object);
@@ -236,10 +246,10 @@ bool Memory::add_object(const std::string& literal, MemoryObject* object) {
 
 bool Memory::copy_object(const std::string& literal, Value value, Type wait_type, Address address,
                          bool is_const, bool is_static, bool is_final,
-                         bool is_global, bool is_private) {
+                         bool is_global, bool is_private, bool is_shadow) {
     try {
         auto object = CreateMemoryObjectWithAddress(value, wait_type, this, address,
-                                                    is_const, is_static, is_final, is_global, is_private,
+                                                    is_const, is_static, is_final, is_global, is_private, is_shadow,
                                                     literal, this);
         string_pool.emplace(literal, object);
         STATIC_MEMORY.register_object(object);
@@ -251,7 +261,7 @@ bool Memory::copy_object(const std::string& literal, Value value, Type wait_type
 
 bool Memory::add_object_in_lambda(const std::string& literal, Value value, bool is_global) {
     auto object = new MemoryObject(value, value.type, this, 0,
-                                   false, true, false, is_global, false,
+                                   false, true, false, is_global, false, false,
                                    literal, this);
     if (check_literal(literal)) delete_variable(literal);
     try {
@@ -265,9 +275,9 @@ bool Memory::add_object_in_lambda(const std::string& literal, Value value, bool 
 
 bool Memory::add_object_in_func(const std::string& literal, Value value, Type type,
                                 bool is_const, bool is_static, bool is_final,
-                                bool is_global, bool is_private) {
+                                bool is_global, bool is_private, bool is_shadow) {
     auto object = new MemoryObject(value, type, this, 0,
-                                   is_const, is_static, is_final, is_global, is_private,
+                                   is_const, is_static, is_final, is_global, is_private, is_shadow,
                                    literal, this);
     if (check_literal(literal)) delete_variable(literal);
     try {
@@ -281,9 +291,9 @@ bool Memory::add_object_in_func(const std::string& literal, Value value, Type ty
 
 bool Memory::add_object_in_struct(const std::string& literal, Value& value,
                                   bool is_const, bool is_static, bool is_final,
-                                  bool is_global, bool is_private) {
+                                  bool is_global, bool is_private, bool is_shadow) {
     auto object = new MemoryObject(value, value.type, this, 0,
-                                   is_const, is_static, is_final, is_global, is_private,
+                                   is_const, is_static, is_final, is_global, is_private, is_shadow,
                                    literal, this);
     if (check_literal(literal)) delete_variable(literal);
     try {

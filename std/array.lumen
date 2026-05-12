@@ -14,9 +14,9 @@ struct Array {
     // global означает что переменная доступна везде
     // static означает статическую типизацию (тип Type?)
     // Type? означает что может быть Type или Null
-    global static let T: Type = Null;
+    global static shadow let T: Type = Null;
 
-    global static const let type: auto = typeof(Array);
+    global static const shadow let type: auto = typeof(Array);
 
     // Конструктор массива
     // _T - тип элементов
@@ -104,7 +104,7 @@ struct Array {
     // Получение элемента по индексу
     func get(index: Int) -> T {
         // Проверяем что индекс не выходит за границы массива
-        if (index >= this._size)
+        if (index >= this._size || index < 0)
             assert false, "Went outside the array size " + String(this._size);
         
         // Возвращаем элемент по указанному индексу
@@ -121,3 +121,4 @@ struct Array {
         *(this._ptr + index) = obj;
     }
 }
+
