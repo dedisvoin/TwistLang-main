@@ -1365,6 +1365,8 @@ class ErrorOverviewPanel(QWidget):
 # CUSTOM WIDGETS
 # =============================================================================
 
+TOGLE_ = True
+
 class AnimatedToggle(QToolButton):
     """Custom toggle switch with animated handle"""
     def __init__(self, parent=None):
@@ -4766,7 +4768,7 @@ class TwistLangEditor(FramelessMainWindow):
         toggle_layout.setSpacing(5)
 
         self.folding_toggle = AnimatedToggle()
-        self.folding_toggle.setChecked(False)
+        self.folding_toggle.setChecked(True)
         self.folding_toggle.toggled.connect(self._toggle_folding_handler)
         self.folding_toggle.setToolTip(Strings.get("toggle_folding"))
 

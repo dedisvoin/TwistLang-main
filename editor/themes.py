@@ -50,6 +50,55 @@ THEMES = {
         }
     },
 
+        "Pure Light": {
+        "type": "light",
+        "colors": {
+            "bg": QColor("#ffffff"),
+            "fg": QColor("#111827"),
+            "title_bg": QColor("#f3f4f6"),
+            "title_bg_darker": QColor("#e5e7eb"),
+            "title_fg": QColor("#111827"),
+            "title_border": QColor("#d1d5db"),
+            "keyword": QColor("#7c3aed"),      # Фиолетовый
+            "type": QColor("#0891b2"),         # Бирюзовый
+            "comment": QColor("#6b7280"),      # Нейтрально-серый
+            "string": QColor("#059669"),       # Изумрудный
+            "number": QColor("#d97706"),       # Янтарный
+            "operator": QColor("#374151"),     # Тёмно-серый (читаемый)
+            "function": QColor("#db2777"),     # Малиновый
+            "modifier": QColor("#4f46e5"),     # Индиго
+            "directive": QColor("#ea580c"),    # Оранжево-красный
+            "literal": QColor("#dc2626"),      # Чистый красный
+            "namespace": QColor("#2563eb"),    # Синий
+            "special": QColor("#0284c7"),      # Голубой
+            "object": QColor("#0d9488"),       # Морская волна
+            "define_macro": QColor("#4b5563"), # Серый (под подчёркиванием)
+            "caret": QColor("#111827"),
+            "caret_line": QColor("#f9fafb"),
+            "margin_bg": QColor("#f9fafb"),
+            "margin_fg": QColor("#9ca3af"),
+            "selection_bg": QColor("#bfdbfe"),
+            "selection_fg": QColor("#111827"),
+            "brace_bg": QColor("#8b5cf655"),
+            "brace_fg": QColor("#8b5cf6"),
+            "error": QColor("#ef4444"),
+            "warning": QColor("#f59e0b"),
+            "echo": QColor("#6b7280"),
+            "autosave_on": QColor("#10b981"),
+            "autosave_off": QColor("#ef4444"),
+            "status_bg": QColor("#111827"),
+            "status_border": QColor("#d1d5db"),
+            "tree_hover_bg": QColor("#f3f4f6"),
+            "tree_hover_fg": QColor("#111827"),
+            "tree_selection_bg": QColor("#e5e7eb"),
+            "tree_selection_fg": QColor("#111827"),
+            "tree_edit_bg": QColor("#ffffff"),
+            "tree_edit_fg": QColor("#111827"),
+            "comment_doc": QColor("#525b6e"),
+            "comment_question": QColor("#7a8596")
+        }
+    },
+
     "Lavender Mist": {
         "type": "light",
         "colors": {
