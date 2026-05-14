@@ -106,8 +106,8 @@ struct Type {
     static bool compare(const Type& a, const Type& b);
 
 public:
-    bool is_sub_type_impl(const Type& other, const UnionType* other_union = nullptr) const;
     vector<TypePtr> get_union_components() const;
+    
 };
 
 // Реализация compare (статическая)
@@ -289,114 +289,76 @@ vector<TypePtr> Type::get_union_components() const {
     }
 }
 
-// Исправленная проверка подтипа
-bool Type::is_sub_type_impl(const Type& other, const UnionType* other_union) const {
-    // Если other - union, проверяем любой компонент
-    if (other_union) {
-        for (const auto& comp : other_union->components) {
-            if (comp && this->is_sub_type_impl(*comp, nullptr)) return true;
-        }
-        return false;
-    }
-
-    // Если this - union
-    if (is_union_type()) {
-        const auto& this_union = get<UnionType>(m_data);
-        for (const auto& comp : this_union.components) {
-            if (!comp || !comp->is_sub_type_impl(other, nullptr)) return false;
-        }
-        return true;
-    }
-
+// Вспомогательная функция для прямого (не union) структурного сравнения
+// Вспомогательная функция для прямого (не union) структурного сравнения
+static bool is_sub_type_direct(const Type& self, const Type& other) {
     // ptr - любой указательный тип является подтипом ptr
-    if (holds_alternative<PtrType>(other.m_data)) {
-        return this->is_pointer();
-    }
-
+    if (holds_alternative<PtrType>(other.m_data)) return self.is_pointer();
     // *auto - подходит под любой указатель
-    if (holds_alternative<PointerAutoType>(other.m_data)) {
-        return this->is_pointer();
-    }
-    
+    if (holds_alternative<PointerAutoType>(other.m_data)) return self.is_pointer();
     // auto - подходит под любой НЕ-указатель
-    if (holds_alternative<AutoType>(other.m_data)) {
-        return !this->is_pointer();
-    }
+    if (holds_alternative<AutoType>(other.m_data)) return !self.is_pointer();
 
-    // Разные типы
-    if (m_data.index() != other.m_data.index()) {
-        return false;
-    }
+    // Если базовые variant-типы не совпадают, подтип невозможен
+    if (self.m_data.index() != other.m_data.index()) return false;
 
-    // Структурное сравнение
-    bool result = false;
-    visit([&](const auto& lhs, const auto& rhs) {
+    return visit([&](const auto& lhs, const auto& rhs) -> bool {
         using L = decay_t<decltype(lhs)>;
         using R = decay_t<decltype(rhs)>;
 
+        // Компилятор должен знать, что мы заходим сюда только если типы совпадают
         if constexpr (is_same_v<L, R>) {
             if constexpr (is_same_v<L, PrimitiveType>) {
-                result = (lhs.name == rhs.name);
-            }
-            else if constexpr (is_same_v<L, AutoType>) {
-                result = true;
-            }
-            else if constexpr (is_same_v<L, PointerAutoType>) {
-                result = true;
-            }
-            else if constexpr (is_same_v<L, PtrType>) {
-                result = true;
+                return lhs.name == rhs.name;
             }
             else if constexpr (is_same_v<L, PointerType>) {
-                if (lhs.pointee && rhs.pointee) {
-                    result = lhs.pointee->is_sub_type(*rhs.pointee);
-                } else {
-                    result = false;
-                }
+                if (!lhs.pointee || !rhs.pointee) return false;
+                return lhs.pointee->is_sub_type(*rhs.pointee);
             }
             else if constexpr (is_same_v<L, ArrayType>) {
-                if (lhs.element_type && rhs.element_type) {
-                    result = lhs.element_type->is_sub_type(*rhs.element_type);
-                } else {
-                    result = false;
-                }
+                if (!lhs.element_type || !rhs.element_type) return false;
+                return lhs.element_type->is_sub_type(*rhs.element_type);
             }
             else if constexpr (is_same_v<L, FunctionType>) {
-                if (lhs.arg_types.size() != rhs.arg_types.size()) {
-                    result = false;
-                    return;
-                }
+                if (lhs.arg_types.size() != rhs.arg_types.size()) return false;
                 for (size_t i = 0; i < lhs.arg_types.size(); ++i) {
-                    if (!lhs.arg_types[i] || !rhs.arg_types[i]) {
-                        result = false;
-                        return;
-                    }
-                    // Контравариантность параметров
-                    if (!rhs.arg_types[i]->is_sub_type(*lhs.arg_types[i])) {
-                        result = false;
-                        return;
-                    }
+                    if (!lhs.arg_types[i] || !rhs.arg_types[i]) return false;
+                    // Контравариантность параметров: (A -> B) <: (C -> D) <=> C <: A && B <: D
+                    if (!rhs.arg_types[i]->is_sub_type(*lhs.arg_types[i])) return false;
                 }
-                if (lhs.return_type && rhs.return_type) {
-                    result = lhs.return_type->is_sub_type(*rhs.return_type);
-                } else {
-                    result = (!lhs.return_type && !rhs.return_type);
-                }
+                if (lhs.return_type && rhs.return_type) return lhs.return_type->is_sub_type(*rhs.return_type);
+                return !lhs.return_type && !rhs.return_type;
             }
-            else {
-                result = false;
-            }
+            // AutoType, PtrType, PointerAutoType, UnionType, monostate
+            // Для них совпадение индексов уже гарантирует совместимость (или они обработаны выше)
+            return true; 
         }
-    }, m_data, other.m_data);
-
-    return result;
+        // Этот блок теоретически недостижим из-за проверки index() выше,
+        // но нужен для удовлетворения требования visit возвращать значение во всех ветках
+        return false; 
+    }, self.m_data, other.m_data);
 }
 
+// Основная проверка подтипа с корректной рекурсивной обработкой union
 bool Type::is_sub_type(const Type& other) const {
-    if (other.is_union_type()) {
-        return is_sub_type_impl(other, &get<UnionType>(other.m_data));
+    // 1. Если `this` — union, то КАЖДЫЙ его компонент должен быть подтипом `other`
+    if (this->is_union_type()) {
+        const auto& this_union = get<UnionType>(this->m_data);
+        for (const auto& comp : this_union.components) {
+            if (!comp || !comp->is_sub_type(other)) return false;
+        }
+        return true;
     }
-    return is_sub_type_impl(other, nullptr);
+    // 2. Если `other` — union, то `this` должен быть подтипом ХОТЯ БЫ ОДНОГО из его компонентов
+    if (other.is_union_type()) {
+        const auto& other_union = get<UnionType>(other.m_data);
+        for (const auto& comp : other_union.components) {
+            if (comp && this->is_sub_type(*comp)) return true;
+        }
+        return false;
+    }
+    // 3. Ни один не union — прямое структурное сравнение
+    return is_sub_type_direct(*this, other);
 }
 
 Type Type::operator|(const Type& other) const {

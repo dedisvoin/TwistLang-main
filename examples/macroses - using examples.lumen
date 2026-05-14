@@ -1,0 +1,22 @@
+#define PI = 3.141592; // синтаксис декларации макро-подстановки
+// заменяет найденный токен на список токенов
+// PI -> 3.141592
+
+let my_PI = PI;
+echo my_PI, " ", PI;
+
+
+#define var = static let; // удобное комбинирование 
+var a: auto = 10;
+
+
+// #macro позволяет генерировать более сложные конструкции
+#macro auto_static(var_name, value) = [
+    static let var_name: auto = value;
+]; // автоматически сгенерирует код для декларации статической переменной
+
+auto_static(a, 10)
+//! a = 3.14; // будет ошибка!
+
+let T = Int | Double | String | Char;
+
