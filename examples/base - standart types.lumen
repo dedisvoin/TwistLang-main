@@ -42,3 +42,4 @@ let str = String(true); // true в виде строку
 // и так далее...
 
 
+static let a: Int = 10;

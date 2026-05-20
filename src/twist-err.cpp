@@ -82,9 +82,6 @@ struct Error {
         return error_buffer;
     }
 
-
-    // Старый Write больше не нужен, используйте Write(buffer)
-
     Error(string message, PosInFile start_pif, PosInFile end_pif, ErrorType type, string code) {
         PosInFile new_pif;
         new_pif.file_path = start_pif.file_path;
@@ -513,5 +510,9 @@ namespace ERROR_THROW {
 
     Error InvalidDereferenceAddres(const Token& start, const Token& end) {
         return Error("Ivalid dereference addres", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+    }
+
+    Error ZeroDivision(const Token& start, const Token& end) {
+        return Error("Zero division", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
     }
 }

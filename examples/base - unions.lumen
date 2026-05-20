@@ -21,3 +21,5 @@ echo Null >> N1;
 
 // ERROR
 echo (Int | Null | Double) >> N1; // приоритеты операторов такие
+
+

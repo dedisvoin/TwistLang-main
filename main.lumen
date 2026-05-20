@@ -1,0 +1,6 @@
+#macro getter(a) {
+    func get_%a() -> typeof(a) {
+        ret this.a;
+    }
+}
+

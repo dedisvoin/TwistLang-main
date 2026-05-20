@@ -46,8 +46,8 @@ struct MemoryObject {
     Modifiers modifiers;
     void* memory_pointer;
     Address address;
-    std::string var_name;      // имя переменной (пустое для безымянных)
-    Memory* owner;              // память-владелец (nullptr для безымянных)
+    std::string var_name;       // имя переменной (пустое для безымянных)
+    Memory* owner;             
 
     MemoryObject(Value value, Type wait_type, void* memory, Address address,
                  bool is_const, 

@@ -11,12 +11,14 @@ var a: auto = 10;
 
 
 // #macro позволяет генерировать более сложные конструкции
-#macro auto_static(var_name, value) = [
+#macro auto_static(var_name, value) {
     static let var_name: auto = value;
-]; // автоматически сгенерирует код для декларации статической переменной
+} // автоматически сгенерирует код для декларации статической переменной
 
 auto_static(a, 10)
 //! a = 3.14; // будет ошибка!
 
 let T = Int | Double | String | Char;
+
+
 

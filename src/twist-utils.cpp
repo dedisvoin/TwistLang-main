@@ -17,7 +17,6 @@
 
 using namespace std;
 
-// Split string by delimiter
 vector<string> SplitString(const string& str, char delimiter) {
     vector<string> substrings;
     string current;
@@ -81,11 +80,7 @@ namespace TERMINAL_COLORS {
 }
 #define TM TERMINAL_COLORS
 
-// Message types
-// INFO - informational message
-// WARNING - warning message
-// ERROR - error message
-// SUCCESS - success message
+
 namespace MESSAGE_TYPES {
     string INFO = "[ " + TM::WHITE + "inf" + TM::RESET + " ] ";
     string WARNING = "[ " + TM::YELLOW + "wrn" + TM::RESET + " ] ";
@@ -96,10 +91,6 @@ namespace MESSAGE_TYPES {
 
 #define MT MESSAGE_TYPES
 
-
-
-
-// Program utility functions
 
 /* Program file path is not foud */
 void _FILE_NOT_FOUND(string file_name) {
@@ -280,9 +271,6 @@ void middleTimeIt(string name, function<void()> func, int count) {
 }
 
 
-/*
-    Saves content to a file. Returns true if successful, false otherwise.
-*/
 bool SaveFile(string file_name, string content) {
     ofstream stream = ofstream(file_name);
     if (!stream.is_open()) {
@@ -293,10 +281,6 @@ bool SaveFile(string file_name, string content) {
     return true;
 }
 
-
-// Добавьте эти функции в конец файла twist-utils.cpp
-
-// Check if string starts with UTF-8 BOM
 bool HasUTF8BOM(const string& str) {
     if (str.length() >= 3) {
         unsigned char b1 = static_cast<unsigned char>(str[0]);
@@ -307,7 +291,7 @@ bool HasUTF8BOM(const string& str) {
     return false;
 }
 
-// Remove UTF-8 BOM if present
+
 string RemoveUTF8BOM(const string& str) {
     if (HasUTF8BOM(str)) {
         return str.substr(3);
@@ -315,32 +299,28 @@ string RemoveUTF8BOM(const string& str) {
     return str;
 }
 
-// Improved OpenFile with UTF-8 support
 string OpenFile(string file_name) {
     ifstream stream(file_name, ios::binary);
     if (!stream.is_open()) {
         return "";
     }
     
-    // Get file size
+  
     stream.seekg(0, ios::end);
     size_t size = stream.tellg();
     stream.seekg(0, ios::beg);
     
-    // Read file
+
     string content(size, '\0');
     stream.read(&content[0], size);
     stream.close();
     
-    // Remove BOM if present
     content = RemoveUTF8BOM(content);
     
     return content;
 }
 
-/*
-    Saved tokens content to a file.
-*/
+
 bool SaveTokensFile(string file_name, vector<Token> tokens) {
     string content;
 
@@ -357,9 +337,7 @@ bool SaveTokensFile(string file_name, vector<Token> tokens) {
     return false;
 }
 
-/*
-    Saves preprocessed file. Returns true if successful, false otherwise.
-*/
+
 bool SavePreprocessedFile(string file_name, string content) {
     if (SaveFile(file_name, content)) {
         _PREPROCESSED_FILE_SAVED(file_name);
@@ -368,9 +346,7 @@ bool SavePreprocessedFile(string file_name, string content) {
     return false;
 }
 
-/*
-    Converts command line arguments into a vector of strings.
-*/
+
 vector<string> ConvertArgs(int argc, char** argv) {
     vector<string> args;
     for (int i = 0; i < argc; i++) {
@@ -380,9 +356,6 @@ vector<string> ConvertArgs(int argc, char** argv) {
 }
 
 
-/*
-    Debug method to output command line arguments.
-*/
 void OutArgs(vector<string> args) {
     for (string arg : args) {
         cout << arg << endl;
@@ -390,9 +363,6 @@ void OutArgs(vector<string> args) {
 }
 
 
-/*
-    Checks if the file has a valid specifier.
-*/
 bool CheckFileSpecifier(string file_name) {
     size_t dot_pos = file_name.find_last_of(".");
     if (dot_pos == string::npos) {
@@ -402,10 +372,6 @@ bool CheckFileSpecifier(string file_name) {
     return (specifier == ".lumen" || specifier == ".lm");
 }
 
-/*
-    Argument parser structure.
-    Parses command line arguments and stores the file path.
-*/
 struct ArgsParser {
 
     vector<string> args;

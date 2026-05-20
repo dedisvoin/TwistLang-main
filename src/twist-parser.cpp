@@ -335,7 +335,7 @@ struct ASTGenerator {
 
             if (!found_operator) break;
 
-            Token& op_token = *walker.get();
+            Token& op_token = *walker.get(-1);
 
             auto right = (this->*parseHigherLevel)();
             if (!right)

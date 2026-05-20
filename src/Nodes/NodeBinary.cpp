@@ -67,7 +67,7 @@ struct NodeBinary : public Node { NO_EXEC
             else if (op == "*")
                 return NewInt(l * r);
             else if (op == "/") {
-                if (r == 0) ERROR::ZeroDivision(start_token, end_token, op_token, left_val, right_val);
+                if (r == 0) throw ERROR_THROW::ZeroDivision(start_token, end_token);
                 return NewInt(l / r);
             }
             else if (op == "**")
@@ -100,7 +100,7 @@ struct NodeBinary : public Node { NO_EXEC
             else if (op == "*")
                 return NewDouble(l * r);
             else if (op == "/") {
-                if (r == 0) ERROR::ZeroDivision(start_token, end_token, op_token, left_val, right_val);
+                if (r == 0) throw ERROR_THROW::ZeroDivision(start_token, end_token);
                 return NewDouble(l / r);
             }
             else if (op == "**")
@@ -271,7 +271,7 @@ struct NodeBinary : public Node { NO_EXEC
                             }
                         }
                         arr.values.emplace_back(right_val);
-                        // Возвращаем ссылку из памяти
+                      
                         return var_obj->value;
                     }
                 }

@@ -47,7 +47,7 @@ MIN_FONT_SIZE = 8
 
 APP_ICON_PATH = r"data\app_icon.svg"
 
-DEFAULT_THEME = "Catppuccin Mocha"
+DEFAULT_THEME = "Emerald Forest"
 WINDOW_MIN_WIDTH = 400
 WINDOW_MIN_HEIGHT = 300
 TITLE_BAR_HEIGHT = 32
@@ -2791,7 +2791,7 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
 
-            if ch in '+-*/%=&|^!<>~,?.:;(){}[]':
+            if ch in '+-*/%=&@|^!<>~,?.:;(){}[]':
                 expecting_namespace = False
                 j = pos + ch_len
 

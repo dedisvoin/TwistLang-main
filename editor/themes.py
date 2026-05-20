@@ -491,7 +491,7 @@ THEMES = {
             "string": QColor("#b3d46b"),
             "number": QColor("#ffb86c"),
             "operator": QColor("#7b8c74"),
-            "function": QColor("#ff6b6b"),
+            "function": QColor("#6b8eff"),
             "modifier": QColor("#ff8c42"),
             "directive": QColor("#ffb86c"),
             "literal": QColor("#b3d46b"),

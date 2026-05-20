@@ -91,8 +91,8 @@ inline const char* get_node_type_name(NodeTypes type) {
 
 
 struct Node {
-    NodeTypes NODE_TYPE;            // Node name
-    virtual ~Node() = default;      // Destructor
+    NodeTypes NODE_TYPE;            
+    virtual ~Node() = default;      // Деструктор
     virtual Value eval_from(Memory* memory) = 0;
-    virtual void exec_from(Memory* memory) = 0;
+    virtual void  exec_from(Memory* memory) = 0;
 };

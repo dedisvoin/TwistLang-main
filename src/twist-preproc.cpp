@@ -18,20 +18,18 @@ namespace ErrorTypes {
     const std::string PREPROCESSOR = TERMINAL_COLORS::BOLD + TERMINAL_COLORS::BLUE  + "preprocessor" + TERMINAL_COLORS::RESET;
 }
 
-// Структура для хранения define
 struct Define {
     std::vector<Token> body;
     PosInFile definition_pos;
 };
 
-// Структура для хранения macro
 struct Macro {
     std::vector<std::string> params;
     std::vector<Token> body;
     PosInFile definition_pos;
+    bool variadic;
 };
 
-// Обёртка для потоковой обработки токенов
 class TokenStream {
 private:
     const std::vector<Token>& tokens;
@@ -66,23 +64,13 @@ class Preprocessor {
 public:
     Preprocessor() = default;
 
-    // Главный метод обработки
-    // Главный метод обработки
     std::vector<Token> process(const std::vector<Token>& tokens, const std::string& file_path) {
         current_file_path_ = std::filesystem::absolute(file_path).string();
         current_file_name_ = GetFileName(file_path);
         included_files_.insert(current_file_path_);
         
-        // ============================================
-        // ПРОХОД 1: ТОЛЬКО #include (рекурсивно)
-        // ============================================
         std::vector<Token> after_includes = processIncludes(tokens);
-        
-        // ============================================
-        // ПРОХОД 2: сбор #define и #macro из ОБЪЕДИНЁННОГО списка
-        // ============================================
         std::vector<Token> after_directives = processDefinesAndMacros(after_includes);
-        
         return after_directives;
     }
 
@@ -93,100 +81,72 @@ private:
     std::string current_file_name_;
     std::set<std::string> included_files_;
 
-    // ---------------------------------------------------------------
-// ПРОХОД 1: рекурсивная вставка всех #include
-// ---------------------------------------------------------------
-std::vector<Token> processIncludes(const std::vector<Token>& tokens) {
-    std::vector<Token> output;
-    TokenStream stream(tokens);
-    
-    while (stream.hasNext()) {
-        const Token& tok = stream.peek();
+    std::vector<Token> processIncludes(const std::vector<Token>& tokens) {
+        std::vector<Token> output;
+        TokenStream stream(tokens);
         
-        if (tok.type == TokenType::PREPROC) {
-            stream.next(); // '#'
-            
-            if (!stream.hasNext() || stream.peek().type != TokenType::LITERAL) {
-                output.push_back(tok);
-                continue;
-            }
-            
-            const Token& dir = stream.peek();
-            
-            
-            
-            if (dir.value == "include") {
-                stream.next(); // 'include'
-                processIncludeDirective(stream, output);
-            } else if (dir.value != "include" && dir.value != "define" && dir.value != "macro") {
-                throw Error("unsupported directive: " + dir.value, dir.pif, ErrorTypes::PREPROCESSOR, "");
+        while (stream.hasNext()) {
+            const Token& tok = stream.peek();
+            if (tok.type == TokenType::PREPROC) {
+                stream.next(); // '#'
+                if (!stream.hasNext() || stream.peek().type != TokenType::LITERAL) {
+                    output.push_back(tok);
+                    continue;
+                }
+                const Token& dir = stream.peek();
+                if (dir.value == "include") {
+                    stream.next();
+                    processIncludeDirective(stream, output);
+                } else if (dir.value != "include" && dir.value != "define" && dir.value != "macro") {
+                    throw Error("unsupported directive: " + dir.value, dir.pif, ErrorTypes::PREPROCESSOR, "");
+                } else {
+                    output.push_back(tok);
+                    output.push_back(stream.next());
+                }
             } else {
-                // Оставляем #define и #macro для второго прохода
-                output.push_back(tok);        // '#'
-                output.push_back(stream.next()); // директива
+                output.push_back(stream.next());
             }
-        } else {
-            output.push_back(stream.next());
         }
+        return output;
     }
-    
-    return output;
-}
 
-// ---------------------------------------------------------------
-// ПРОХОД 2: сбор #define/#macro и подстановка
-// ---------------------------------------------------------------
-std::vector<Token> processDefinesAndMacros(const std::vector<Token>& tokens) {
-    defines_.clear();
-    macros_.clear();
-    
-    // Шаг 2a: собираем все #define и #macro
-    std::vector<Token> without_defines = collectDefinesAndMacros(tokens);
-    
-    // Шаг 2b: подставляем все define и macro
-    std::set<std::string> forbidden;
-    std::vector<Token> result = expandTokens(without_defines, forbidden);
-    
-    return result;
-}
+    std::vector<Token> processDefinesAndMacros(const std::vector<Token>& tokens) {
+        defines_.clear();
+        macros_.clear();
+        std::vector<Token> without_defines = collectDefinesAndMacros(tokens);
+        std::set<std::string> forbidden;
+        std::vector<Token> result = expandTokens(without_defines, forbidden);
+        return result;
+    }
 
-std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
-    std::vector<Token> output;
-    TokenStream stream(tokens);
-    
-    while (stream.hasNext()) {
-        const Token& tok = stream.peek();
+    std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
+        std::vector<Token> output;
+        TokenStream stream(tokens);
         
-        if (tok.type == TokenType::PREPROC) {
-            stream.next(); // '#'
-            
-            if (!stream.hasNext() || stream.peek().type != TokenType::LITERAL) {
-                output.push_back(tok);
-                
-                throw Error("waited directive", stream.peek().pif, ErrorTypes::PREPROCESSOR, "");
-            
-                continue;
-            }
-            
-            const Token& dir = stream.next();
-            
-            if (dir.value == "define") {
-                processDefineDirective(stream);
-            } else if (dir.value == "macro") {
-                processMacroDirective(stream);
+        while (stream.hasNext()) {
+            const Token& tok = stream.peek();
+            if (tok.type == TokenType::PREPROC) {
+                stream.next();
+                if (!stream.hasNext() || stream.peek().type != TokenType::LITERAL) {
+                    output.push_back(tok);
+                    throw Error("waited directive", stream.peek().pif, ErrorTypes::PREPROCESSOR, "");
+                }
+                const Token& dir = stream.next();
+                if (dir.value == "define") {
+                    processDefineDirective(stream);
+                } else if (dir.value == "macro") {
+                    processMacroDirective(stream);
+                } else {
+                    output.push_back(tok);
+                    output.push_back(dir);
+                }
             } else {
-                output.push_back(tok);
-                output.push_back(dir);
+                output.push_back(stream.next());
             }
-        } else {
-            output.push_back(stream.next());
         }
+        return output;
     }
-    
-    return output;
-}
 
-    // Лексирование файла в токены
     std::vector<Token> lexFile(const std::string& path) {
         std::string content = OpenFile(path);
         if (content.empty()) {
@@ -205,38 +165,6 @@ std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
         return std::move(lexer.tokens);
     }
 
-    // Сбор директив из потока токенов
-    std::vector<Token> collectDirectives(TokenStream& stream) {
-        std::vector<Token> output;
-        while (stream.hasNext()) {
-            const Token& tok = stream.peek();
-            if (tok.type == TokenType::PREPROC) {
-                stream.next(); // '#'
-                if (!stream.hasNext() || stream.peek().type != TokenType::LITERAL) {
-                    PosInFile errPos = tok.pif;
-                    Error err("Expected preprocessor directive after '#'", errPos, ErrorTypes::SYNTAX, "");
-                    throw err;
-                }
-                const Token& dir = stream.next();
-                if (dir.value == "include") {
-                    processIncludeDirective(stream, output);
-                } else if (dir.value == "define") {
-                    processDefineDirective(stream);
-                } else if (dir.value == "macro") {
-                    processMacroDirective(stream);
-                } else {
-                    PosInFile errPos = dir.pif;
-                    Error err("Unknown preprocessor directive '#" + dir.value + "'", errPos, ErrorTypes::PREPROCESSOR, "");
-                    throw err;
-                }
-            } else {
-                output.push_back(stream.next());
-            }
-        }
-        return output;
-    }
-
-    // Обработка #include "file_path";
     void processIncludeDirective(TokenStream& stream, std::vector<Token>& output) {
         auto directive_pos = stream.peek();
         if (!stream.hasNext() || stream.peek().type != TokenType::STRING) {
@@ -252,33 +180,24 @@ std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
         }
         stream.next(); // ';'
 
-        // Разрешение пути относительно текущего файла
         std::filesystem::path base_dir = std::filesystem::path(current_file_path_).parent_path();
         std::filesystem::path full_included_path = base_dir / included_path;
         std::string resolved_path = std::filesystem::absolute(full_included_path).string();
 
-        if (included_files_.count(resolved_path)) return; // уже включён
+        if (included_files_.count(resolved_path)) return;
 
         included_files_.insert(resolved_path);
         
         auto included_tokens = lexFile(resolved_path);
         Preprocessor nested;
         nested.included_files_ = this->included_files_;
-        
         auto processed = nested.processIncludes(included_tokens);
-        
         this->included_files_ = nested.included_files_;
-        
-        // Удаляем END_OF_FILE из включаемого файла перед вставкой
+
         if (!processed.empty() && processed.back().type == TokenType::END_OF_FILE) processed.pop_back();
         
-        // Суммируем длину значений всех токенов (включая вложенные include)
         size_t total_size = 0;
-        for (const auto& token : processed) {
-            total_size += token.value.size();
-        }
-        
-        // Форматируем размер
+        for (const auto& token : processed) total_size += token.value.size();
         std::string size_str;
         if (total_size >= 1024 * 1024) {
             double mb = static_cast<double>(total_size) / (1024.0 * 1024.0);
@@ -297,7 +216,6 @@ std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
         output.insert(output.end(), processed.begin(), processed.end());
     }
 
-    // Обработка #define name = ...;
     void processDefineDirective(TokenStream& stream) {
         if (!stream.hasNext() || (stream.peek().type != TokenType::LITERAL && stream.peek().type != TokenType::KEYWORD)) {
             PosInFile errPos = stream.hasNext() ? stream.peek().pif : PosInFile();
@@ -324,7 +242,6 @@ std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
         defines_[name] = {body, body.empty() ? PosInFile() : body[0].pif};
     }
 
-    // Обработка #macro name(params) = [...];
     void processMacroDirective(TokenStream& stream) {
         if (!stream.hasNext() || stream.peek().type != TokenType::LITERAL) {
             PosInFile errPos = stream.hasNext() ? stream.peek().pif : PosInFile();
@@ -340,29 +257,44 @@ std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
         }
         stream.next(); // '('
         
-        // Парсим параметры
         std::vector<std::string> params;
+        bool variadic = false;
+        
         if (stream.hasNext() && stream.peek().type != TokenType::R_BRACKET) {
             while (true) {
-                if (!stream.hasNext() || stream.peek().type != TokenType::LITERAL) {
-                    PosInFile errPos = stream.hasNext() ? stream.peek().pif : PosInFile();
+                if (!stream.hasNext()) {
+                    Error err("Unexpected end of macro parameters", PosInFile(), ErrorTypes::SYNTAX, "");
+                    throw err;
+                }
+                if (stream.peek().type == TokenType::OPERATOR && stream.peek().value == "...") {
+                    variadic = true;
+                    stream.next();
+                    break;
+                }
+                if (stream.peek().type != TokenType::LITERAL) {
+                    PosInFile errPos = stream.peek().pif;
                     Error err("Expected parameter name in macro", errPos, ErrorTypes::SYNTAX, "");
                     throw err;
                 }
-                params.push_back(stream.next().value);
-                
+                std::string param_name = stream.next().value;
+                params.push_back(param_name);
                 if (!stream.hasNext()) {
                     Error err("Unexpected end of macro parameters", PosInFile(), ErrorTypes::SYNTAX, "");
                     throw err;
                 }
                 if (stream.peek().type == TokenType::R_BRACKET) break;
-                
-                if (!(stream.peek().type == TokenType::OPERATOR && stream.peek().value == ",")) {
-                    PosInFile errPos = stream.peek().pif;
-                    Error err("Expected ',' or ')' in macro parameters", errPos, ErrorTypes::SYNTAX, "");
-                    throw err;
+                if (stream.peek().type == TokenType::OPERATOR && stream.peek().value == ",") {
+                    stream.next();
+                    if (stream.hasNext() && stream.peek().type == TokenType::LITERAL && stream.peek().value == "...") {
+                        variadic = true;
+                        stream.next();
+                        break;
+                    }
+                    continue;
                 }
-                stream.next(); // ','
+                PosInFile errPos = stream.peek().pif;
+                Error err("Expected ',' or ')' in macro parameters", errPos, ErrorTypes::SYNTAX, "");
+                throw err;
             }
         }
         
@@ -373,32 +305,24 @@ std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
         }
         stream.next(); // ')'
         
-        if (!stream.hasNext() || !(stream.peek().type == TokenType::OPERATOR && stream.peek().value == "=")) {
+        if (!stream.hasNext() || stream.peek().type != TokenType::L_CURVE_BRACKET) {
             PosInFile errPos = stream.hasNext() ? stream.peek().pif : PosInFile();
-            Error err("Expected '=' after macro signature", errPos, ErrorTypes::SYNTAX, "");
+            Error err("Expected '{' to start macro body", errPos, ErrorTypes::SYNTAX, "");
             throw err;
         }
-        stream.next(); // '='
+        stream.next(); // '{'
         
-        if (!stream.hasNext() || stream.peek().type != TokenType::L_RECT_BRACKET) {
-            PosInFile errPos = stream.hasNext() ? stream.peek().pif : PosInFile();
-            Error err("Expected '[' to start macro body", errPos, ErrorTypes::SYNTAX, "");
-            throw err;
-        }
-        stream.next(); // '['
-        
-        // Собираем тело макроса до ']' с учётом вложенности
         std::vector<Token> body;
-        int bracket_depth = 1;
-        while (stream.hasNext() && bracket_depth > 0) {
+        int brace_depth = 1;
+        while (stream.hasNext() && brace_depth > 0) {
             const Token& tok = stream.peek();
-            if (tok.type == TokenType::L_RECT_BRACKET) {
-                bracket_depth++;
+            if (tok.type == TokenType::L_CURVE_BRACKET) {
+                brace_depth++;
                 body.push_back(stream.next());
-            } else if (tok.type == TokenType::R_RECT_BRACKET) {
-                bracket_depth--;
-                if (bracket_depth == 0) {
-                    stream.next(); // поглощаем закрывающую скобку, но не добавляем в тело
+            } else if (tok.type == TokenType::R_CURVE_BRACKET) {
+                brace_depth--;
+                if (brace_depth == 0) {
+                    stream.next();
                     break;
                 } else {
                     body.push_back(stream.next());
@@ -407,24 +331,37 @@ std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
                 body.push_back(stream.next());
             }
         }
-        
-        if (bracket_depth != 0) {
+        if (brace_depth != 0) {
             PosInFile errPos = body.empty() ? PosInFile() : body.back().pif;
-            Error err("Unclosed '[' in macro body", errPos, ErrorTypes::SYNTAX, "");
+            Error err("Unclosed '{' in macro body", errPos, ErrorTypes::SYNTAX, "");
             throw err;
         }
         
-        if (!stream.hasNext() || stream.peek().type != TokenType::DAC) {
-            PosInFile errPos = stream.hasNext() ? stream.peek().pif : PosInFile();
-            Error err("Expected ';' after macro body", errPos, ErrorTypes::SYNTAX, "");
-            throw err;
+        if (stream.hasNext() && stream.peek().type == TokenType::DAC) {
+            stream.next();
         }
-        stream.next(); // ';'
         
-        macros_[name] = {params, body, body.empty() ? PosInFile() : body[0].pif};
+        Macro macro;
+        macro.params = params;
+        macro.body = body;
+        macro.variadic = variadic;
+        macro.definition_pos = body.empty() ? PosInFile() : body[0].pif;
+        macros_[name] = macro;
     }
 
-    // Рекурсивное раскрытие токенов с защитой от бесконечной рекурсии
+    // Преобразование вектора токенов в строку (для @ параметра)
+    std::string tokensToString(const std::vector<Token>& tokens) {
+        std::string result;
+        for (size_t i = 0; i < tokens.size(); ++i) {
+            result += tokens[i].value;
+            if (i + 1 < tokens.size()) {
+                result += " ";
+            }
+        }
+        return result;
+    }
+
+    // Основной метод раскрытия макросов с поддержкой @ (stringify) и % (конкатенация)
     std::vector<Token> expandTokens(const std::vector<Token>& tokens,
                                     std::set<std::string>& forbidden_macros) {
         std::vector<Token> result;
@@ -432,54 +369,55 @@ std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
 
         while (stream.hasNext()) {
             const Token& tok = stream.peek();
-
-            // Обрабатываем define
+            
+            // Обработка #define (простых макросов-объектов)
             if (tok.type == TokenType::LITERAL) {
                 auto defIt = defines_.find(tok.value);
                 if (defIt != defines_.end()) {
-                    stream.next(); // потребляем имя
+                    stream.next();
                     const auto& body = defIt->second.body;
                     auto expanded = expandTokens(body, forbidden_macros);
                     result.insert(result.end(), expanded.begin(), expanded.end());
                     continue;
                 }
             }
-
-            // Обрабатываем macro
+            
+            // Обработка макросов-функций
             if (tok.type == TokenType::LITERAL) {
                 auto macIt = macros_.find(tok.value);
                 if (macIt != macros_.end()) {
                     size_t savedPos = stream.getPosition();
-                    stream.next(); // потребляем имя макроса
-
+                    stream.next(); // имя макроса
+                    
                     if (stream.hasNext() && stream.peek().type == TokenType::L_BRACKET) {
                         stream.next(); // '('
-
+                        
                         if (forbidden_macros.find(tok.value) != forbidden_macros.end()) {
                             stream.setPosition(savedPos);
                             result.push_back(stream.next());
                             continue;
                         }
-
-                        // Парсим аргументы
+                        
+                        // Парсинг аргументов
                         std::vector<std::vector<Token>> args;
-                        if (macIt->second.params.empty() &&
+                        int paren_depth = 1;
+                        
+                        if (macIt->second.params.empty() && !macIt->second.variadic &&
                             stream.hasNext() && stream.peek().type == TokenType::R_BRACKET) {
-                            stream.next();
+                            stream.next(); // ')'
                         } else {
                             std::vector<Token> current_arg;
-                            int paren_depth = 1;
                             while (stream.hasNext() && paren_depth > 0) {
                                 const Token& arg_tok = stream.peek();
                                 if (arg_tok.type == TokenType::L_BRACKET) {
                                     paren_depth++;
-                                    if (paren_depth > 1) current_arg.push_back(stream.next());
-                                    else stream.next();
+                                    current_arg.push_back(stream.next());
                                 } else if (arg_tok.type == TokenType::R_BRACKET) {
                                     paren_depth--;
                                     if (paren_depth == 0) {
-                                        if (!current_arg.empty() || !args.empty())
+                                        if (!current_arg.empty() || !args.empty()) {
                                             args.push_back(current_arg);
+                                        }
                                         stream.next();
                                         break;
                                     } else {
@@ -499,49 +437,119 @@ std::vector<Token> collectDefinesAndMacros(const std::vector<Token>& tokens) {
                                 throw err;
                             }
                         }
-
-                        if (args.size() != macIt->second.params.size()) {
-                            PosInFile errPos = tok.pif;
-                            Error err("Wrong number of arguments for macro '" + tok.value +
-                                      "': expected " + std::to_string(macIt->second.params.size()) +
-                                      ", got " + std::to_string(args.size()),
-                                      errPos, ErrorTypes::MACRO, "");
-                            throw err;
+                        
+                        // Проверка количества аргументов
+                        if (!macIt->second.variadic) {
+                            if (args.size() != macIt->second.params.size()) {
+                                PosInFile errPos = tok.pif;
+                                Error err("Wrong number of arguments for macro '" + tok.value +
+                                          "': expected " + std::to_string(macIt->second.params.size()) +
+                                          ", got " + std::to_string(args.size()),
+                                          errPos, ErrorTypes::MACRO, "");
+                                throw err;
+                            }
+                        } else {
+                            if (args.size() < macIt->second.params.size()) {
+                                PosInFile errPos = tok.pif;
+                                Error err("Wrong number of arguments for variadic macro '" + tok.value +
+                                          "': expected at least " + std::to_string(macIt->second.params.size()) +
+                                          ", got " + std::to_string(args.size()),
+                                          errPos, ErrorTypes::MACRO, "");
+                                throw err;
+                            }
                         }
-
+                        
                         forbidden_macros.insert(tok.value);
-
+                        
+                        // Формируем substituted_body, обрабатывая @ перед параметрами
                         std::vector<Token> substituted_body;
-                        for (const Token& bt : macIt->second.body) {
+                        for (size_t i = 0; i < macIt->second.body.size(); ++i) {
+                            const Token& bt = macIt->second.body[i];
+                            
+                            // Проверяем, не является ли текущий токен оператором @ и следующий - литералом-параметром
+                            if (bt.type == TokenType::OPERATOR && bt.value == "@" && i + 1 < macIt->second.body.size()) {
+                                const Token& next_bt = macIt->second.body[i + 1];
+                                if (next_bt.type == TokenType::LITERAL) {
+                                    auto paramIt = std::find(macIt->second.params.begin(), macIt->second.params.end(), next_bt.value);
+                                    if (paramIt != macIt->second.params.end()) {
+                                        size_t idx = paramIt - macIt->second.params.begin();
+                                        if (idx < args.size()) {
+                                            // Превращаем аргумент в строку
+                                            std::string str_value = tokensToString(args[idx]);
+                                            Token string_token;
+                                            string_token.type = TokenType::STRING;
+                                            string_token.value = str_value;
+                                            string_token.pif = bt.pif; // позиция @
+                                            substituted_body.push_back(string_token);
+                                            i++; // пропускаем имя параметра
+                                            continue;
+                                        }
+                                    }
+                                }
+                                // Если не параметр, то оставляем как есть (оба токена)
+                                substituted_body.push_back(bt);
+                                substituted_body.push_back(next_bt);
+                                i++;
+                                continue;
+                            }
+                            
+                            // Обычная подстановка параметра (без @)
                             if (bt.type == TokenType::LITERAL) {
-                                auto paramIt = std::find(macIt->second.params.begin(),
-                                                        macIt->second.params.end(), bt.value);
+                                auto paramIt = std::find(macIt->second.params.begin(), macIt->second.params.end(), bt.value);
                                 if (paramIt != macIt->second.params.end()) {
                                     size_t idx = paramIt - macIt->second.params.begin();
                                     if (idx < args.size()) {
-                                        substituted_body.insert(substituted_body.end(),
-                                                               args[idx].begin(), args[idx].end());
+                                        substituted_body.insert(substituted_body.end(), args[idx].begin(), args[idx].end());
                                         continue;
                                     }
                                 }
                             }
                             substituted_body.push_back(bt);
                         }
-
+                        
+                        // Первое раскрытие макросов в подставленном теле
                         auto expanded_body = expandTokens(substituted_body, forbidden_macros);
+                        
+                        // === ОБРАБОТКА ОПЕРАТОРА КОНКАТЕНАЦИИ % ===
+                        std::vector<Token> concatenated_body;
+                        for (size_t i = 0; i < expanded_body.size(); ++i) {
+                            if (expanded_body[i].type == TokenType::OPERATOR && expanded_body[i].value == "%") {
+                                if (concatenated_body.empty() || i + 1 >= expanded_body.size()) {
+                                    Error err("Invalid use of % operator for concatenation",
+                                              expanded_body[i].pif, ErrorTypes::MACRO, "");
+                                    throw err;
+                                }
+                                Token left = concatenated_body.back();
+                                concatenated_body.pop_back();
+                                Token right = expanded_body[i + 1];
+                                std::string concatenated = left.value + right.value;
+                                Token new_token;
+                                new_token.type = TokenType::LITERAL;
+                                new_token.value = concatenated;
+                                new_token.pif = left.pif;
+                                concatenated_body.push_back(new_token);
+                                i++; // пропускаем правый операнд
+                            } else {
+                                concatenated_body.push_back(expanded_body[i]);
+                            }
+                        }
+                        
+                        // Повторное раскрытие результата конкатенации
+                        auto final_expanded = expandTokens(concatenated_body, forbidden_macros);
+                        
                         forbidden_macros.erase(tok.value);
-
-                        result.insert(result.end(), expanded_body.begin(), expanded_body.end());
+                        result.insert(result.end(), final_expanded.begin(), final_expanded.end());
                         continue;
                     } else {
                         stream.setPosition(savedPos);
                     }
                 }
             }
-
+            
+            // Обычный токен
             result.push_back(stream.next());
         }
-
+        
         return result;
     }
 };

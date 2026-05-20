@@ -3,9 +3,7 @@
 #include <memory>
 #include <variant>
 #include <optional>
-#include <ostream>
 #include <any>
-#include <iostream>
 #include <cassert>
 #pragma once
 
@@ -63,9 +61,7 @@ struct Type {
 
     Type() : m_data(monostate{}) {}
 
-    Type(const string& str) {
-        parse_from_string(str);
-    }
+    Type(const string& str) { parse_from_string(str); }
 
     explicit Type(PrimitiveType pt) : m_data(std::move(pt)) { update_pool(); }
     explicit Type(PointerType pt) : m_data(std::move(pt)) { update_pool(); }
@@ -107,7 +103,6 @@ struct Type {
 
 public:
     vector<TypePtr> get_union_components() const;
-    
 };
 
 // Реализация compare (статическая)
@@ -290,7 +285,6 @@ vector<TypePtr> Type::get_union_components() const {
 }
 
 // Вспомогательная функция для прямого (не union) структурного сравнения
-// Вспомогательная функция для прямого (не union) структурного сравнения
 static bool is_sub_type_direct(const Type& self, const Type& other) {
     // ptr - любой указательный тип является подтипом ptr
     if (holds_alternative<PtrType>(other.m_data)) return self.is_pointer();
@@ -306,7 +300,7 @@ static bool is_sub_type_direct(const Type& self, const Type& other) {
         using L = decay_t<decltype(lhs)>;
         using R = decay_t<decltype(rhs)>;
 
-        // Компилятор должен знать, что мы заходим сюда только если типы совпадают
+  
         if constexpr (is_same_v<L, R>) {
             if constexpr (is_same_v<L, PrimitiveType>) {
                 return lhs.name == rhs.name;
@@ -323,25 +317,20 @@ static bool is_sub_type_direct(const Type& self, const Type& other) {
                 if (lhs.arg_types.size() != rhs.arg_types.size()) return false;
                 for (size_t i = 0; i < lhs.arg_types.size(); ++i) {
                     if (!lhs.arg_types[i] || !rhs.arg_types[i]) return false;
-                    // Контравариантность параметров: (A -> B) <: (C -> D) <=> C <: A && B <: D
+                    
                     if (!rhs.arg_types[i]->is_sub_type(*lhs.arg_types[i])) return false;
                 }
                 if (lhs.return_type && rhs.return_type) return lhs.return_type->is_sub_type(*rhs.return_type);
                 return !lhs.return_type && !rhs.return_type;
             }
-            // AutoType, PtrType, PointerAutoType, UnionType, monostate
-            // Для них совпадение индексов уже гарантирует совместимость (или они обработаны выше)
             return true; 
         }
-        // Этот блок теоретически недостижим из-за проверки index() выше,
-        // но нужен для удовлетворения требования visit возвращать значение во всех ветках
         return false; 
     }, self.m_data, other.m_data);
 }
 
-// Основная проверка подтипа с корректной рекурсивной обработкой union
+
 bool Type::is_sub_type(const Type& other) const {
-    // 1. Если `this` — union, то КАЖДЫЙ его компонент должен быть подтипом `other`
     if (this->is_union_type()) {
         const auto& this_union = get<UnionType>(this->m_data);
         for (const auto& comp : this_union.components) {
@@ -349,7 +338,6 @@ bool Type::is_sub_type(const Type& other) const {
         }
         return true;
     }
-    // 2. Если `other` — union, то `this` должен быть подтипом ХОТЯ БЫ ОДНОГО из его компонентов
     if (other.is_union_type()) {
         const auto& other_union = get<UnionType>(other.m_data);
         for (const auto& comp : other_union.components) {
@@ -357,7 +345,6 @@ bool Type::is_sub_type(const Type& other) const {
         }
         return false;
     }
-    // 3. Ни один не union — прямое структурное сравнение
     return is_sub_type_direct(*this, other);
 }
 
@@ -443,7 +430,7 @@ void Type::parse_from_string(const string& str) {
         return;
     }
 
-    // Проверка на union
+   
     {
         int paren = 0, square = 0;
         bool is_union = false;
@@ -533,7 +520,7 @@ void Type::parse_from_string(const string& str) {
     update_pool();
 }
 
-// Функции создания типов
+
 Type create_pointer_type(const Type& type) {
     if (type.is_union_type()) {
         auto comps = type.get_union_components();
@@ -612,17 +599,6 @@ struct Value {
 
     Value copy() const {
         return Value(*this);
-    }
-
-    friend ostream& operator<<(ostream& os, const Value& value) {
-        if (value.type == STANDART_TYPE::STRING) {
-            os << any_cast<string>(value.data);
-        } else if (value.type == STANDART_TYPE::NAMESPACE) {
-            os << "NAMESPACE";
-        } else {
-            os << "Value(" << value.type.pool << ")";
-        }
-        return os;
     }
 };
 
