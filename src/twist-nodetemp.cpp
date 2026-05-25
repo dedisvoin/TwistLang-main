@@ -57,7 +57,8 @@
     _(NODE_ARRAY_PUSH) \
     _(NODE_OBJECT_RESOLUTION) \
     _(NODE_STRUCT_DECLARATION) \
-    _(NODE_ECHO)
+    _(NODE_ECHO) \
+    _(NODE_IS)
 
 // Enum
 enum NodeTypes {
@@ -91,7 +92,7 @@ inline const char* get_node_type_name(NodeTypes type) {
 
 
 struct Node {
-    NodeTypes NODE_TYPE;            
+    NodeTypes NODE_TYPE;
     virtual ~Node() = default;      // Деструктор
     virtual Value eval_from(Memory* memory) = 0;
     virtual void  exec_from(Memory* memory) = 0;

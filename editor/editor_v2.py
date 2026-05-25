@@ -1303,7 +1303,7 @@ class ErrorOverviewPanel(QWidget):
                     item.setBackground(bg)
 
                 self.model.appendRow([file_item, line_item, type_item, msg_item])
-    
+
         # Автоподгонка ширин колонок после отрисовки
         QTimer.singleShot(0, lambda: [
             self.tree.resizeColumnToContents(0),
@@ -2483,7 +2483,7 @@ class TwistLangLexer(QsciLexerCustom):
 
         self.keywords = {
             'if', 'else', 'for', 'while', 'let', 'in', 'and', 'or', 'echo',
-            'ret', 'assert', 'lambda', 'do',
+            'ret', 'assert', 'lambda', 'do', "is",
             'struct', 'namespace', 'func', 'continue', 'break'
         }
         self.modifiers = {'const', 'static', 'global', 'final', 'private', 'shadow'}
@@ -2685,6 +2685,7 @@ class TwistLangLexer(QsciLexerCustom):
                             esc_len += next_l
                             j += next_l
                         self.setStyling(esc_len, self.STYLE_ESCAPE)
+
                     elif c == quote_char:
                         # Закрывающая кавычка
                         self.setStyling(l, self.STYLE_STRING)
@@ -3302,6 +3303,18 @@ class CustomScintilla(QsciScintilla):
         self.setScrollWidthTracking(True)
         self.setScrollWidth(1)
         self.setCaretLineVisible(True)
+
+            # Настройка прозрачного фона (добавить в конец метода)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.SendScintilla(self.SCI_SETBUFFEREDDRAW, 0)
+        
+        # Прозрачный фон для всех стилей
+        for style in range(32):
+            self.SendScintilla(self.SCI_STYLESETBACK, style, 0)
+        
+        # Прозрачные марджины
+        for margin in range(5):
+            self.SendScintilla(self.SCI_SETMARGINBACKN, margin, 0)
 
         self.setMarginType(0, QsciScintilla.MarginType.NumberMargin)
         self.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)
@@ -4830,7 +4843,7 @@ class TwistLangEditor(FramelessMainWindow):
             editor = self.tab_widget.widget(i)
             if isinstance(editor, CustomScintilla) and editor.filename and editor.errors:
                 file_errors_map[editor.filename] = editor.errors
-                
+
         self.error_overview_panel.set_all_errors(file_errors_map)
 
     def _show_file_explorer_for_path(self, path: str):

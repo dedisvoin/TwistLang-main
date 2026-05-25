@@ -1,0 +1,64 @@
+// простейшее lambda выражение
+// обязательно необходимо указать ожидаемые и возвращаемые типы
+//! в { ... } нужно указать вырежине, не инструкцию
+let sum = lambda(a: Int, b: Int) -> Int { a + b };
+
+// вызов
+echo sum(1, 5);
+
+
+
+///////////////////////////////////////////////////////
+// конструирование объектов на основе пространств имен
+// и lambda выражений
+///////////////////////////////////////////////////////
+
+// макет данных
+global namespace Person {
+    static let name: String?;
+    static let age: Int?;
+}
+
+let create = lambda(global name: String, global age: Int) -> typeof(Person) {
+    // используем анонимное пространство имен для манипуляций с объектом
+    namespace {
+        let p = Person();       //? создаем копию 
+        
+        p::name = name;         //? устанавливаем значение
+        p::age = age;
+    }::p                        //? возвращаем копию
+};
+
+let pp = create("Ivan", 19);
+let p2 = create("Kate", 18);
+
+
+echo pp::name;
+echo pp::age;
+echo p2::name;
+echo p2::age;
+
+
+///////////////////////////////////////////////////////
+// массивы лямбд
+///////////////////////////////////////////////////////
+
+let methods = {
+    lambda(a: Int, b: Int) -> Int { a + b },
+    lambda(a: Int, b: Int) -> Int { a - b }
+};
+
+echo methods[0](10, 20);
+echo methods[1](10, 20);
+
+
+let methods_ptr = &methods;
+
+echo (*methods_ptr)[1](5, 5);
+
+
+echo is(methods_ptr, final);
+
+
+
+

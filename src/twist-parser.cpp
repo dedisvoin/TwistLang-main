@@ -66,6 +66,7 @@
 #include "Nodes/NodeArrayPush.cpp"
 
 #include "Nodes/NodeEcho.cpp"
+#include "Nodes/NodeIs.cpp"
 
 #include <vcruntime_startup.h>
 #include <string>
@@ -125,6 +126,7 @@ struct ASTGenerator {
 
     // Call
     Node* ParseCall(Node* expr, Token start, Token end);
+    Node* ParseIs();
 
     // Base literals
     Node* ParseNumber();
@@ -226,6 +228,10 @@ struct ASTGenerator {
             return ParseNew();
         }
 
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("is")) {
+            return ParseIs();
+        }
+
         if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("sizeof")) {
             return ParseSizeof();
         }
@@ -268,12 +274,12 @@ struct ASTGenerator {
         if (walker.CheckType(TokenType::DEREFERENCE) && walker.CheckValue("*")) {
             return ParseDereference();
         }
-        
+
         auto expr = parse_primary_expression();
         if (!expr) {
             if (walker.CheckType(TokenType::OPERATOR) && walker.CheckValue(":") && walker.CheckType(TokenType::OPERATOR, 1) && walker.CheckValue(":", 1))
                 throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
-            else 
+            else
                 return nullptr;
         }
         return ParsePostfix(std::move(expr));
@@ -285,9 +291,9 @@ struct ASTGenerator {
     ) {
         Token& start_token = *walker.get();
         Token& start_less = *walker.get(-1);
-        
+
         auto left = (this->*parseHigherLevel)();
-        
+
         while (true) {
             bool found_operator = false;
             string op;
@@ -324,7 +330,7 @@ struct ASTGenerator {
                     walker.next();
                     break;
                 }
-                
+
                 if ((walker.CheckType(TokenType::OPERATOR) || walker.CheckType(TokenType::L_TRIANGLE_BRACKET) || walker.CheckType(TokenType::R_TRIANGLE_BRACKET) || walker.CheckType(TokenType::DEREFERENCE)) && walker.CheckValue(candidate)) {
                     found_operator = true;
                     op = candidate;
@@ -527,12 +533,12 @@ struct ASTGenerator {
         if (walker.CheckValue(";")) {
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "statement");
         }
-        
+
         // Общий случай: выражение, которое может быть присваиванием или expression statement
         auto start_left_value_token = *walker.get();
-        
+
         auto left_expr = parse_expression();
-        
+
         if (left_expr) {
             auto end_left_value_token = *walker.get(-1);
 
@@ -580,7 +586,7 @@ struct ASTGenerator {
                 return new NodeExpressionStatement(left_expr);
             }
         }
-        
+
         return nullptr;
     }
 
@@ -599,71 +605,124 @@ struct ASTGenerator {
 };
 
 void GenerateStandartTypes(Memory* g_memory, string g_file_name) {
+    // Тип Int
     auto OBJ_TYPE_INT = CreateMemoryObject(NewType("Int"), STANDART_TYPE::TYPE, g_memory,
         true, true, true, true, false, false);
-    g_memory->add_object("Int",OBJ_TYPE_INT);
+    OBJ_TYPE_INT->is_standart = true;
+    g_memory->add_object("Int", OBJ_TYPE_INT);
     STATIC_MEMORY.register_object(OBJ_TYPE_INT);
 
+    // Тип Double
     auto OBJ_TYPE_DOUBLE = CreateMemoryObject(NewType("Double"), STANDART_TYPE::TYPE, g_memory,
         true, true, true, true, false, false);
-    g_memory->add_object("Double",OBJ_TYPE_DOUBLE);
+    OBJ_TYPE_DOUBLE->is_standart = true;
+    g_memory->add_object("Double", OBJ_TYPE_DOUBLE);
     STATIC_MEMORY.register_object(OBJ_TYPE_DOUBLE);
 
+    // Тип Char
     auto OBJ_TYPE_CHAR = CreateMemoryObject(NewType("Char"), STANDART_TYPE::TYPE, g_memory,
         true, true, true, true, false, false);
-    g_memory->add_object("Char",OBJ_TYPE_CHAR);
+    OBJ_TYPE_CHAR->is_standart = true;
+    g_memory->add_object("Char", OBJ_TYPE_CHAR);
     STATIC_MEMORY.register_object(OBJ_TYPE_CHAR);
 
+    // Тип String
     auto OBJ_TYPE_STRING = CreateMemoryObject(NewType("String"), STANDART_TYPE::TYPE, g_memory,
         true, true, true, true, false, false);
-    g_memory->add_object("String",OBJ_TYPE_STRING);
+    OBJ_TYPE_STRING->is_standart = true;
+    g_memory->add_object("String", OBJ_TYPE_STRING);
     STATIC_MEMORY.register_object(OBJ_TYPE_STRING);
 
+    // Тип Bool
     auto OBJ_TYPE_BOOL = CreateMemoryObject(NewType("Bool"), STANDART_TYPE::TYPE, g_memory,
         true, true, true, true, false, false);
-    g_memory->add_object("Bool",OBJ_TYPE_BOOL);
+    OBJ_TYPE_BOOL->is_standart = true;
+    g_memory->add_object("Bool", OBJ_TYPE_BOOL);
     STATIC_MEMORY.register_object(OBJ_TYPE_BOOL);
 
+    // Тип Type
     auto OBJ_TYPE_TYPE = CreateMemoryObject(NewType("Type"), STANDART_TYPE::TYPE, g_memory,
         true, true, true, true, false, false);
-    g_memory->add_object("Type",OBJ_TYPE_TYPE);
+    OBJ_TYPE_TYPE->is_standart = true;
+    g_memory->add_object("Type", OBJ_TYPE_TYPE);
     STATIC_MEMORY.register_object(OBJ_TYPE_TYPE);
 
+    // Тип Null
     auto OBJ_TYPE_NULL = CreateMemoryObject(NewType("Null"), STANDART_TYPE::TYPE, g_memory,
         true, true, true, true, false, false);
-    g_memory->add_object("Null",OBJ_TYPE_NULL);
+    OBJ_TYPE_NULL->is_standart = true;
+    g_memory->add_object("Null", OBJ_TYPE_NULL);
     STATIC_MEMORY.register_object(OBJ_TYPE_NULL);
 
-
+    // Тип Namespace
     auto OBJ_TYPE_NAMESPACE = CreateMemoryObject(NewType("Namespace"), STANDART_TYPE::TYPE, g_memory,
         true, true, true, true, false, false);
-    g_memory->add_object("Namespace",OBJ_TYPE_NAMESPACE);
+    OBJ_TYPE_NAMESPACE->is_standart = true;
+    g_memory->add_object("Namespace", OBJ_TYPE_NAMESPACE);
     STATIC_MEMORY.register_object(OBJ_TYPE_NAMESPACE);
 
+    // Тип Lambda
     auto OBJ_TYPE_LAMBDA = CreateMemoryObject(NewType("Lambda"), STANDART_TYPE::TYPE, g_memory,
         true, true, true, true, false, false);
-    g_memory->add_object("Lambda",OBJ_TYPE_LAMBDA);
+    OBJ_TYPE_LAMBDA->is_standart = true;
+    g_memory->add_object("Lambda", OBJ_TYPE_LAMBDA);
     STATIC_MEMORY.register_object(OBJ_TYPE_LAMBDA);
 
+    // Тип auto
     auto OBJ_TYPE_AUTO = CreateMemoryObject(NewType("auto"), STANDART_TYPE::TYPE, g_memory,
         true, true, true, true, false, false);
-    g_memory->add_object("auto",OBJ_TYPE_AUTO);
+    OBJ_TYPE_AUTO->is_standart = true;
+    g_memory->add_object("auto", OBJ_TYPE_AUTO);
     STATIC_MEMORY.register_object(OBJ_TYPE_AUTO);
 
+    // Тип ptr
     auto OBJ_TYPE_PTR = CreateMemoryObject(NewType("ptr"), STANDART_TYPE::TYPE, g_memory,
         true, true, true, true, false, false);
-    g_memory->add_object("ptr",OBJ_TYPE_PTR);
-    STATIC_MEMORY.register_object(OBJ_TYPE_AUTO);
+    OBJ_TYPE_PTR->is_standart = true;
+    g_memory->add_object("ptr", OBJ_TYPE_PTR);
+    STATIC_MEMORY.register_object(OBJ_TYPE_PTR);  // Исправлено: был OBJ_TYPE_AUTO
 
-    auto __TWIST_FILE__ = CreateMemoryObject(Value(STANDART_TYPE::STRING, string(g_file_name)), STANDART_TYPE::STRING, g_memory,
+    // Константа __FILE__
+    auto __TWIST_FILE__ = CreateMemoryObject(Value(STANDART_TYPE::STRING, string(g_file_name)),
+        STANDART_TYPE::STRING, g_memory,
         true, true, true, true, false, false);
+    __TWIST_FILE__->is_standart = true;
     g_memory->add_object("__FILE__", __TWIST_FILE__);
     STATIC_MEMORY.register_object(__TWIST_FILE__);
 
-    auto __TWIST_ADDR__ = CreateMemoryObject(NewPointer(AddressManager::get_current_address() + 2, STANDART_TYPE::NULL_T), STANDART_TYPE::STRING, g_memory,
+    // Константа __PTR__ (текущий адрес + 2)
+    auto __TWIST_ADDR__ = CreateMemoryObject(
+        NewPointer(AddressManager::get_current_address() + 2, STANDART_TYPE::NULL_T),
+        STANDART_TYPE::PTR, g_memory,  // Исправлен тип с STRING на PTR
         true, true, true, true, false, false);
+    __TWIST_ADDR__->is_standart = true;
     g_memory->add_object("__PTR__", __TWIST_ADDR__);
     STATIC_MEMORY.register_object(__TWIST_ADDR__);
+}
+
+Node* ASTGenerator::ParseIs() {
+    walker.next(); // pass "is"
+    auto token_start = *walker.get(-1);
+    if (!walker.CheckValue("("))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "'('");
+    walker.next();
+    auto token_start_expr = *walker.get();
+    auto expr = parse_expression();
+    auto token_end_expr = *walker.get(-1);
+    if (!expr)
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+    if (!walker.CheckValue(",") && walker.CheckType(TokenType::OPERATOR))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "','");
+    walker.next();
+    if (!walker.CheckType(TokenType::LITERAL) && !walker.CheckType(TokenType::KEYWORD))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "one literal");
+    string modifier = walker.get()->value;
+    walker.next();
+    if (!walker.CheckValue(")"))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
+    walker.next();
+    auto token_end = *walker.get(-1);
+    return new NodeIs(expr, modifier, token_start, token_end, token_start_expr, token_end_expr);
 }
 
 Node* ASTGenerator::ParseEcho() {
@@ -683,7 +742,7 @@ Node* ASTGenerator::ParseEcho() {
             continue;
         }
         else {
-        
+
            if (!walker.CheckType(TokenType::DAC)) {
                 throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
            } else {
@@ -693,10 +752,10 @@ Node* ASTGenerator::ParseEcho() {
         }
         break;
     }
-    
-    
+
+
     Token end = *walker.get(-1);
-   
+
     return new NodeEcho(expressions, start, end);
 }
 
@@ -730,7 +789,7 @@ Node* ASTGenerator::ParseExit() {
 
 // PASS
 Node* ASTGenerator::ParsePostfix(Node* expr) {
-    
+
     while (true) {
         if (walker.CheckValue("(")) {
             Token start = *walker.get();
@@ -887,7 +946,7 @@ Node* ASTGenerator::ParseFuncDecl() {
     if (!return_type_expr)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "return type expression");
 
-    
+
     auto body = parse_statement();
     if (!body)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "body");
@@ -1000,7 +1059,7 @@ Node* ASTGenerator::ParseNew() {
 
     if (walker.CheckType(TokenType::L_TRIANGLE_BRACKET)) {
         walker.next();
-        
+
         while (true) {
             if (walker.CheckType(TokenType::KEYWORD) | walker.CheckType(LITERAL)) {
                 if (walker.CheckValue("const")) {
@@ -1018,7 +1077,7 @@ Node* ASTGenerator::ParseNew() {
                     end_type = *walker.get(-1);
                     if (!type_expr)
                         throw ERROR_THROW::UnexpectedToken(*walker.get(), "type expression");
-                    
+
                     if (!walker.CheckType(TokenType::R_BRACKET))
                         throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
                     walker.next();
@@ -1030,7 +1089,7 @@ Node* ASTGenerator::ParseNew() {
                 walker.next();
                 continue;
             }
-            if (walker.CheckType(TokenType::R_TRIANGLE_BRACKET) && 
+            if (walker.CheckType(TokenType::R_TRIANGLE_BRACKET) &&
                 walker.CheckType(TokenType::OPERATOR, -1) && walker.CheckValue(",", -1)) {
                 throw ERROR_THROW::UnexpectedToken(*walker.get(), "modifier (static, const)");
             }
@@ -1040,7 +1099,7 @@ Node* ASTGenerator::ParseNew() {
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "'>'");
         walker.next();
     }
-    
+
     auto expr = parse_expression();
     if (!expr)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression or null");
@@ -1073,7 +1132,7 @@ Node* ASTGenerator::ParseCall(Node* expr, Token start, Token end) {
     return new NodeCall(expr, arguments, start, end);
 }
 
-// PASS 
+// PASS
 Node* ASTGenerator::ParseLambda() {
     walker.next(); // pass 'lambda' token
     Token start_args_token = *walker.get();
@@ -1087,9 +1146,9 @@ Node* ASTGenerator::ParseLambda() {
         if (walker.CheckType(TokenType::LITERAL)) {
             name = walker.get()->value;
             walker.next();
-        } else 
+        } else
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "literal (not `String` or `Char`)");
-        
+
         if (!walker.CheckValue("]"))
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "']'");
         walker.next();
@@ -1118,8 +1177,8 @@ Node* ASTGenerator::ParseLambda() {
             arg_is_global = true;
             walker.next();
         }
-        
-        
+
+
         if (!walker.CheckType(TokenType::LITERAL))
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "variable name");
         string arg_name = walker.get()->value;
@@ -1152,7 +1211,7 @@ Node* ASTGenerator::ParseLambda() {
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // Парсинг возвращаемого типа
     //////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
     if (!(walker.CheckValue("-") && walker.CheckType(TokenType::OPERATOR)))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "syntax: -> type expression");
     walker.next();
@@ -1166,7 +1225,7 @@ Node* ASTGenerator::ParseLambda() {
 
     if (!return_type)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "return type expression");
-    
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -1318,14 +1377,14 @@ Node* ASTGenerator::ParseAddressOf() {
 // PASS
 Node* ASTGenerator::ParseDereference() {
     walker.next(); // pass '*' token
-    
+
     Token start_token = *walker.get();
     auto expr = parse_expression();
     if (!expr)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
     Token end_token = *walker.get(-1);
     return new NodeDereference(expr, start_token, end_token);
-    
+
 }
 
 // PASS
@@ -1427,7 +1486,7 @@ Node* ASTGenerator::ParseFor() {
 
     auto body = parse_statement();
 
-    if (!body) 
+    if (!body)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "body");
 
     return new NodeFor(init_state, check_expr, update_state, body, body_token);
@@ -1443,7 +1502,7 @@ Node* ASTGenerator::ParseWhile() {
     walker.next();
 
     auto expr = parse_expression();
-    if (!expr) 
+    if (!expr)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "check expression");
 
     if (!walker.CheckValue(")"))
@@ -1451,7 +1510,7 @@ Node* ASTGenerator::ParseWhile() {
     walker.next();
     auto end_token = *walker.get(-1);
 
-    
+
     auto body = parse_statement();
     if (!body)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "body");
@@ -1482,9 +1541,9 @@ Node* ASTGenerator::ParseDoWhile() {
     walker.next();
 
     auto expr = parse_expression();
-    if (!expr) 
+    if (!expr)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
-    
+
 
     if (!walker.CheckValue(")"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
@@ -1654,7 +1713,7 @@ Node* ASTGenerator::ParseBlock() {
         walker.next(); // pass '}'
         return new NodeBlock(nodes_array);
     }
-    
+
     while (true) {
         auto statement = parse_statement();
         if (!statement) break;
@@ -1724,7 +1783,7 @@ Node* ASTGenerator::ParseScopes() {
 
 
 Node* ASTGenerator::ParseVariableDecl() {
-    
+
     walker.next(); // pass 'let' token
 
 
@@ -1737,17 +1796,17 @@ Node* ASTGenerator::ParseVariableDecl() {
     Node* type_expr = nullptr; // type expression
     Token type_start_token;
     Token type_end_token;
-    
+
 
     if (walker.CheckValue(":")) {
         walker.next(); // pass ':' token
         type_start_token = *walker.get();
-        
+
         type_expr = parse_expression();
-        
-        if (!type_expr) 
+
+        if (!type_expr)
             throw ERROR_THROW::UnexpectedToken(*walker.get(), "type expression");
-        
+
         type_end_token = *walker.get(-1);
     } else {
         type_start_token = *walker.get();
@@ -1787,7 +1846,7 @@ Node* ASTGenerator::ParseVariableDecl() {
     if (!walker.CheckValue(";"))
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "';'");
     walker.next(); // pass ';' token
-    
+
     return new NodeVariableDeclaration(var_name, expr, variable_token,
                                              type_expr, type_start_token, type_end_token, nullable, start_expr_token, end_expr_token);
 }
@@ -1798,7 +1857,7 @@ Node* ASTGenerator::ParseShadowVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("private") && !walker.CheckValue("struct") &&
         !walker.CheckValue("final")) {
         throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
@@ -1830,7 +1889,7 @@ Node* ASTGenerator::ParseFinalVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("private") && !walker.CheckValue("struct") &&
         !walker.CheckValue("shadow")) {
         throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
@@ -1863,7 +1922,7 @@ Node* ASTGenerator::ParseStaticVariableDecl() {
     if (!walker.CheckValue("final") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("private") && !walker.CheckValue("struct") &&
         !walker.CheckValue("shadow")) {
         throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
@@ -1894,7 +1953,7 @@ Node* ASTGenerator::ParseConstVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("final") && !walker.CheckValue("global") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("private") && !walker.CheckValue("struct") &&
         !walker.CheckValue("shadow")) {
         throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
@@ -1926,7 +1985,7 @@ Node* ASTGenerator::ParseGlobalVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("final") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("private") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("private") && !walker.CheckValue("struct") &&
         !walker.CheckValue("shadow")) {
         throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
@@ -1957,7 +2016,7 @@ Node* ASTGenerator::ParsePrivateVariableDecl() {
     if (!walker.CheckValue("static") && !walker.CheckValue("let") &&
         !walker.CheckValue("const") && !walker.CheckValue("final") &&
         !walker.CheckValue("namespace") && !walker.CheckValue("func") &&
-        !walker.CheckValue("global") && !walker.CheckValue("struct") && 
+        !walker.CheckValue("global") && !walker.CheckValue("struct") &&
         !walker.CheckValue("shadow")) {
         throw ERROR_THROW::ExpectedDeclarationStatement(*walker.get());
     }
@@ -2125,9 +2184,9 @@ Node* ASTGenerator::ParseStructDecl() {
 
     auto body = parse_statement();
 
-    if (!body) 
+    if (!body)
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "body or ';'");
-    
+
 
     return new NodeStructDeclaration(body, name, token);
 }

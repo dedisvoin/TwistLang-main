@@ -12,7 +12,7 @@ struct NodeAddressOf : public Node { NO_EXEC
         this->NODE_TYPE = NodeTypes::NODE_ADDRESS_OF;
     }
 
-    
+
     Value eval_from(Memory* _memory) override {
         // Сначала вычислим выражение, чтобы получить его тип (нужен для указателя)
         Value val = expr->eval_from(_memory);
@@ -29,7 +29,7 @@ struct NodeAddressOf : public Node { NO_EXEC
         }
         // Обрабатываем разрешение имени (namespace::var)
         else if (expr->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
-            auto [mem, var_name] = resolveTargetMemory(expr, _memory);
+            auto [mem, var_name] = resolveTargetMemory(expr, _memory, start, end);
             int addr = mem->get_variable(var_name)->address;
             return NewPointer(addr, val.type);
         }

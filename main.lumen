@@ -1,6 +1,3 @@
-#macro getter(a) {
-    func get_%a() -> typeof(a) {
-        ret this.a;
-    }
+namespace std {
+    let a = 10;
 }
-

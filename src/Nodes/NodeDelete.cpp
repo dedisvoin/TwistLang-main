@@ -14,8 +14,8 @@ struct NodeDelete : public Node { NO_EVAL
     }
 
     void exec_from(Memory* _memory) override {
-        if (target->NODE_TYPE != NodeTypes::NODE_LITERAL && 
-            target->NODE_TYPE != NodeTypes::NODE_NAME_RESOLUTION && 
+        if (target->NODE_TYPE != NodeTypes::NODE_LITERAL &&
+            target->NODE_TYPE != NodeTypes::NODE_NAME_RESOLUTION &&
             target->NODE_TYPE != NodeTypes::NODE_DEREFERENCE) {
             ERROR::InvalidDeleteInstruction(start_token, end_token);
         }
@@ -23,7 +23,7 @@ struct NodeDelete : public Node { NO_EVAL
         if (target->NODE_TYPE == NodeTypes::NODE_DEREFERENCE) {
             auto deref_node = static_cast<NodeDereference*>(target);
             auto value = deref_node->expr->eval_from(_memory);
-            
+
             if (!value.type.is_pointer()) {
                 ERROR::CanNotDeleteUndereferencedValue(start_token, end_token);
             }
@@ -45,7 +45,7 @@ struct NodeDelete : public Node { NO_EVAL
             return;
         } else {
             // Удаление по имени (переменная или пространство имён) – остаётся без изменений
-            pair<Memory*, string> target_info = resolveTargetMemory(target, _memory);
+            pair<Memory*, string> target_info = resolveTargetMemory(target, _memory, start_token, end_token);
             Memory* target_memory = target_info.first;
             string target_name = target_info.second;
 

@@ -1,0 +1,33 @@
+
+// Базовый пример структуры
+struct Person {
+    static {
+        let name: String?;
+        let age: Int?;
+    }
+
+    func __init__(name: String, age: Int) -> typeof(Person) { // Конструктор
+        this.name = name;
+        this.age = age;
+        ret this;
+    }
+
+    func p_echo() -> Null {
+        echo "Name: " + this.name + ", Age: " + String(this.age);
+    }
+}
+
+let p_1 = Person("Ivan", 19);
+p_1.p_echo();
+
+
+
+struct string { // если нет конструктора то при вызове будет создаваться копия структуры
+    let a = 0;
+}
+
+let a = string();
+
+
+
+

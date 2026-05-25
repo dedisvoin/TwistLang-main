@@ -43,3 +43,11 @@ let str = String(true); // true в виде строку
 
 
 static let a: Int = 10;
+
+
+let d_1 = Double("3,14");
+echo d_1;
+
+echo Int("2");
+
+echo Bool(0);

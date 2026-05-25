@@ -18,7 +18,40 @@ var a: auto = 10;
 auto_static(a, 10)
 //! a = 3.14; // будет ошибка!
 
+
 let T = Int | Double | String | Char;
 
 
+// максросы поддерживают конкатенацию литералов
+#macro setter(var_name) {
+    func set_%var_name(value: auto) -> Null {
+        var_name = value;
+    }
+}
+
+// чтобы привреатить в строку можно использовать @
+// превлащает поток токенов в единый строковый литерал
+#macro to_string(args) {
+    @args
+}
+
+
+global let b = 0;
+echo b;
+
+setter(b)
+
+set_b(10);
+
+echo b;
+
+
+let value = to_string(10);
+echo value, " ", typeof(value);
+
+let value = to_string(Hello World);
+echo value;
+
+let value = to_string(let a = 10;);
+echo value; // при сборе токенов они разделяются пробелами
 

@@ -3,6 +3,7 @@
 #include "src/twist-utils.cpp"
 #include "src/twist-tokenwalker.cpp"
 #include "src/twist-parser.cpp"
+#include "src/lumen-mdumper.cpp"
 
 #include "fstream"
 #include <filesystem>
@@ -92,6 +93,7 @@ void language_server(const std::string& file_path, std::string file_name) {
         // Игнорируем
     }
 
+    dump_memory(g_memory.get(), "dump.json");
     // Запись лога
     std::ofstream log(string("dbg/") + file_name + "_ls.dbg", std::ios::trunc);
     log << Error::GetBuffer();

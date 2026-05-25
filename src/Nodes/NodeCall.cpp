@@ -21,7 +21,7 @@ struct RecursionGuard {
     const Token& start;
     const Token& end;
     RecursionGuard(const Token& s, const Token& e) : start(s), end(e) {
-        
+
         if (recursion_depth >= MAX_RECURSION) {
             throw ERROR_THROW::MaxRecursionDepthExceeded(start, end);
         }
@@ -106,7 +106,7 @@ struct NodeCall : public Node { NO_EXEC
             result = ((Node*)(lambda->expr))->eval_from(call_memory);
         }
         catch (Error err) {
-            
+
             if (err.message_type == 1) {
                 string saved_message = err.message;
                 err.message = "...";
@@ -115,12 +115,12 @@ struct NodeCall : public Node { NO_EXEC
                 string saved_message = err.message;
                 err.message = "...";
                 throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", err.message_type, saved_message);
-                
+
             }
             throw ERROR_THROW::CallError(start_callable, end_callable, "anonymous-lambda", new Error(err), err.message_type);
         }
 
-        
+
 
         // Проверка типа возвращаемого значения (если задан)
         if (lambda->return_type) {
@@ -139,7 +139,7 @@ struct NodeCall : public Node { NO_EXEC
     }
 
     Value call_function(Value &value, Memory* _memory) {
-        
+
         auto func = any_cast<Function*>(value.data);
 
         // 1. Создаём новую память для этого вызова
@@ -152,7 +152,7 @@ struct NodeCall : public Node { NO_EXEC
         call_memory.add_object(func->name, value, value.type,
                             true, true, true, true, false);
 
-        
+
 
         size_t arg_idx = 0;
 
@@ -203,9 +203,9 @@ struct NodeCall : public Node { NO_EXEC
                 int64_t variadic_size = 0;
                 if (param->variadic_size) {
                     Value size_val = param->variadic_size->eval_from(&call_memory);
-                    if (size_val.type != STANDART_TYPE::INT) 
+                    if (size_val.type != STANDART_TYPE::INT)
                         throw ERROR_THROW::InvalidFuncVariadicSizeExpression(start_callable, end_callable, size_val.type);
-                    
+
                     variadic_size = any_cast<int64_t>(size_val.data);
                     if (variadic_size < 0) {
                         throw ERROR_THROW::InvalidFuncVariadicSize(start_callable, end_callable, variadic_size);
@@ -252,10 +252,10 @@ struct NodeCall : public Node { NO_EXEC
 
                 if (call_memory.check_literal(param->name)) {
                     MemoryObject* existing = call_memory.get_variable(param->name);
-                    if (existing->modifiers.is_global) 
+                    if (existing->modifiers.is_global)
                         throw ERROR_THROW::FuncArgumentShadowsGlobal(start_callable, end_callable,
                             func->name, param->name);
-                    
+
                 }
 
                 call_memory.add_object_in_func(param->name, array_value, array_value.type,
@@ -272,7 +272,7 @@ struct NodeCall : public Node { NO_EXEC
 
         // 5. Выполняем тело функции в её собственной call_memory
         try {
-            
+
             ((Node*)(func->body))->exec_from(&call_memory);
             return NewNull();
         }
@@ -307,33 +307,35 @@ struct NodeCall : public Node { NO_EXEC
 
     Value call_struct(Value &value, Memory* _memory) {
         // Убедимся, что вызываемый объект действительно является структурой
-
-
         Struct* struct_builder = any_cast<Struct*>(value.data);
-        
+
         auto new_memory = new Memory();
         _memory->link_objects(new_memory);
         struct_builder->memory->copy_objects(*new_memory);
         auto new_struct = NewStruct(new_memory, struct_builder->name);
         new_memory->add_object_in_struct("this", new_struct, false, false, false, true);
-        
+
         if (struct_builder->body)
             struct_builder->body->exec_from(new_memory);
-        
-        
-        
-        
+
         // Создаём новую структуру с той же памятью и именем
 
         if (new_memory->check_literal("__init__")) {
             auto &builder = new_memory->get_variable("__init__")->value;
             return call_function(builder, _memory);;
         }
-        
-        
-        
-        
+
         return new_struct;
+    }
+
+    Value call_namespace(Value &value, Memory* _memory) {
+        auto n_space = any_cast<Namespace*>(value.data);
+        auto mem = new Memory();
+
+        n_space->memory->copy_objects_to_namespace(mem);
+
+        auto p = NewNamespace(mem, n_space->name);
+        return p;
     }
 
     Value call_string(Value &value_, Memory* _memory) {
@@ -357,7 +359,7 @@ struct NodeCall : public Node { NO_EXEC
         }
         else if (value.type == STANDART_TYPE::INT) {
             new_string = to_string(any_cast<int64_t>(value.data));
-        } 
+        }
         else if (value.type == STANDART_TYPE::DOUBLE) {
             new_string = to_string(any_cast<NUMBER_ACCURACY>(value.data));
         }
@@ -389,38 +391,94 @@ struct NodeCall : public Node { NO_EXEC
 
 
         auto value = args[0]->eval_from(_memory);
-        if (value.type == STANDART_TYPE::INT) 
+        if (value.type == STANDART_TYPE::INT)
             return value;
-        else if (value.type == STANDART_TYPE::DOUBLE) 
+        else if (value.type == STANDART_TYPE::DOUBLE)
             return NewInt(any_cast<NUMBER_ACCURACY>(value.data));
-        else if (value.type == STANDART_TYPE::STRING) 
+        else if (value.type == STANDART_TYPE::STRING)
             return NewInt(stoll(any_cast<string&>(value.data)));
-        else if (value.type == STANDART_TYPE::CHAR) 
+        else if (value.type == STANDART_TYPE::CHAR)
             return NewInt(stoll(to_string(any_cast<char>(value.data))));
-        
+
         throw ERROR_THROW::InvalidIntArgumentType(start_callable, end_callable, value.type);
     }
 
+    Value call_double(Value &value_, Memory* _memory) {
+        if (args.size() != 1)
+            throw ERROR_THROW::InvalidDoubleArgumentCount(start_callable, end_callable, args.size());
+
+        auto value = args[0]->eval_from(_memory);
+        if (value.type == STANDART_TYPE::DOUBLE)
+            return value;
+        else if (value.type == STANDART_TYPE::INT)
+            return NewDouble(any_cast<int64_t>(value.data));
+        else if (value.type == STANDART_TYPE::STRING)
+            return NewDouble(stod(any_cast<string&>(value.data)));
+        else if (value.type == STANDART_TYPE::CHAR)
+            return NewDouble(stoll(to_string(any_cast<char>(value.data))));
+
+        throw ERROR_THROW::InvalidDoubleArgumentType(start_callable, end_callable, value.type);
+    }
+
+    Value call_bool(Value &value_, Memory* _memory) {
+        if (args.size() != 1)
+            throw ERROR_THROW::InvalidBoolArgumentCount(start_callable, end_callable, args.size());
+
+        auto value = args[0]->eval_from(_memory);
+        if (value.type == STANDART_TYPE::BOOL)
+            return value;
+        else if (value.type == STANDART_TYPE::INT)
+            return NewBool(any_cast<int64_t>(value.data) != 0);
+        else if (value.type == STANDART_TYPE::DOUBLE)
+            return NewBool(any_cast<NUMBER_ACCURACY>(value.data) != 0.0);
+        else if (value.type == STANDART_TYPE::STRING)
+            return NewBool(!any_cast<string&>(value.data).empty());
+        else if (value.type == STANDART_TYPE::CHAR)
+            return NewBool(any_cast<char>(value.data) != '\0');
+
+        throw ERROR_THROW::InvalidBoolArgumentType(start_callable, end_callable, value.type);
+    }
+
+    Value call_char(Value &value_, Memory* _memory) {
+        if (args.size() != 1)
+            throw ERROR_THROW::InvalidCharArgumentCount(start_callable, end_callable, args.size());
+
+        auto value = args[0]->eval_from(_memory);
+        if (value.type == STANDART_TYPE::CHAR)
+            return value;
+        else if (value.type == STANDART_TYPE::INT)
+            return NewChar(static_cast<char>(any_cast<int64_t>(value.data)));
+        else if (value.type == STANDART_TYPE::STRING) {
+            string str = any_cast<string&>(value.data);
+            if (str.length() != 1) {
+                throw ERROR_THROW::InvalidCharArgumentType(start_callable, end_callable, value.type);
+            }
+            return NewChar(str[0]);
+        }
+
+        throw ERROR_THROW::InvalidCharArgumentType(start_callable, end_callable, value.type);
+    }
+
     Value call_ptr(Value &value_, Memory* _memory) {
-        
-       
+
+
         auto value = args[0]->eval_from(_memory);
 
-        if (value.type != STANDART_TYPE::INT) 
+        if (value.type != STANDART_TYPE::INT)
             throw ERROR_THROW::InvalidPtrFirstArgumentType(start_callable, end_callable, value.type);
-        
+
         if (args.size() == 1)
             return NewPointerValue(any_cast<int64_t>(value.data), STANDART_TYPE::NULL_T);
         else if (args.size() == 2) {
             auto t = args[1]->eval_from(_memory);
-            if (t.type == STANDART_TYPE::TYPE)    
+            if (t.type == STANDART_TYPE::TYPE)
                 return NewPointerValue(any_cast<int64_t>(value.data), any_cast<Type&>(t.data));
             if (!t.type.is_sub_type(STANDART_TYPE::TYPES)) {
                 return NewPointerValue(any_cast<int64_t>(value.data), any_cast<Struct*>(t.data)->type);
             }
             throw ERROR_THROW::InvalidPtrSecondArgumentType(start_callable, end_callable, value.type);
         }
-        
+
         throw ERROR_THROW::InvalidPtrArgumentCount(start_callable, end_callable, args.size());
     }
 
@@ -438,7 +496,7 @@ struct NodeCall : public Node { NO_EXEC
         //     return result;
         // }
 
-        
+
         if (value.type == STANDART_TYPE::LAMBDA) {
             return call_lambda(value, _memory);
         }
@@ -448,14 +506,23 @@ struct NodeCall : public Node { NO_EXEC
         if (value.type == STANDART_TYPE::TYPE && any_cast<Type>(value.data).pool == "Int") {
             return call_int(value, _memory);
         }
+        if (value.type == STANDART_TYPE::TYPE && any_cast<Type>(value.data).pool == "Double") {
+            return call_double(value, _memory);
+        }
+        if (value.type == STANDART_TYPE::TYPE && any_cast<Type>(value.data).pool == "Bool") {
+            return call_bool(value, _memory);
+        }
         if (value.type == STANDART_TYPE::TYPE && any_cast<Type>(value.data).pool == "ptr") {
             return call_ptr(value, _memory);
         }
-        else if (value.type.is_func()) {
+        if (value.type == STANDART_TYPE::NAMESPACE) {
+            return call_namespace(value, _memory);
+        }
+        if (value.type.is_func()) {
             RecursionGuard guard(start_callable, end_callable);  // <<< контроль глубины
             return call_function(value, _memory);
         }
-        else if (!value.type.is_sub_type(STANDART_TYPE::TYPES)) {
+        if (!value.type.is_sub_type(STANDART_TYPE::TYPES)) {
             return call_struct(value, _memory);
         }
 

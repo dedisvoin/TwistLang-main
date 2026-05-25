@@ -1,0 +1,179 @@
+{
+    "objects": {
+        "Person": {
+            "addr": 18,
+            "name": "Person",
+            "type": "Person",
+            "value": {
+                "fields": {
+                    "Person": {
+                        "addr": 0,
+                        "name": "Person",
+                        "type": "Person",
+                        "value": {
+                            "fields": {
+                                "Person": {
+                                    "cyclic": true
+                                },
+                                "__init__": {
+                                    "addr": 16,
+                                    "name": "",
+                                    "type": "(Func(String, Int) -> Person)",
+                                    "value": {
+                                        "type": "(Func(String, Int) -> Person)",
+                                        "value": "<struct>"
+                                    }
+                                },
+                                "age": {
+                                    "addr": 15,
+                                    "name": "age",
+                                    "type": "Int | Null",
+                                    "value": {
+                                        "type": "Null",
+                                        "value": null
+                                    }
+                                },
+                                "name": {
+                                    "addr": 14,
+                                    "name": "name",
+                                    "type": "String | Null",
+                                    "value": {
+                                        "type": "Null",
+                                        "value": null
+                                    }
+                                },
+                                "p_echo": {
+                                    "addr": 17,
+                                    "name": "",
+                                    "type": "(Func() -> Null)",
+                                    "value": {
+                                        "type": "(Func() -> Null)",
+                                        "value": "<struct>"
+                                    }
+                                }
+                            },
+                            "struct_name": "Person",
+                            "type": "Person"
+                        }
+                    },
+                    "__init__": {
+                        "cyclic": true
+                    },
+                    "age": {
+                        "cyclic": true
+                    },
+                    "name": {
+                        "cyclic": true
+                    },
+                    "p_echo": {
+                        "cyclic": true
+                    }
+                },
+                "struct_name": "Person",
+                "type": "Person"
+            }
+        },
+        "a": {
+            "addr": 29,
+            "name": "a",
+            "type": "string",
+            "value": {
+                "fields": {
+                    "a": {
+                        "addr": 28,
+                        "name": "a",
+                        "type": "Int",
+                        "value": {
+                            "type": "Int",
+                            "value": 0
+                        }
+                    },
+                    "string": {
+                        "cyclic": true
+                    },
+                    "this": {
+                        "cyclic": true
+                    }
+                },
+                "struct_name": "string",
+                "type": "string"
+            }
+        },
+        "p_1": {
+            "addr": 24,
+            "name": "p_1",
+            "type": "Person",
+            "value": {
+                "fields": {
+                    "Person": {
+                        "cyclic": true
+                    },
+                    "__init__": {
+                        "addr": 21,
+                        "name": "",
+                        "type": "(Func(String, Int) -> Person)",
+                        "value": {
+                            "type": "(Func(String, Int) -> Person)",
+                            "value": "<struct>"
+                        }
+                    },
+                    "age": {
+                        "addr": 20,
+                        "name": "age",
+                        "type": "Int | Null",
+                        "value": {
+                            "type": "Int",
+                            "value": 19
+                        }
+                    },
+                    "name": {
+                        "addr": 19,
+                        "name": "name",
+                        "type": "String | Null",
+                        "value": {
+                            "type": "String",
+                            "value": "Ivan"
+                        }
+                    },
+                    "p_echo": {
+                        "addr": 22,
+                        "name": "",
+                        "type": "(Func() -> Null)",
+                        "value": {
+                            "type": "(Func() -> Null)",
+                            "value": "<struct>"
+                        }
+                    },
+                    "this": {
+                        "cyclic": true
+                    }
+                },
+                "struct_name": "Person",
+                "type": "Person"
+            }
+        },
+        "string": {
+            "addr": 27,
+            "name": "string",
+            "type": "string",
+            "value": {
+                "fields": {
+                    "a": {
+                        "addr": 26,
+                        "name": "a",
+                        "type": "Int",
+                        "value": {
+                            "type": "Int",
+                            "value": 0
+                        }
+                    },
+                    "string": {
+                        "cyclic": true
+                    }
+                },
+                "struct_name": "string",
+                "type": "string"
+            }
+        }
+    }
+}

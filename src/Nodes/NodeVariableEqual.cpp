@@ -25,9 +25,9 @@ struct NodeVariableEqual : public Node { NO_EVAL
 
     void exec_from(Memory* _memory) override {
         auto right_value = expression->eval_from(_memory);
-        
-        
-        
+
+
+
         if (variable->NODE_TYPE == NODE_DEREFERENCE) {
             auto left_value = ((NodeDereference*)variable)->expr->eval_from(_memory);
             if (!left_value.type.is_pointer()) {
@@ -38,14 +38,14 @@ struct NodeVariableEqual : public Node { NO_EVAL
             if (!STATIC_MEMORY.is_registered(address)){
                 throw ERROR_THROW::InvalidDereferenceAddres(start_left_value_token, end_left_value_token);
             }
-    
+
             auto object = STATIC_MEMORY.get_by_address(address);
             auto modifiers = object->modifiers;
-            
+
             // Проверяем константность
-            if (modifiers.is_const) 
+            if (modifiers.is_const)
                 throw ERROR_THROW::PointerToConstRedefinition(start_left_value_token, end_left_value_token);
-            
+
 
             // Проверяем типизацию для статических переменных
             if (modifiers.is_static) {
@@ -63,28 +63,28 @@ struct NodeVariableEqual : public Node { NO_EVAL
             return;
         }
 
-        pair<Memory*, string> target = resolveTargetMemory(variable, _memory);
+        pair<Memory*, string> target = resolveTargetMemory(variable, _memory, start_left_value_token, end_left_value_token);
 
         Memory* target_memory = target.first;
         string target_var_name = target.second;
 
-        if (target_memory->is_private(target_var_name)) 
+        if (target_memory->is_private(target_var_name))
             throw ERROR_THROW::PrivateVariableAccess(start_left_value_token, end_value_token, target_var_name);
-        
+
 
         if (!target_memory->check_literal(target_var_name))
             throw ERROR_THROW::VariableUndefined(start_left_value_token, end_left_value_token, target_var_name);
 
-        if (target_memory->is_const(target_var_name)) 
+        if (target_memory->is_const(target_var_name))
             throw ERROR_THROW::VariableConstRedefinition(start_left_value_token, end_value_token, target_var_name);
-        
+
 
         if (target_memory->is_static(target_var_name)) {
             auto wait_type = target_memory->get_wait_type(target_var_name);
             auto value_type = right_value.type;
-            if (!IsTypeCompatible(wait_type, value_type)) 
+            if (!IsTypeCompatible(wait_type, value_type))
                 throw ERROR_THROW::VariableStaticTypesMisMatch(start_left_value_token, end_value_token, wait_type, value_type);
-            
+
         }
 
         target_memory->set_object_value(target_var_name, right_value);

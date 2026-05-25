@@ -47,14 +47,15 @@ struct MemoryObject {
     void* memory_pointer;
     Address address;
     std::string var_name;       // имя переменной (пустое для безымянных)
-    Memory* owner;             
+    Memory* owner;
+    bool is_standart = false;
 
     MemoryObject(Value value, Type wait_type, void* memory, Address address,
-                 bool is_const, 
-                 bool is_static, 
-                 bool is_final, 
-                 bool is_global, 
-                 bool is_private, 
+                 bool is_const,
+                 bool is_static,
+                 bool is_final,
+                 bool is_global,
+                 bool is_private,
                  bool is_shadow,
                  const std::string& name = "", Memory* owner = nullptr)
         : value(value), wait_type(wait_type),
@@ -99,8 +100,8 @@ struct Memory {
     bool add_object_in_struct(const std::string& literal, Value& value,
                               bool is_const = false, bool is_static = false, bool is_final = false,
                               bool is_global = false, bool is_private = false, bool is_shadow = false);
-    
-    
+
+
 
     inline MemoryObject* get_variable(const std::string& literal) {
         auto it = string_pool.find(literal);
@@ -124,6 +125,20 @@ struct Memory {
             if (!pair.second->modifiers.is_global)
                 continue;
             target_memory.string_pool[pair.first] = new MemoryObject(*pair.second);
+        }
+    }
+
+    inline void copy_objects(Memory* target_memory) {
+        for (auto& pair : string_pool) {
+            if (!pair.second->modifiers.is_global)
+                continue;
+            target_memory->string_pool[pair.first] = new MemoryObject(*pair.second);
+        }
+    }
+
+    inline void copy_objects_to_namespace(Memory* target_memory) {
+        for (auto& pair : string_pool) {
+            target_memory->string_pool[pair.first] = new MemoryObject(*pair.second);
         }
     }
 

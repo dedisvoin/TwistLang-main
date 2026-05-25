@@ -486,6 +486,16 @@ namespace ERROR_THROW {
         return err;
     }
 
+    Error InvalidDoubleArgumentType(const Token& start_args, const Token& end_args, Type type) {
+        Error err = Error("'Double' expected one of arguments `Int`, `Double`, `String`, `Char`, but found " + type.pool, start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidDoubleArgumentCount(const Token& start_args, const Token& end_args, size_t found) {
+        Error err = Error("'Double' expected 1 argument, but found " + to_string(found), start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
     Error InvalidIntArgumentType(const Token& start_args, const Token& end_args, Type type) {
         Error err = Error("'Int' expected one of arguments `Int`, `Double`, `String`, `Char`, but found " + type.pool, start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
@@ -493,6 +503,26 @@ namespace ERROR_THROW {
 
     Error InvalidIntArgumentCount(const Token& start_args, const Token& end_args, size_t found) {
         Error err = Error("'Int' expected 1 argument, but found " + to_string(found), start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidBoolArgumentType(const Token& start_args, const Token& end_args, Type type) {
+        Error err = Error("'Bool' expected one of arguments `Bool`, `Int`, `Double`, `String`, `Char`, but found " + type.pool, start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidBoolArgumentCount(const Token& start_args, const Token& end_args, size_t found) {
+        Error err = Error("'Bool' expected 1 argument, but found " + to_string(found), start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidCharArgumentType(const Token& start_args, const Token& end_args, Type type) {
+        Error err = Error("'Char' expected one of arguments `Int`, `String`, `Char`, but found " + type.pool, start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
+    Error InvalidCharArgumentCount(const Token& start_args, const Token& end_args, size_t found) {
+        Error err = Error("'Char' expected 1 argument, but found " + to_string(found), start_args.pif, end_args.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
 
@@ -514,5 +544,13 @@ namespace ERROR_THROW {
 
     Error ZeroDivision(const Token& start, const Token& end) {
         return Error("Zero division", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+    }
+
+    Error InvalidModifierTypeToIs(const Token& start, const Token& end, string modifier) {
+        return Error("Invalid modifier type '" + modifier + "', wait one of {static, const, final, global, private, shadow}", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+    }
+
+    Error UnresolveValue(const Token& start, const Token& end) {
+        return Error("Unresolve value", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
     }
 }

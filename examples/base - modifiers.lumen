@@ -59,8 +59,34 @@ echo A::a;
 
 
 global shadow let outer = 100;
-namespace A {
-    let outer = 20; // запрещено (теневое наложение)
-                   //! неопределенное поведение!
-    
+echo outer;
+namespace B {
+    let outer = 20; // перекроет глобальное значение
 }
+echo B::outer;
+echo outer;
+
+
+// для того чтобы узнать состояние модификатора можно использовать конструкцию is(expr, modifier)
+
+
+static const let DUMMY: auto = 10;
+let STANDART = 3.14;
+
+echo is(DUMMY, static);
+echo is(DUMMY, final);
+
+#macro is_standart(expr) {
+    !(is(expr, static) || is(expr, const) || is(expr, final))
+}
+
+echo is_standart(DUMMY);
+echo is_standart(STANDART);
+
+namespace AA {
+    namespace B {
+        const shadow let IN;
+    }
+}
+
+
