@@ -104,5 +104,9 @@ for (let i = 0; i < SIZE; ++i;)  {
     arr.append(i);                              // само число
 }
 
+
+
 // Вывод содержимого массива на экран
 echo String(arr);
+
+

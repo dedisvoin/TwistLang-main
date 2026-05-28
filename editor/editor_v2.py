@@ -2951,6 +2951,7 @@ class CustomScintilla(QsciScintilla):
         self.filename = None
         self.last_save_time = datetime.now()
 
+        
         self.ctrl_pressed = False
 
         self.errors: List[ErrorInfo] = []
@@ -2975,6 +2976,9 @@ class CustomScintilla(QsciScintilla):
         self.ls_debounce_timer.setSingleShot(True)
         self.ls_debounce_timer.timeout.connect(self._request_ls_check)
 
+        self.static_api_words = []      # список (слово, тип_иконки)
+        self.autocompletion_api = None  # для хранения QsciAPIs
+
     # ... существующий код до метода setup_lexer_for_file ...
 
     def setup_lexer_for_file(self, filename: str = None):
@@ -2995,6 +2999,51 @@ class CustomScintilla(QsciScintilla):
         lexer = TwistLangLexer(self, self.main_window.current_theme if self.main_window else DEFAULT_THEME,
                               self.main_window.global_font_size if self.main_window else DEFAULT_FONT_SIZE)
         return lexer
+    
+    def _collect_identifiers_from_text(self, text: str) -> dict:
+        """Возвращает {имя: тип_иконки} для слов после let, namespace, func, #macro, #define, struct."""
+        identifiers = {}
+        # Все динамические слова получают тип 8 (Variable)
+        patterns = [
+            (r'\blet\s+([a-zA-Z_][a-zA-Z0-9_]*)', 8),
+            (r'\bnamespace\s+([a-zA-Z_][a-zA-Z0-9_]*)', 8),
+            (r'\bfunc\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', 8),
+            (r'\b#macro\s+([a-zA-Z_][a-zA-Z0-9_]*)', 8),
+            (r'\b#define\s+([a-zA-Z_][a-zA-Z0-9_]*)', 8),
+            (r'\bstruct\s+([a-zA-Z_][a-zA-Z0-9_]*)', 8),
+        ]
+        # Упрощённое удаление однострочных комментариев
+        for line in text.split('\n'):
+            if '//' in line:
+                line = line[:line.index('//')]
+            for pattern, typ in patterns:
+                for match in re.finditer(pattern, line):
+                    name = match.group(1)
+                    if name:
+                        identifiers[name] = typ
+        return identifiers
+
+    def _rebuild_autocompletion(self, dynamic_words: dict):
+        """Пересоздаёт API автодополнения из статических и динамических слов."""
+        lexer = self.lexer()
+        if not isinstance(lexer, TwistLangLexer):
+            return
+        api = QsciAPIs(lexer)
+        for word, typ in self.static_api_words:
+            api.add(f"{word}?{typ}")
+        for word, typ in dynamic_words.items():
+            api.add(f"{word}?{typ}")
+        api.prepare()
+        lexer.setAPIs(api)
+        self.autocompletion_api = api
+
+    def update_autocompletion(self):
+        """Обновляет автодополнение на основе текущего текста (вызывается при изменении файла)."""
+        if not self.filename or not self.filename.endswith('.lumen'):
+            return
+        text = self.text()
+        dynamic = self._collect_identifiers_from_text(text)
+        self._rebuild_autocompletion(dynamic)
 
     def _setup_python_lexer(self, lexer: QsciLexerPython):
         """Configure Python lexer with current theme colors"""
@@ -5488,6 +5537,8 @@ class TwistLangEditor(FramelessMainWindow):
             current_text = editor.error_tooltip.label.text()
             editor.error_tooltip.set_text(current_text, colors, editor.error_tooltip._last_error_type)
         self._apply_global_font_to_all_editors()
+        if isinstance(editor.lexer(), TwistLangLexer):
+            editor.update_autocompletion()
         editor.repaint()
 
     def _apply_fold_marker_colors(self, editor: CustomScintilla):
@@ -5832,25 +5883,32 @@ class TwistLangEditor(FramelessMainWindow):
             4: ("L", colors["literal"]),
             5: ("D", colors["directive"]),
             6: ("S", colors["special"]),
-            7: ("F", colors["function"])
+            7: ("F", colors["function"]),
+            8: ("V", colors.get("variable", colors["fg"])),   # ← новая иконка для переменных
         }
 
         for img_id, (text, color) in icons.items():
-            pixmap = self._create_type_pixmap(text, color, size)
+            pixmap = self._create_type_pixmap(text, color, size - 4)
             editor.registerImage(img_id, pixmap)
 
         api = QsciAPIs(lexer)
+        editor.static_api_words.clear()
 
         for word in lexer.keywords:
             api.add(word + "?1")
+            editor.static_api_words.append((word, 1))
         for word in lexer.modifiers:
             api.add(word + "?2")
+            editor.static_api_words.append((word, 2))
         for word in lexer.types:
             api.add(word + "?3")
+            editor.static_api_words.append((word, 3))
         for word in lexer.literals:
             api.add(word + "?4")
+            editor.static_api_words.append((word, 4))
         for word in lexer.special_keywords:
             api.add(word + "?6")
+            editor.static_api_words.append((word, 6))
         for word in lexer.directives:
             if word == '#include':
                 api.add(word + " : Include another file: #include \"filename\" ?5")
@@ -5858,9 +5916,13 @@ class TwistLangEditor(FramelessMainWindow):
                 api.add(word + " : Define a macro: #define NAME = value ?5")
             elif word == "#macro":
                 api.add(word + " : Define a macro function ?5")
+            else:
+                api.add(word + "?5")
+            editor.static_api_words.append((word, 5))
 
         api.prepare()
         lexer.setAPIs(api)
+        editor.autocompletion_api = api
 
     def _create_type_pixmap(self, text: str, color: QColor, size: int) -> QPixmap:
         pixmap = QPixmap(size, size)
@@ -6003,6 +6065,7 @@ class TwistLangEditor(FramelessMainWindow):
             # Фильтруем ошибки по текущему файлу
             filtered_errors = self._filter_errors_by_file(errors, editor.filename)
             editor.set_errors(filtered_errors)
+            editor.update_autocompletion()
         else:
             editor.clear_errors()
 
