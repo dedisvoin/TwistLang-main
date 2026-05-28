@@ -15,8 +15,8 @@ echo sum(1, 5);
 
 // макет данных
 global namespace Person {
-    static let name: String?;
-    static let age: Int?;
+    global static let name: String?;
+    global static let age: Int?;
 }
 
 let create = lambda(global name: String, global age: Int) -> typeof(Person) {
@@ -38,7 +38,6 @@ echo pp::age;
 echo p2::name;
 echo p2::age;
 
-
 ///////////////////////////////////////////////////////
 // массивы лямбд
 ///////////////////////////////////////////////////////
@@ -58,7 +57,4 @@ echo (*methods_ptr)[1](5, 5);
 
 
 echo is(methods_ptr, final);
-
-
-
 

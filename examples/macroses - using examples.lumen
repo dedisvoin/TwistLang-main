@@ -2,6 +2,7 @@
 // заменяет найденный токен на список токенов
 // PI -> 3.141592
 
+
 let my_PI = PI;
 echo my_PI, " ", PI;
 
@@ -54,4 +55,18 @@ echo value;
 
 let value = to_string(let a = 10;);
 echo value; // при сборе токенов они разделяются пробелами
+
+
+
+
+
+#define TEST = 3.1415;
+#macro T(a) {a}
+
+echo T(TEST);
+
+
+
+
+
 

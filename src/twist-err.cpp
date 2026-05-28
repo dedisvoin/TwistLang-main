@@ -286,11 +286,16 @@ namespace ERROR_THROW {
         return err;
     }
 
-
     Error VariableConstRedefinition(const Token& start, const Token& end, string name) {
         Error err = Error("Cannot assign to const variable '" + name + "'", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
         return err;
     }
+
+    Error VariableConstModification(const Token& start, const Token& end, string name) {
+        Error err = Error("Cannot modify const variable '" + name + "'", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+        return err;
+    }
+
 
     Error PointerToConstRedefinition(const Token& start, const Token& end) {
         Error err = Error("The pointer points to a constant object", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);

@@ -1,0 +1,26 @@
+// Генерирует публичные методы доступа
+#macro property(type, name, default_value) {
+    static let _%name: type = default_value;
+    
+    func get_%name() -> type {
+        ret this._%name;
+    }
+    
+    func set_%name(value: type) -> Null {
+        this._%name = value;
+    }
+}
+
+
+struct User {
+    property(String, username, "anonymous")
+    property(Int, age, 0)
+    property(Bool, is_active, false)
+}
+
+let u = User();
+u.set_username("Alice");
+u.set_age(25);
+echo u.get_username(), " ", u.get_age();
+
+

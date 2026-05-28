@@ -5,8 +5,7 @@
 #include "NodeObjectResolution.cpp"
 #include "NodeNamespaceResolution.cpp"
 
-#ifndef TARGET_RESOLVER_CPP
-#define TARGET_RESOLVER_CPP
+#pragma once
 
 pair<Memory*, string> resolveTargetMemory(Node* node, Memory* current_memory, Token start, Token stop) {
     if (node->NODE_TYPE == NodeTypes::NODE_LITERAL) {
@@ -42,4 +41,18 @@ pair<Memory*, string> resolveTargetMemory(Node* node, Memory* current_memory, To
     }
 }
 
-#endif
+bool is_resolvable(Node* node, Memory* current_memory) {
+    if (node->NODE_TYPE == NodeTypes::NODE_LITERAL) {
+        return true;
+    }
+    else if (node->NODE_TYPE == NodeTypes::NODE_OBJECT_RESOLUTION) {
+        return true;
+    }
+    else if (node->NODE_TYPE == NodeTypes::NODE_NAME_RESOLUTION) {
+        
+        return true;
+    }
+    else {
+        return false;
+    }
+}

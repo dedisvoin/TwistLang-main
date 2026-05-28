@@ -11,7 +11,7 @@
 using namespace std;
 
 struct Function {
-    Memory* memory; 
+    Memory* memory;
     Node* body;
     vector<Arg*> arguments;
     Node* return_type;
@@ -23,9 +23,9 @@ struct Function {
 
     Type type;
     string name;
-    
-    Function(string name, Memory* memory, Node* body, vector<Arg*> args, 
-           Node* return_type, 
+
+    Function(string name, Memory* memory, Node* body, vector<Arg*> args,
+           Node* return_type,
            Type type,
            Token start_args_token, Token end_args_token, Token start_return_type_token, Token end_return_type_token)
         : name(name), memory(memory), body(body), arguments(std::move(args)),
@@ -33,17 +33,9 @@ struct Function {
 
 };
 
-struct Method {
-    Function* func;
-    std::shared_ptr<Memory> instance_memory;
-};
-
-
 
 Value NewFunction(string name, Memory* memory, Node* body, std::vector<Arg*> args, Node* return_type, Type func_type,
     Token start_args_token, Token end_args_token, Token start_return_type_token, Token end_return_type_token) {
     Function* func = new Function(name, memory, body, std::move(args), return_type, func_type, start_args_token, end_args_token, start_return_type_token, end_return_type_token);
     return Value(func_type, func);
 }
-
-

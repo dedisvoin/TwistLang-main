@@ -1,5 +1,6 @@
 #include "../twist-nodetemp.cpp"
 #include "../twist-err.cpp"
+#include "../Nodes/TargetResolver.cpp"
 
 /*
  * NodeUnary – узел унарной операции.
@@ -37,6 +38,41 @@ struct NodeUnary : public Node { NO_EXEC
         }
 
     Value eval_from(Memory* _memory) override {
+        if (is_resolvable(operand, _memory)) {
+            
+            auto [mem, name] = resolveTargetMemory(operand, _memory, start, end);
+            
+            auto value = mem->get_variable(name)->value;
+
+            if (mem->is_const(name))
+                throw ERROR_THROW::VariableConstModification(operator_token, end, name);
+            if (value.type == STANDART_TYPE::INT) {
+                if (op == "++") {
+                    int64_t v = any_cast<int64_t>(value.data);
+                    mem->set_object_value(name, Value(NewInt(v + 1)));
+                    return NewInt(v + 1);
+                } else if (op == "--") {
+                    int64_t v = any_cast<int64_t>(value.data);
+                    mem->set_object_value(name, Value(NewInt(v - 1)));
+                    return NewInt(v - 1);
+                }
+                throw ERROR_THROW::UnsupportedUnaryOperator(operator_token, start, end, value.type);
+            }
+            if (value.type == STANDART_TYPE::DOUBLE) {
+                if (op == "++") {
+                    NUMBER_ACCURACY v = any_cast<NUMBER_ACCURACY>(value.data);
+                    mem->set_object_value(name, Value(NewDouble(v + 1)));
+                    return NewDouble(v + 1);
+                } else if (op == "--") {
+                    NUMBER_ACCURACY v = any_cast<NUMBER_ACCURACY>(value.data);
+                    mem->set_object_value(name, Value(NewDouble(v - 1)));
+                    return NewDouble(v - 1);
+                }
+                throw ERROR_THROW::UnsupportedUnaryOperator(operator_token, start, end, value.type);
+            }
+            
+        }
+
         Value value = operand->eval_from(_memory);
 
         if (value.type == STANDART_TYPE::INT) {
@@ -46,6 +82,12 @@ struct NodeUnary : public Node { NO_EXEC
             } else if (op == "+") {
                 int64_t v = any_cast<int64_t>(value.data);
                 return NewInt(+v);
+            } else if (op == "++") {
+                int64_t v = any_cast<int64_t>(value.data);
+                return NewInt(v + 1);
+            } else if (op == "--") {
+                int64_t v = any_cast<int64_t>(value.data);
+                return NewInt(v - 1);
             }
             throw ERROR_THROW::UnsupportedUnaryOperator(operator_token, start, end, value.type);
         } else if (value.type == STANDART_TYPE::BOOL) {
@@ -63,6 +105,12 @@ struct NodeUnary : public Node { NO_EXEC
             } else if (op == "+") {
                 NUMBER_ACCURACY v = any_cast<NUMBER_ACCURACY>(value.data);
                 return NewDouble(+v);
+            } else if (op == "++") {
+                NUMBER_ACCURACY v = any_cast<NUMBER_ACCURACY>(value.data);
+                return NewDouble(v + 1);
+            } else if (op == "--") {
+                NUMBER_ACCURACY v = any_cast<NUMBER_ACCURACY>(value.data);
+                return NewDouble(v + 1);
             }
             throw ERROR_THROW::UnsupportedUnaryOperator(operator_token, start, end, value.type);
         } else if (value.type.is_pointer()) {

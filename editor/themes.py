@@ -26,6 +26,7 @@ THEMES = {
             "special": QColor("#d33682"),
             "object": QColor("#2a9781"),
             "define_macro": QColor("#bcc0cc"),
+            "dunder_method": QColor("#6c71c4"),  # Фиолетово-синий, хорошо сочетается с модификаторами
             "caret": QColor("#1e1e2e"),
             "caret_line": QColor("#e6e9ef"),
             "margin_bg": QColor("#dce0e8"),
@@ -49,7 +50,7 @@ THEMES = {
             "tree_edit_fg": QColor("#4c4f69"),
         }
     },
-    
+
 
     "Pure Light": {
         "type": "light",
@@ -74,6 +75,7 @@ THEMES = {
             "special": QColor("#d33682"),
             "object": QColor("#2a9781"),
             "define_macro": QColor("#c0c0c0"),
+            "dunder_method": QColor("#8b5cf6"),  # Яркий фиолетовый для контраста на белом фоне
             "caret": QColor("#000000"),
             "caret_line": QColor("#f0f0f0"),
             "margin_bg": QColor("#f8f8f8"),
@@ -121,6 +123,7 @@ THEMES = {
             "special": QColor("#ea76cb"),
             "object": QColor("#209fb5"),
             "define_macro": QColor("#bcc0cc"),
+            "dunder_method": QColor("#8839ef"),  # Тот же цвет, что у ключевых слов Catppuccin
             "caret": QColor("#4c4f69"),
             "caret_line": QColor("#e6e9ef"),
             "margin_bg": QColor("#e6e9ef"),
@@ -168,6 +171,7 @@ THEMES = {
             "special": QColor("#d5c254"),
             "object": QColor("#6f8f3c"),
             "define_macro": QColor("#c4bfb2"),
+            "dunder_method": QColor("#7e6b9c"),  # Тот же цвет, что у модификаторов Kanagawa
             "caret": QColor("#3c3c3c"),
             "caret_line": QColor("#e9e3d9"),
             "margin_bg": QColor("#ede6dc"),
@@ -215,6 +219,7 @@ THEMES = {
             "special": QColor("#d33682"),
             "object": QColor("#b58900"),
             "define_macro": QColor("#cdc8b5"),
+            "dunder_method": QColor("#6c71c4"),  # Лавандовый, сочетается с Solarized
             "caret": QColor("#002b36"),
             "caret_line": QColor("#eee8d5"),
             "margin_bg": QColor("#eee8d5"),
@@ -262,6 +267,7 @@ THEMES = {
             "special": QColor("#ff0000"),
             "object": QColor("#2b91af"),
             "define_macro": QColor("#c0c0c0"),
+            "dunder_method": QColor("#6c71c4"),  # Фиолетовый для контраста с VS стилем
             "caret": QColor("#000000"),
             "caret_line": QColor("#f0f0f0"),
             "margin_bg": QColor("#f0f0f0"),
@@ -290,7 +296,7 @@ THEMES = {
     "Moonlight": {
         "type": "dark",
         "colors": {
-            "bg": QColor("#15222e"),          # darker editor background
+            "bg": QColor("#15222e"),
             "fg": QColor("#d9e0ee"),
             "title_bg": QColor("#2a3a4a"),
             "title_bg_darker": QColor("#22303e"),
@@ -310,9 +316,10 @@ THEMES = {
             "special": QColor("#ff6b6b"),
             "object": QColor("#70c9f0"),
             "define_macro": QColor("#4a5a6a"),
+            "dunder_method": QColor("#cba6f7"),  # Лавандовый, хорошо на темном фоне
             "caret": QColor("#d9e0ee"),
             "caret_line": QColor("#1e2a3a"),
-            "margin_bg": QColor("#1e2a3a"),   # panel background lighter than editor
+            "margin_bg": QColor("#1e2a3a"),
             "margin_fg": QColor("#5a6e7a"),
             "selection_bg": QColor("#3a4a5a"),
             "selection_fg": QColor("#d9e0ee"),
@@ -323,7 +330,7 @@ THEMES = {
             "echo": QColor("#8a9ba8"),
             "autosave_on": QColor("#b3d46b"),
             "autosave_off": QColor("#ff6b6b"),
-            "status_bg": QColor("#0d1117"),   # status bar even darker
+            "status_bg": QColor("#0d1117"),
             "status_border": QColor("#2a3a4a"),
             "tree_hover_bg": QColor("#22303e"),
             "tree_hover_fg": QColor("#d9e0ee"),
@@ -337,7 +344,7 @@ THEMES = {
     "Catppuccin Mocha": {
         "type": "dark",
         "colors": {
-            "bg": QColor("#181825"),          # darker editor
+            "bg": QColor("#181825"),
             "fg": QColor("#cdd6f4"),
             "title_bg": QColor("#313244"),
             "title_bg_darker": QColor("#29293b"),
@@ -357,9 +364,10 @@ THEMES = {
             "special": QColor("#f5c2e7"),
             "object": QColor("#94e2d5"),
             "define_macro": QColor("#4a4a5a"),
+            "dunder_method": QColor("#cba6f7"),  # Тот же цвет, что у ключевых слов Catppuccin
             "caret": QColor("#cdd6f4"),
             "caret_line": QColor("#29293b"),
-            "margin_bg": QColor("#1e1e2e"),   # panels lighter
+            "margin_bg": QColor("#1e1e2e"),
             "margin_fg": QColor("#6c7086"),
             "selection_bg": QColor("#585b70"),
             "selection_fg": QColor("#cdd6f4"),
@@ -370,7 +378,7 @@ THEMES = {
             "echo": QColor("#a6adc8"),
             "autosave_on": QColor("#a6e3a1"),
             "autosave_off": QColor("#f38ba8"),
-            "status_bg": QColor("#11111b"),   # darker status bar
+            "status_bg": QColor("#11111b"),
             "status_border": QColor("#313244"),
             "tree_hover_bg": QColor("#29293b"),
             "tree_hover_fg": QColor("#cdd6f4"),
@@ -404,6 +412,7 @@ THEMES = {
             "special": QColor("#f2b5b5"),
             "object": QColor("#f2cdcd"),
             "define_macro": QColor("#4a4a5a"),
+            "dunder_method": QColor("#b4befe"),  # Светло-фиолетовый из палитры Lumen
             "caret": QColor("#ffffff"),
             "caret_line": QColor("#29293b"),
             "margin_bg": QColor("#1e1e2e"),
@@ -451,6 +460,7 @@ THEMES = {
             "special": QColor("#e46876"),
             "object": QColor("#98bb6c"),
             "define_macro": QColor("#4b4b58"),
+            "dunder_method": QColor("#957fb8"),  # Фиолетовый из палитры Kanagawa
             "caret": QColor("#dcd7ba"),
             "caret_line": QColor("#23232e"),
             "margin_bg": QColor("#1f1f28"),
@@ -498,9 +508,10 @@ THEMES = {
             "special": QColor("#e67e80"),
             "object": QColor("#a7c080"),
             "define_macro": QColor("#596879"),
+            "dunder_method": QColor("#dbbc7f"),  # Золотистый, хорошо сочетается с Everforest
             "caret": QColor("#d3c6aa"),
             "caret_line": QColor("#2d3c4d"),
-            "margin_bg": QColor("#2d3c4d"),   # lighter panel
+            "margin_bg": QColor("#2d3c4d"),
             "margin_fg": QColor("#859289"),
             "selection_bg": QColor("#4a5a6a"),
             "selection_fg": QColor("#d3c6aa"),
@@ -525,7 +536,7 @@ THEMES = {
     "Rosé Pine": {
     "type": "dark",
     "colors": {
-        "bg": QColor("#191724"),          # редактор – самый тёмный
+        "bg": QColor("#191724"),
         "fg": QColor("#e0def4"),
         "title_bg": QColor("#26233a"),
         "title_bg_darker": QColor("#1c192d"),
@@ -545,9 +556,10 @@ THEMES = {
         "special": QColor("#eb6f92"),
         "object": QColor("#c4a7e7"),
         "define_macro": QColor("#454050"),
+        "dunder_method": QColor("#c4a7e7"),  # Фиолетовый из палитры Rosé Pine
         "caret": QColor("#e0def4"),
         "caret_line": QColor("#26233a"),
-        "margin_bg": QColor("#1f1d2e"),   # панели чуть светлее редактора
+        "margin_bg": QColor("#1f1d2e"),
         "margin_fg": QColor("#6e6a86"),
         "selection_bg": QColor("#403d52"),
         "selection_fg": QColor("#e0def4"),
@@ -558,7 +570,7 @@ THEMES = {
         "echo": QColor("#908caa"),
         "autosave_on": QColor("#9ccfd8"),
         "autosave_off": QColor("#eb6f92"),
-        "status_bg": QColor("#100e1a"),   # ещё темнее
+        "status_bg": QColor("#100e1a"),
         "status_border": QColor("#403d52"),
         "tree_hover_bg": QColor("#1c192d"),
         "tree_hover_fg": QColor("#e0def4"),
@@ -592,9 +604,10 @@ THEMES = {
             "special": QColor("#d08770"),
             "object": QColor("#a3be8c"),
             "define_macro": QColor("#465164"),
+            "dunder_method": QColor("#b48ead"),  # Фиолетовый из палитры Nord
             "caret": QColor("#e5e9f0"),
             "caret_line": QColor("#2e3b4e"),
-            "margin_bg": QColor("#1a2538"),   # lighter panel
+            "margin_bg": QColor("#1a2538"),
             "margin_fg": QColor("#4c5b73"),
             "selection_bg": QColor("#3b4c63"),
             "selection_fg": QColor("#e5e9f0"),
@@ -639,9 +652,10 @@ THEMES = {
             "special": QColor("#d65d0e"),
             "object": QColor("#8ec07c"),
             "define_macro": QColor("#544848"),
+            "dunder_method": QColor("#d3869b"),  # Розовый из палитры Gruvbox
             "caret": QColor("#fbf1c7"),
             "caret_line": QColor("#3c3836"),
-            "margin_bg": QColor("#282828"),   # lighter panel
+            "margin_bg": QColor("#282828"),
             "margin_fg": QColor("#928374"),
             "selection_bg": QColor("#504945"),
             "selection_fg": QColor("#fbf1c7"),
@@ -686,9 +700,10 @@ THEMES = {
             "special": QColor("#e68c8c"),
             "object": QColor("#9acc8c"),
             "define_macro": QColor("#4a504a"),
+            "dunder_method": QColor("#c6a0f6"),  # Лавандовый из палитры Emerald Forest
             "caret": QColor("#f0f8f0"),
             "caret_line": QColor("#2a302a"),
-            "margin_bg": QColor("#1e241e"),   # lighter panel
+            "margin_bg": QColor("#1e241e"),
             "margin_fg": QColor("#6a746a"),
             "selection_bg": QColor("#3a443a"),
             "selection_fg": QColor("#dfecdf"),

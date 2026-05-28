@@ -6,27 +6,45 @@ struct Person {
         let age: Int?;
     }
 
-    func __init__(name: String, age: Int) -> typeof(Person) { // Конструктор
+    func __init__(name: String, age: Int) -> typeof(Person) { // конструктор
         this.name = name;
         this.age = age;
+        outln "created";
         ret this;
     }
+
+    func __del__() -> Null { // деструктор
+        outln "deleted";
+    }
+
 
     func p_echo() -> Null {
         echo "Name: " + this.name + ", Age: " + String(this.age);
     }
 }
 
-let p_1 = Person("Ivan", 19);
-p_1.p_echo();
+let person_1 = Person("Ivan", 19);
+
+
+person_1.p_echo();
+
+let pt = &person_1;
+
+del *pt;
 
 
 
-struct string { // если нет конструктора то при вызове будет создаваться копия структуры
-    let a = 0;
-}
 
-let a = string();
+
+
+
+
+
+
+
+
+
+
 
 
 

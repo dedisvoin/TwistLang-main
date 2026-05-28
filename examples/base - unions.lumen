@@ -19,7 +19,10 @@ static let name: String?; // работает
 let N1 = Int | Double | String | Null;
 echo Null >> N1;
 
-// ERROR
+
 echo (Int | Null | Double) >> N1; // приоритеты операторов такие
 
 
+for (let i = 0; i < 10; ++i;) {
+    out i;
+}

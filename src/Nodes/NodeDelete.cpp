@@ -1,6 +1,7 @@
 #include "../twist-nodetemp.cpp"
 #include "../twist-errors.cpp"
 #include "NodeDereference.cpp"
+#include "NodeCall.cpp"
 #include "TargetResolver.cpp"
 
 struct NodeDelete : public Node { NO_EVAL
@@ -30,8 +31,19 @@ struct NodeDelete : public Node { NO_EVAL
 
             int address = any_cast<int>(value.data);
             MemoryObject* obj = STATIC_MEMORY.get_by_address(address);
+
             if (!obj) {
                 ERROR::CanNotDeleteUndereferencedValue(start_token, end_token);
+            }
+
+            auto val = obj->value;
+            if (IsStructure(val.type)) {
+                Struct* struct_object = any_cast<Struct*>(val.data);
+                if (struct_object->memory->check_literal("__del__")) {
+                    auto &builder = struct_object->memory->get_variable("__del__")->value;
+                    auto cn = NodeCall(builder, vector<Node*>{}, start_token, end_token);
+                    cn.eval_from(struct_object->memory);
+                }
             }
 
             // Если объект принадлежит какой-то памяти и имеет имя, удаляем через владельца
@@ -48,6 +60,15 @@ struct NodeDelete : public Node { NO_EVAL
             pair<Memory*, string> target_info = resolveTargetMemory(target, _memory, start_token, end_token);
             Memory* target_memory = target_info.first;
             string target_name = target_info.second;
+            auto value = target->eval_from(_memory);
+            if (IsStructure(value.type)) {
+                Struct* struct_object = any_cast<Struct*>(value.data);
+                if (struct_object->memory->check_literal("__del__")) {
+                    auto &builder = struct_object->memory->get_variable("__del__")->value;
+                    auto cn = NodeCall(builder, vector<Node*>{}, start_token, end_token);
+                    cn.eval_from(struct_object->memory);
+                }
+            }
 
             if (!target_memory->check_literal(target_name)) {
                 ERROR::UndefinedVariable(start_token);

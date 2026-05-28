@@ -1,142 +1,194 @@
 {
     "objects": {
-        "Person": {
-            "addr": 18,
-            "name": "Person",
-            "type": "Person",
+        "Array": {
+            "addr": 26,
+            "name": "Array",
+            "type": "Array",
             "value": {
                 "fields": {
-                    "Person": {
+                    "Array": {
+                        "cyclic": true
+                    },
+                    "T": {
+                        "cyclic": true
+                    },
+                    "__del__": {
+                        "cyclic": true
+                    },
+                    "__init__": {
+                        "cyclic": true
+                    },
+                    "__str__": {
+                        "cyclic": true
+                    },
+                    "_at_index": {
+                        "cyclic": true
+                    },
+                    "_size": {
+                        "cyclic": true
+                    },
+                    "_start": {
+                        "cyclic": true
+                    },
+                    "_type": {
+                        "cyclic": true
+                    },
+                    "alloc": {
+                        "cyclic": true
+                    },
+                    "append": {
+                        "cyclic": true
+                    },
+                    "get": {
+                        "cyclic": true
+                    },
+                    "set": {
+                        "cyclic": true
+                    }
+                },
+                "struct_name": "Array",
+                "type": "Array"
+            }
+        },
+        "arr": {
+            "addr": 88,
+            "name": "arr",
+            "type": "Array",
+            "value": {
+                "fields": {
+                    "Array": {
                         "addr": 0,
-                        "name": "Person",
-                        "type": "Person",
+                        "name": "Array",
+                        "type": "Array",
                         "value": {
                             "fields": {
-                                "Person": {
+                                "Array": {
                                     "cyclic": true
                                 },
-                                "__init__": {
-                                    "addr": 16,
-                                    "name": "",
-                                    "type": "(Func(String, Int) -> Person)",
-                                    "value": {
-                                        "type": "(Func(String, Int) -> Person)",
-                                        "value": "<struct>"
-                                    }
-                                },
-                                "age": {
+                                "T": {
                                     "addr": 15,
-                                    "name": "age",
-                                    "type": "Int | Null",
+                                    "name": "T",
+                                    "type": "Type",
                                     "value": {
-                                        "type": "Null",
-                                        "value": null
+                                        "type": "Type",
+                                        "value": "Array"
                                     }
                                 },
-                                "name": {
-                                    "addr": 14,
-                                    "name": "name",
-                                    "type": "String | Null",
-                                    "value": {
-                                        "type": "Null",
-                                        "value": null
-                                    }
-                                },
-                                "p_echo": {
-                                    "addr": 17,
+                                "__del__": {
+                                    "addr": 20,
                                     "name": "",
                                     "type": "(Func() -> Null)",
                                     "value": {
                                         "type": "(Func() -> Null)",
                                         "value": "<struct>"
                                     }
+                                },
+                                "__init__": {
+                                    "addr": 19,
+                                    "name": "",
+                                    "type": "(Func(Int, Type) -> Array)",
+                                    "value": {
+                                        "type": "(Func(Int, Type) -> Array)",
+                                        "value": "<struct>"
+                                    }
+                                },
+                                "__str__": {
+                                    "addr": 21,
+                                    "name": "",
+                                    "type": "(Func() -> String)",
+                                    "value": {
+                                        "type": "(Func() -> String)",
+                                        "value": "<struct>"
+                                    }
+                                },
+                                "_at_index": {
+                                    "addr": 18,
+                                    "name": "_at_index",
+                                    "type": "Int",
+                                    "value": {
+                                        "type": "Int",
+                                        "value": 0
+                                    }
+                                },
+                                "_size": {
+                                    "addr": 17,
+                                    "name": "_size",
+                                    "type": "Int",
+                                    "value": {
+                                        "type": "Int",
+                                        "value": 0
+                                    }
+                                },
+                                "_start": {
+                                    "addr": 16,
+                                    "name": "_start",
+                                    "type": "ptr | Null",
+                                    "value": {
+                                        "type": "Null",
+                                        "value": null
+                                    }
+                                },
+                                "_type": {
+                                    "addr": 14,
+                                    "name": "_type",
+                                    "type": "Type",
+                                    "value": {
+                                        "type": "Type",
+                                        "value": "Null"
+                                    }
+                                },
+                                "alloc": {
+                                    "addr": 24,
+                                    "name": "",
+                                    "type": "(Func() -> ptr)",
+                                    "value": {
+                                        "type": "(Func() -> ptr)",
+                                        "value": "<struct>"
+                                    }
+                                },
+                                "append": {
+                                    "addr": 25,
+                                    "name": "",
+                                    "type": "(Func(Null) -> Null)",
+                                    "value": {
+                                        "type": "(Func(Null) -> Null)",
+                                        "value": "<struct>"
+                                    }
+                                },
+                                "get": {
+                                    "addr": 22,
+                                    "name": "",
+                                    "type": "(Func(Int) -> Null)",
+                                    "value": {
+                                        "type": "(Func(Int) -> Null)",
+                                        "value": "<struct>"
+                                    }
+                                },
+                                "set": {
+                                    "addr": 23,
+                                    "name": "",
+                                    "type": "(Func(Int, Null) -> Array)",
+                                    "value": {
+                                        "type": "(Func(Int, Null) -> Array)",
+                                        "value": "<struct>"
+                                    }
                                 }
                             },
-                            "struct_name": "Person",
-                            "type": "Person"
+                            "struct_name": "Array",
+                            "type": "Array"
                         }
                     },
-                    "__init__": {
-                        "cyclic": true
-                    },
-                    "age": {
-                        "cyclic": true
-                    },
-                    "name": {
-                        "cyclic": true
-                    },
-                    "p_echo": {
-                        "cyclic": true
-                    }
-                },
-                "struct_name": "Person",
-                "type": "Person"
-            }
-        },
-        "a": {
-            "addr": 29,
-            "name": "a",
-            "type": "string",
-            "value": {
-                "fields": {
-                    "a": {
+                    "T": {
                         "addr": 28,
-                        "name": "a",
-                        "type": "Int",
+                        "name": "T",
+                        "type": "Type",
                         "value": {
-                            "type": "Int",
-                            "value": 0
+                            "type": "Type",
+                            "value": "Array"
                         }
                     },
-                    "string": {
-                        "cyclic": true
-                    },
-                    "this": {
-                        "cyclic": true
-                    }
-                },
-                "struct_name": "string",
-                "type": "string"
-            }
-        },
-        "p_1": {
-            "addr": 24,
-            "name": "p_1",
-            "type": "Person",
-            "value": {
-                "fields": {
-                    "Person": {
-                        "cyclic": true
-                    },
-                    "__init__": {
-                        "addr": 21,
-                        "name": "",
-                        "type": "(Func(String, Int) -> Person)",
-                        "value": {
-                            "type": "(Func(String, Int) -> Person)",
-                            "value": "<struct>"
-                        }
-                    },
-                    "age": {
-                        "addr": 20,
-                        "name": "age",
-                        "type": "Int | Null",
-                        "value": {
-                            "type": "Int",
-                            "value": 19
-                        }
-                    },
-                    "name": {
-                        "addr": 19,
-                        "name": "name",
-                        "type": "String | Null",
-                        "value": {
-                            "type": "String",
-                            "value": "Ivan"
-                        }
-                    },
-                    "p_echo": {
-                        "addr": 22,
+                    "__del__": {
+                        "addr": 33,
                         "name": "",
                         "type": "(Func() -> Null)",
                         "value": {
@@ -144,35 +196,120 @@
                             "value": "<struct>"
                         }
                     },
+                    "__init__": {
+                        "addr": 32,
+                        "name": "",
+                        "type": "(Func(Int, Type) -> Array)",
+                        "value": {
+                            "type": "(Func(Int, Type) -> Array)",
+                            "value": "<struct>"
+                        }
+                    },
+                    "__str__": {
+                        "addr": 34,
+                        "name": "",
+                        "type": "(Func() -> String)",
+                        "value": {
+                            "type": "(Func() -> String)",
+                            "value": "<struct>"
+                        }
+                    },
+                    "_at_index": {
+                        "addr": 31,
+                        "name": "_at_index",
+                        "type": "Int",
+                        "value": {
+                            "type": "Int",
+                            "value": 44
+                        }
+                    },
+                    "_size": {
+                        "addr": 30,
+                        "name": "_size",
+                        "type": "Int",
+                        "value": {
+                            "type": "Int",
+                            "value": 44
+                        }
+                    },
+                    "_start": {
+                        "addr": 29,
+                        "name": "_start",
+                        "type": "ptr | Null",
+                        "value": {
+                            "points_to": {
+                                "addr": 44,
+                                "name": "",
+                                "type": "Null",
+                                "value": {
+                                    "type": "Int",
+                                    "value": 0
+                                }
+                            },
+                            "type": "*Null",
+                            "value": 44
+                        }
+                    },
+                    "_type": {
+                        "addr": 27,
+                        "name": "_type",
+                        "type": "Type",
+                        "value": {
+                            "type": "Type",
+                            "value": "Int | String | Char"
+                        }
+                    },
+                    "alloc": {
+                        "addr": 37,
+                        "name": "",
+                        "type": "(Func() -> ptr)",
+                        "value": {
+                            "type": "(Func() -> ptr)",
+                            "value": "<struct>"
+                        }
+                    },
+                    "append": {
+                        "addr": 38,
+                        "name": "",
+                        "type": "(Func(Null) -> Null)",
+                        "value": {
+                            "type": "(Func(Null) -> Null)",
+                            "value": "<struct>"
+                        }
+                    },
+                    "get": {
+                        "addr": 35,
+                        "name": "",
+                        "type": "(Func(Int) -> Null)",
+                        "value": {
+                            "type": "(Func(Int) -> Null)",
+                            "value": "<struct>"
+                        }
+                    },
+                    "set": {
+                        "addr": 36,
+                        "name": "",
+                        "type": "(Func(Int, Null) -> Array)",
+                        "value": {
+                            "type": "(Func(Int, Null) -> Array)",
+                            "value": "<struct>"
+                        }
+                    },
                     "this": {
                         "cyclic": true
                     }
                 },
-                "struct_name": "Person",
-                "type": "Person"
+                "struct_name": "Array",
+                "type": "Array"
             }
         },
-        "string": {
-            "addr": 27,
-            "name": "string",
-            "type": "string",
+        "i": {
+            "addr": 89,
+            "name": "i",
+            "type": "Int",
             "value": {
-                "fields": {
-                    "a": {
-                        "addr": 26,
-                        "name": "a",
-                        "type": "Int",
-                        "value": {
-                            "type": "Int",
-                            "value": 0
-                        }
-                    },
-                    "string": {
-                        "cyclic": true
-                    }
-                },
-                "struct_name": "string",
-                "type": "string"
+                "type": "Int",
+                "value": 40
             }
         }
     }

@@ -12,6 +12,8 @@
 #include <any>
 #include <cstdint>
 
+#pragma once
+
 #define MAX_RECURSION 100
 
 // ---------- защита от переполнения стека вызовов ----------
@@ -33,7 +35,8 @@ struct RecursionGuard {
 
 
 struct NodeCall : public Node { NO_EXEC
-    Node* callable;
+    Node* callable = nullptr;
+    Value value = NewNull();
     vector<Node*> args;
     Token start_callable;
     Token end_callable;
@@ -55,6 +58,11 @@ struct NodeCall : public Node { NO_EXEC
 
     NodeCall(Node* callable, vector<Node*> args, Token start_callable, Token end_callable) :
         callable(callable), args(args), start_callable(start_callable), end_callable(end_callable) {
+        this->NODE_TYPE = NodeTypes::NODE_CALL;
+    }
+
+    NodeCall(Value callable, vector<Node*> args, Token start_callable, Token end_callable) :
+        value(callable), args(args), start_callable(start_callable), end_callable(end_callable) {
         this->NODE_TYPE = NodeTypes::NODE_CALL;
     }
 
@@ -322,7 +330,7 @@ struct NodeCall : public Node { NO_EXEC
 
         if (new_memory->check_literal("__init__")) {
             auto &builder = new_memory->get_variable("__init__")->value;
-            return call_function(builder, _memory);;
+            return call_function(builder, _memory);
         }
 
         return new_struct;
@@ -333,6 +341,12 @@ struct NodeCall : public Node { NO_EXEC
         auto mem = new Memory();
 
         n_space->memory->copy_objects_to_namespace(mem);
+        for (auto &obj : mem->string_pool) {
+
+            if (obj.second->value.type.is_func()) {
+                any_cast<Function*>(obj.second->value.data)->memory->copy_objects(mem);
+            }
+        }
 
         auto p = NewNamespace(mem, n_space->name);
         return p;
@@ -380,6 +394,15 @@ struct NodeCall : public Node { NO_EXEC
             new_string = new_string + any_cast<Type>(lambda->return_type->eval_from(_memory).data).pool;
         } else if (value.type.is_pointer()) {
             new_string = value.type.pool + "[0x" + to_string(any_cast<int>(value.data)) + "]";
+        } else if (IsStructure(value.type)) {
+            Struct* struct_object = any_cast<Struct*>(value.data);
+            
+            if (struct_object->memory->check_literal("__str__")) {
+                auto &builder = struct_object->memory->get_variable("__str__")->value;
+                auto cn = NodeCall(builder, vector<Node*>{}, start_callable, end_callable);
+                return cn.eval_from(struct_object->memory);
+            }
+            throw ERROR_THROW::UncallableType(start_callable, end_callable, value.type);
         }
 
         return NewString(new_string);
@@ -483,9 +506,9 @@ struct NodeCall : public Node { NO_EXEC
     }
 
     Value eval_from(Memory* _memory) override {
-
-        auto value = callable->eval_from(_memory);
-
+        if (callable) {
+            value = callable->eval_from(_memory);
+        }
         // if (value.type == STANDART_TYPE::METHOD) {
         //     auto method = any_cast<Method>(value.data);
         //     auto saved_memory = method.func->memory;

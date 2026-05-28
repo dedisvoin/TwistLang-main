@@ -2475,6 +2475,7 @@ class TwistLangLexer(QsciLexerCustom):
     STYLE_DEFINE_MACRO = 15
     STYLE_COMMENT_DOC = 16      # Для //! комментариев
     STYLE_COMMENT_QUESTION = 17 # Для //? комментариев
+    STYLE_DUNDER_METHOD = 18  # Добавить этот стиль
 
     def __init__(self, parent=None, theme_name: str = DEFAULT_THEME, font_size: int = DEFAULT_FONT_SIZE):
         super().__init__(parent)
@@ -2484,7 +2485,7 @@ class TwistLangLexer(QsciLexerCustom):
         self.keywords = {
             'if', 'else', 'for', 'while', 'let', 'in', 'and', 'or', 'echo',
             'ret', 'assert', 'lambda', 'do', "is",
-            'struct', 'namespace', 'func', 'continue', 'break'
+            'struct', 'namespace', 'func', 'continue', 'break', '__VA_ARGS__'
         }
         self.modifiers = {'const', 'static', 'global', 'final', 'private', 'shadow'}
         self.types = {'Int', 'Bool', 'String', 'Char', 'Null', 'Double',
@@ -2522,7 +2523,8 @@ class TwistLangLexer(QsciLexerCustom):
             self.STYLE_ESCAPE: "Escape sequence",
             self.STYLE_DEFINE_MACRO: "Define Macro",
             self.STYLE_COMMENT_DOC: "Documentation Comment",
-            self.STYLE_COMMENT_QUESTION: "Question Comment"
+            self.STYLE_COMMENT_QUESTION: "Question Comment",
+            self.STYLE_DUNDER_METHOD: "Dunder Method"  # Добавить
         }
         return descriptions.get(style, "")
 
@@ -2541,15 +2543,13 @@ class TwistLangLexer(QsciLexerCustom):
         self.setDefaultPaper(colors["bg"])
         self.setDefaultColor(colors["fg"])
 
-        # Базовый шрифт для всех стилей
         safe_font = get_safe_monospace_font(MONOSPACE_FONT_NAME, self.font_size)
 
-        # Сначала устанавливаем базовый шрифт для ВСЕХ стилей
-        for style in range(18):  # 0-17 все стили
+        # Изменить 18 на 19 для нового стиля
+        for style in range(19):  # 0-18 все стили
             self.setFont(safe_font, style)
             self.setPaper(colors["bg"], style)
 
-        # Устанавливаем цвета для стилей
         style_colors = {
             self.STYLE_DEFAULT: colors["fg"],
             self.STYLE_KEYWORD: colors["keyword"],
@@ -2567,8 +2567,9 @@ class TwistLangLexer(QsciLexerCustom):
             self.STYLE_OBJECT: colors["object"],
             self.STYLE_ESCAPE: colors["function"],
             self.STYLE_DEFINE_MACRO: colors["define_macro"],
-            self.STYLE_COMMENT_DOC: colors.get("error", QColor(255, 80, 80)),      # Красный
-            self.STYLE_COMMENT_QUESTION: colors.get("warning", QColor(255, 200, 80)), # Желтый
+            self.STYLE_COMMENT_DOC: colors.get("error", QColor(255, 80, 80)),
+            self.STYLE_COMMENT_QUESTION: colors.get("warning", QColor(255, 200, 80)),
+            self.STYLE_DUNDER_METHOD: colors.get("dunder_method", colors.get("special", QColor(203, 166, 247))),  # Фиолетовый по умолчанию
         }
 
         for style, color in style_colors.items():
@@ -2771,6 +2772,8 @@ class TwistLangLexer(QsciLexerCustom):
                         style = self.STYLE_DEFINE_MACRO
                     elif word.startswith('#'):
                         style = self.STYLE_DIRECTIVE
+                    elif word.startswith('__') and word.endswith('__') and len(word) > 4:
+                        style = self.STYLE_DUNDER_METHOD
                     elif word in self.keywords:
                         style = self.STYLE_KEYWORD
                     elif word in self.special_keywords:
@@ -3307,11 +3310,11 @@ class CustomScintilla(QsciScintilla):
             # Настройка прозрачного фона (добавить в конец метода)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.SendScintilla(self.SCI_SETBUFFEREDDRAW, 0)
-        
+
         # Прозрачный фон для всех стилей
         for style in range(32):
             self.SendScintilla(self.SCI_STYLESETBACK, style, 0)
-        
+
         # Прозрачные марджины
         for margin in range(5):
             self.SendScintilla(self.SCI_SETMARGINBACKN, margin, 0)
