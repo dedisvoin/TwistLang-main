@@ -1,0 +1,46 @@
+// подключаем реализацию массивов
+#include "../std/array.lumen";
+
+global static final let ObjectID: Int = 0;
+
+struct Object {
+    static let id: Int?;
+    let name;
+    func __init__(name: String) -> typeof(Object) {
+        this.id = ObjectID;
+        this.name = name;
+        ++ObjectID;
+        
+        ret this;
+    }
+
+    func __str__() -> String {
+        ret String(this.id) + String("-") + this.name;
+    }
+}
+
+
+
+
+
+
+
+let o1 = Object("Ivan");
+let o2 = Object("Jon");
+let o3 = Object("Peter");
+
+// создаем массив под 4 элемента типа Object
+let arr = Array(4, typeof(Object));
+
+
+arr.append(o1);
+arr.append(o2);
+arr.append(o3);
+arr.append(o3);
+
+echo String(arr);
+
+
+
+
+

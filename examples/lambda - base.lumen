@@ -51,6 +51,7 @@ echo methods[0](10, 20);
 echo methods[1](10, 20);
 
 
+
 let methods_ptr = &methods;
 
 echo (*methods_ptr)[1](5, 5);

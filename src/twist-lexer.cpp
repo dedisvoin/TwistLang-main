@@ -205,7 +205,7 @@ public:
 
 vector<string> KEYWORDS = { "if", "else", "for", "while", "echo",
     "do", "break", "continue", "let", "is",
-    "static", "final", "const", "global", "shadow", "typeof", "sizeof",
+    "static", "final", "const", "global", "shadow", "typeof", "sizeof", "typeis",
      "del", "new" ,"true", "false", "null", "ret", "struct",
     "out", "outln", "input", "in" , "and", "or", "namespace", "assert", "lambda",  "func", "Func", "exit", "private"};
 

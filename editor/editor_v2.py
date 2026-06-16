@@ -62,7 +62,7 @@ AUTOSAVE_INTERVALS = [
     ("5 minutes", 5 * MINUTE)
 ]
 
-VERSION = "0.17b"
+VERSION = "0.18b"
 
 # Global font constants
 MONOSPACE_FONT_NAME = "Fira Code"
@@ -387,7 +387,7 @@ class Strings:
         "cancel": "Отмена"
     }
 
-    current_language = Language.RUSSIAN
+    current_language = Language.ENGLISH
 
     @classmethod
     def set_language(cls, lang: Language):
@@ -2475,7 +2475,7 @@ class TwistLangLexer(QsciLexerCustom):
     STYLE_DEFINE_MACRO = 15
     STYLE_COMMENT_DOC = 16      # Для //! комментариев
     STYLE_COMMENT_QUESTION = 17 # Для //? комментариев
-    STYLE_DUNDER_METHOD = 18  # Добавить этот стиль
+    STYLE_DUNDER_METHOD = 18    # Для __method__
 
     def __init__(self, parent=None, theme_name: str = DEFAULT_THEME, font_size: int = DEFAULT_FONT_SIZE):
         super().__init__(parent)
@@ -2492,11 +2492,25 @@ class TwistLangLexer(QsciLexerCustom):
                       'Namespace', 'Func', 'Lambda', 'auto', "Type", "ptr"}
         self.literals = {'true', 'false', 'null', 'self', 'this'}
         self.directives = {'#define', '#macro', '#include'}
-        self.special_keywords = {'new', 'del', 'typeof', 'sizeof', 'out', 'outln', 'input', 'exit'}
+        self.special_keywords = {'new', 'del', 'typeof', 'sizeof', 'out', 'outln', 'input', 'exit', 'typeis'}
 
         self.define_macros: Set[str] = set()
+        self.struct_names: Set[str] = set()  # Хранилище для названий структур
 
         self.setup_styles()
+
+    def collect_structs_from_text(self, text: str):
+        """Collect all struct names from the text"""
+        self.struct_names.clear()
+        # Pattern to match 'struct Name {' or 'struct Name : BaseClass {' etc.
+        pattern = r'\bstruct\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\:|\{)'
+        for match in re.finditer(pattern, text):
+            struct_name = match.group(1)
+            self.struct_names.add(struct_name)
+
+    def update_structs(self, text: str):
+        """Update struct names from text"""
+        self.collect_structs_from_text(text)
 
     def wordCharacters(self) -> str:
         return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_#"
@@ -2524,7 +2538,7 @@ class TwistLangLexer(QsciLexerCustom):
             self.STYLE_DEFINE_MACRO: "Define Macro",
             self.STYLE_COMMENT_DOC: "Documentation Comment",
             self.STYLE_COMMENT_QUESTION: "Question Comment",
-            self.STYLE_DUNDER_METHOD: "Dunder Method"  # Добавить
+            self.STYLE_DUNDER_METHOD: "Dunder Method"
         }
         return descriptions.get(style, "")
 
@@ -2545,8 +2559,8 @@ class TwistLangLexer(QsciLexerCustom):
 
         safe_font = get_safe_monospace_font(MONOSPACE_FONT_NAME, self.font_size)
 
-        # Изменить 18 на 19 для нового стиля
-        for style in range(19):  # 0-18 все стили
+        # Для всех стилей 0-18
+        for style in range(19):
             self.setFont(safe_font, style)
             self.setPaper(colors["bg"], style)
 
@@ -2569,7 +2583,7 @@ class TwistLangLexer(QsciLexerCustom):
             self.STYLE_DEFINE_MACRO: colors["define_macro"],
             self.STYLE_COMMENT_DOC: colors.get("error", QColor(255, 80, 80)),
             self.STYLE_COMMENT_QUESTION: colors.get("warning", QColor(255, 200, 80)),
-            self.STYLE_DUNDER_METHOD: colors.get("dunder_method", colors.get("special", QColor(203, 166, 247))),  # Фиолетовый по умолчанию
+            self.STYLE_DUNDER_METHOD: colors.get("dunder_method", colors.get("special", QColor(203, 166, 247))),
         }
 
         for style, color in style_colors.items():
@@ -2592,7 +2606,7 @@ class TwistLangLexer(QsciLexerCustom):
         modifier_font.setUnderline(True)
         self.setFont(modifier_font, self.STYLE_MODIFIER)
 
-        # Для define-макросов - жирный
+        # Для define-макросов - подчеркивание
         define_font = QFont(safe_font)
         define_font.setUnderline(True)
         self.setFont(define_font, self.STYLE_DEFINE_MACRO)
@@ -2617,6 +2631,9 @@ class TwistLangLexer(QsciLexerCustom):
                     macro_name = macro_name.rstrip('=:;,(){}[] \t')
                     if macro_name and macro_name[0].isalpha():
                         self.define_macros.add(macro_name)
+
+        # Собираем все названия структур из текста
+        self.collect_structs_from_text(text)
 
         text_bytes = text.encode('utf-8')
         total_bytes = len(text_bytes)
@@ -2665,6 +2682,7 @@ class TwistLangLexer(QsciLexerCustom):
                     pos = j
                     continue
 
+            # Обработка строк
             if ch in ('"', "'"):
                 quote_char = ch
                 j = pos + ch_len
@@ -2700,6 +2718,7 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
 
+            # Обработка чисел
             if ch.isdigit() or (ch == '.' and pos + ch_len < end and
                                 self._get_char_at(text_bytes, pos + ch_len, total_bytes)[0].isdigit()):
                 expecting_namespace = False
@@ -2750,6 +2769,7 @@ class TwistLangLexer(QsciLexerCustom):
                 pos += ch_len
                 continue
 
+            # Обработка слов (идентификаторов)
             if ch.isalpha() or ch == '_' or ch == '#':
                 j = pos
                 while j < end:
@@ -2782,6 +2802,8 @@ class TwistLangLexer(QsciLexerCustom):
                         style = self.STYLE_MODIFIER
                     elif word in self.types:
                         style = self.STYLE_TYPE
+                    elif word in self.struct_names:  # Подсветка названий структур
+                        style = self.STYLE_NAMESPACE_ID
                     elif word in self.literals:
                         style = self.STYLE_LITERAL
                     elif j + 2 <= end and text_bytes[j:j+2] == b'::':
@@ -2795,6 +2817,7 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
 
+            # Обработка операторов
             if ch in '+-*/%=&@|^!<>~,?.:;(){}[]':
                 expecting_namespace = False
                 j = pos + ch_len
@@ -2814,6 +2837,7 @@ class TwistLangLexer(QsciLexerCustom):
                 pos = j
                 continue
 
+            # Остальные символы
             self.setStyling(ch_len, self.STYLE_DEFAULT)
             pos += ch_len
 
@@ -2951,7 +2975,7 @@ class CustomScintilla(QsciScintilla):
         self.filename = None
         self.last_save_time = datetime.now()
 
-        
+
         self.ctrl_pressed = False
 
         self.errors: List[ErrorInfo] = []
@@ -2979,7 +3003,15 @@ class CustomScintilla(QsciScintilla):
         self.static_api_words = []      # список (слово, тип_иконки)
         self.autocompletion_api = None  # для хранения QsciAPIs
 
-    # ... существующий код до метода setup_lexer_for_file ...
+
+    def update_struct_highlighting(self):
+        """Update struct name highlighting in the lexer"""
+        lexer = self.lexer()
+        if isinstance(lexer, TwistLangLexer):
+            text = self.text()
+            lexer.update_structs(text)
+            # Force re-styling of the document
+            self.recolor()
 
     def setup_lexer_for_file(self, filename: str = None):
         """Setup appropriate lexer based on file extension"""
@@ -2999,7 +3031,7 @@ class CustomScintilla(QsciScintilla):
         lexer = TwistLangLexer(self, self.main_window.current_theme if self.main_window else DEFAULT_THEME,
                               self.main_window.global_font_size if self.main_window else DEFAULT_FONT_SIZE)
         return lexer
-    
+
     def _collect_identifiers_from_text(self, text: str) -> dict:
         """Возвращает {имя: тип_иконки} для слов после let, namespace, func, #macro, #define, struct."""
         identifiers = {}
@@ -3043,6 +3075,14 @@ class CustomScintilla(QsciScintilla):
             return
         text = self.text()
         dynamic = self._collect_identifiers_from_text(text)
+
+        # Добавляем struct names в dynamic словарь с типом 3 (Type)
+        lexer = self.lexer()
+        if isinstance(lexer, TwistLangLexer):
+            for struct_name in lexer.struct_names:
+                if struct_name not in dynamic:
+                    dynamic[struct_name] = 3  # 3 = тип Type
+
         self._rebuild_autocompletion(dynamic)
 
     def _setup_python_lexer(self, lexer: QsciLexerPython):
@@ -3311,9 +3351,14 @@ class CustomScintilla(QsciScintilla):
         lexer = self.lexer()
         if lexer and hasattr(lexer, 'update_folding_levels'):
             lexer.update_folding_levels(0, self.length())
+
+        # Обновляем подсветку структур
+        if isinstance(lexer, TwistLangLexer):
+            self.update_struct_highlighting()
+
         # Перезапускаем таймер при каждом изменении
         if self.filename and self.filename.endswith('.lumen'):
-            self.ls_debounce_timer.start(350)  # 600 мс после последнего изменения
+            self.ls_debounce_timer.start(350)
 
     def _request_ls_check(self):
         if self.main_window and self.filename:

@@ -93,7 +93,7 @@ void language_server(const std::string& file_path, std::string file_name) {
         // Игнорируем
     }
 
-    dump_memory(g_memory.get(), "dump.json");
+    //dump_memory(g_memory.get(), "dump.json");
     // Запись лога
     std::ofstream log(string("dbg/") + file_name + "_ls.dbg", std::ios::trunc);
     log << Error::GetBuffer();

@@ -51,6 +51,8 @@ struct NodeVariableEqual : public Node { NO_EVAL
             if (modifiers.is_static) {
                 auto wait_type = object->wait_type;
                 auto value_type = right_value.type;
+                cout << wait_type.pool << endl;
+                cout << value_type.pool << endl;
                 if (!IsTypeCompatible(wait_type, value_type)) {
                     throw ERROR_THROW::VariableStaticTypesMisMatch(start_left_value_token, end_value_token, wait_type, value_type);
                 }

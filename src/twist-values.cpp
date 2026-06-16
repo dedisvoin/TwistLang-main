@@ -571,7 +571,7 @@ bool IsTypeCompatible(const Type& target_type, const Type& source_type) {
 }
 
 bool IsStructure(const Type& type) {
-    return !STANDART_TYPE::TYPES.is_sub_type(type);
+    return !type.is_sub_type(STANDART_TYPE::TYPES);
 }
 
 struct Value {

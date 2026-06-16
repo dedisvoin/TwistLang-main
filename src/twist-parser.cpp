@@ -1,6 +1,7 @@
 #include "twist-nodetemp.cpp"
 #include "twist-tokenwalker.cpp"
 #include "twist-tokens.cpp"
+#include "math.h"
 
 #include "twist-err.cpp"
 #include "twist-values.cpp"
@@ -68,7 +69,6 @@
 #include "Nodes/NodeEcho.cpp"
 #include "Nodes/NodeIs.cpp"
 
-#include <vcruntime_startup.h>
 #include <string>
 #include <vector>
 #include <any>
@@ -152,6 +152,7 @@ struct ASTGenerator {
 
     // Metafunctions
     Node* ParseTypeof();
+    Node* ParseTypeis();
     Node* ParseSizeof();
 
     // Lambda
@@ -222,6 +223,10 @@ struct ASTGenerator {
 
         if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("typeof")) {
             return ParseTypeof();
+        }
+
+        if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("typeis")) {
+            return ParseTypeis();
         }
 
         if (walker.CheckType(TokenType::KEYWORD) && walker.CheckValue("new")) {
@@ -974,28 +979,27 @@ Node* ASTGenerator::ParseNewFunctionType() {
         Token start_token_return;
         Token end_token_return;
 
-        if (walker.CheckValue("->")) {
-            walker.next(); // pass "->" token
-            start_token_return = *walker.get();
-            return_type_expr = parse_expression();
-            end_token_return = *walker.get(-1);
-            if (!return_type_expr)
-                throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
-
-            return new NodeNewFuncType(
-                vector<Node*>(),
-                return_type_expr,
-                start_token, end_token,
-                start_token_return, end_token_return
-            );
-        } else {
-            return new NodeNewFuncType(
-                vector<Node*>(),
-                nullptr,
-                start_token, end_token,
-                Token(), Token()
-            );
+        if (walker.CheckValue("-")) {
+            walker.next();
+            if (walker.CheckValue(">")) {
+                walker.next(); // pass "->" token
+                start_token_return = *walker.get();
+                return_type_expr = parse_expression();
+                end_token_return = *walker.get(-1);
+                if (!return_type_expr)
+                    throw ERROR_THROW::UnexpectedToken(*walker.get(), "expression");
+            } else {
+                throw ERROR_THROW::UnexpectedToken(*walker.get(), "syntax: -> type expression");
+            }
         }
+
+        return new NodeNewFuncType(
+            {},
+            return_type_expr,
+            start_token, end_token,
+            start_token_return, end_token_return
+        );
+
     }
 
     vector<Node*> type_args;
@@ -1061,7 +1065,7 @@ Node* ASTGenerator::ParseNew() {
         walker.next();
 
         while (true) {
-            if (walker.CheckType(TokenType::KEYWORD) | walker.CheckType(LITERAL)) {
+            if (walker.CheckType(TokenType::KEYWORD) || walker.CheckType(LITERAL)) {
                 if (walker.CheckValue("const")) {
                     is_const = true;
                     walker.next();
@@ -1345,6 +1349,22 @@ Node* ASTGenerator::ParseTypeof() {
         throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
     walker.next();
     return new NodeTypeof(expr, expr_token);
+}
+
+Node* ASTGenerator::ParseTypeis() {
+    walker.next(); // pass 'typeis' token
+    if (!walker.CheckValue("("))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "'('");
+    walker.next();
+
+    auto start = *walker.get();
+    auto expr = parse_expression();
+    auto end = *walker.get(-1);
+
+    if (!walker.CheckValue(")"))
+        throw ERROR_THROW::UnexpectedToken(*walker.get(), "')'");
+    walker.next();
+    return new NodeTypeis(expr, start, end);
 }
 
 // PASS

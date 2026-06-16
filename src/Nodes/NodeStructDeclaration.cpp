@@ -27,12 +27,14 @@ struct NodeStructDeclaration : public Node { NO_EVAL
             if (_memory->is_final(struct_name)) {
                 throw ERROR_THROW::VariableAlreadyDefined(decl_token, struct_name);
             }
-            if (_memory->is_global(struct_name) && !_memory->is_shadow(struct_name)) {
+            else if (_memory->is_global(struct_name) && !_memory->is_shadow(struct_name)) {
                 throw ERROR_THROW::VariableShadowsGlobal(decl_token, struct_name);
+            } 
+            else if (_memory->is_global(struct_name) && _memory->is_shadow(struct_name)) {
+                auto addr = _memory->get_variable(struct_name)->address;
+                STATIC_MEMORY.unregister_object(addr);
+                //_memory->delete_variable(struct_name);
             }
-            // auto addr = _memory->get_variable(struct_name)->address;
-            // STATIC_MEMORY.unregister_object(addr);
-            // _memory->delete_variable(struct_name);
         }
 
         auto new_struct_memory = new Memory();

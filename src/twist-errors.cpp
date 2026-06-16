@@ -442,18 +442,7 @@ namespace ERROR {
         exit(0);
     }
 
-    void WaitedFuncTypeArgumentTypeSpecifier(const Token& start_args, const Token& end_args, int index) {
-        string file_lines = PREPROCESSOR_OUTPUT;
-        vector<string> lines = SplitString(file_lines, '\n');
-
-        cout << TM::YELLOW << ".- " << TM::RESET << MT::WARNING << ">> " << ERROR_TYPES::SEMANTIC << " >> " << start_args.pif << " >> Invalid type specifier" << endl;
-        cout << TM::YELLOW << "|" << TM::RESET << endl;
-        cout << TM::YELLOW << "| " << TM::CYAN << start_args.pif.line << " | " << TM::RESET << lines[start_args.pif.global_line - 1] << endl;
-        cout << TM::YELLOW << "| " << string(to_string(start_args.pif.line).length() + 3, ' ') << string(start_args.pif.index, ' ') << TM::YELLOW << string(end_args.pif.index + end_args.pif.lenght - start_args.pif.index, '^') << " Invalid type specifier for argument '" << index << "'" << endl;
-        cout << TM::YELLOW << "`" << string(to_string(start_args.pif.line).length() + 4, '-') << string(start_args.pif.index, '-') << "'" << TM::RESET << endl;
-
-        exit(0);
-    }
+    
 
     static void MissingFuncArgument(const Token& start_callable, const Token& end_callable,
                                 const Token& arg_start, const Token& arg_end,

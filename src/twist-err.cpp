@@ -226,7 +226,7 @@ namespace ERROR_THROW {
     }
 
     Error InputWarning(const Token& start, const Token& end) {
-        Error err = Error("Input is run time instruction. Default return - null", start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
+        Error err = Error("Input is run time instruction. Default return - 'null'", start.pif, end.pif, ErrorTypes::SEMANTIC, PREPROCESSOR_OUTPUT);
         err.message_type = 1;
         return err;
     }
@@ -557,5 +557,13 @@ namespace ERROR_THROW {
 
     Error UnresolveValue(const Token& start, const Token& end) {
         return Error("Unresolve value", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+    }
+
+    Error WaitedFuncTypeArgumentTypeSpecifier(const Token& start, const Token& end, int index) {
+        return Error("Invalid type specifier for argument '" + to_string(index + 1) + "'", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
+    }
+
+    Error WaitedFuncTypeReturnTypeSpecifier(const Token& start, const Token& end) {
+        return Error("Invalid return type specifier", start.pif, end.pif, ErrorTypes::EXECUTION, PREPROCESSOR_OUTPUT);
     }
 }

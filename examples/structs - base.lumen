@@ -1,50 +1,33 @@
 
 // Базовый пример структуры
-struct Person {
+struct Vector2D {
     static {
-        let name: String?;
-        let age: Int?;
+        global shadow let Number: Type = Int | Double;
+        global shadow let T: Type = typeof(Vector2D);
+        let x: *Number? = new 0;
+        let y: *Number? = new 0;
+
+        let g: auto?;
+        let c: auto?;
     }
 
-    func __init__(name: String, age: Int) -> typeof(Person) { // конструктор
-        this.name = name;
-        this.age = age;
-        outln "created";
+    func __init__(x: Number = 0, y: Number = 0) -> T {
+        *this.x = x;
+        *this.y = y;
         ret this;
     }
 
-    func __del__() -> Null { // деструктор
-        outln "deleted";
-    }
-
-
-    func p_echo() -> Null {
-        echo "Name: " + this.name + ", Age: " + String(this.age);
+    
+    func __str__() -> String {
+        ret "Vector2D: " + String(*this.x) + ", " + String(*this.y);
     }
 }
 
-let person_1 = Person("Ivan", 19);
+
+let v1 = Vector2D(1.0, 20.4);
 
 
-person_1.p_echo();
-
-let pt = &person_1;
-
-del *pt;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+echo *(v1.x);
 
 
 

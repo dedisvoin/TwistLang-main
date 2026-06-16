@@ -1,5 +1,5 @@
 #include "../twist-nodetemp.cpp"
-#include "../twist-errors.cpp"
+#include "../twist-err.cpp"
 
 struct NodeNewFuncType : public Node { NO_EXEC
     vector<Node*> args_types_expr;
@@ -26,7 +26,7 @@ struct NodeNewFuncType : public Node { NO_EXEC
         for (int i = 0; i < args_types_expr.size(); i++) {
             auto value = args_types_expr[i]->eval_from(_memory);
             if (value.type != STANDART_TYPE::TYPE)
-                ERROR::WaitedFuncTypeArgumentTypeSpecifier(start_token_args, end_token_args, i);
+                throw ERROR_THROW::WaitedFuncTypeArgumentTypeSpecifier(start_token_args, end_token_args, i);
             args_types.push_back(any_cast<Type>(value.data));
         }
 
@@ -34,7 +34,7 @@ struct NodeNewFuncType : public Node { NO_EXEC
         if (return_type_expr) {
             auto value = return_type_expr->eval_from(_memory);
             if (value.type != STANDART_TYPE::TYPE)
-                ERROR::WaitedFuncTypeReturnTypeSpecifier(start_token_return, end_token_return);
+                throw ERROR_THROW::WaitedFuncTypeReturnTypeSpecifier(start_token_return, end_token_return);
 
             auto result = create_function_type(any_cast<Type>(value.data), args_types);
             return NewType(result);

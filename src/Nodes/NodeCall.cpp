@@ -151,13 +151,14 @@ struct NodeCall : public Node { NO_EXEC
         auto func = any_cast<Function*>(value.data);
 
         // 1. Создаём новую память для этого вызова
-        Memory call_memory;
+        Memory* call_memory = new Memory;
 
         // 2. Линкуем в неё глобальные объекты из «статической» памяти функции
-        func->memory->link_objects(&call_memory);
+        func->memory->copy_objects(call_memory);
+        _memory->link_objects(call_memory);
 
         // 3. Добавляем саму функцию в call_memory (для рекурсивных вызовов)
-        call_memory.add_object(func->name, value, value.type,
+        call_memory->add_object(func->name, value, value.type,
                             true, true, true, true, false);
 
 
@@ -196,21 +197,21 @@ struct NodeCall : public Node { NO_EXEC
                 }
 
                 // Проверка на перекрытие глобала (теперь внутри call_memory)
-                if (call_memory.check_literal(param->name)) {
-                    MemoryObject* existing = call_memory.get_variable(param->name);
+                if (call_memory->check_literal(param->name)) {
+                    MemoryObject* existing = call_memory->get_variable(param->name);
                     if (existing->modifiers.is_global)
                         throw ERROR_THROW::FuncArgumentShadowsGlobal(start_callable, end_callable,
                             func->name, param->name);
                 }
 
-                call_memory.add_object_in_func(param->name, arg_value, expected,
+                call_memory->add_object_in_func(param->name, arg_value, expected,
                     param->is_const, param->is_static,
                     param->is_final, param->is_global);
             } else {
                 // --- Variadic параметр (логика та же, адресация call_memory) ---
                 int64_t variadic_size = 0;
                 if (param->variadic_size) {
-                    Value size_val = param->variadic_size->eval_from(&call_memory);
+                    Value size_val = param->variadic_size->eval_from(call_memory);
                     if (size_val.type != STANDART_TYPE::INT)
                         throw ERROR_THROW::InvalidFuncVariadicSizeExpression(start_callable, end_callable, size_val.type);
 
@@ -258,15 +259,15 @@ struct NodeCall : public Node { NO_EXEC
                 Array arr(array_type, std::move(elements));
                 Value array_value(array_type, std::move(arr));
 
-                if (call_memory.check_literal(param->name)) {
-                    MemoryObject* existing = call_memory.get_variable(param->name);
+                if (call_memory->check_literal(param->name)) {
+                    MemoryObject* existing = call_memory->get_variable(param->name);
                     if (existing->modifiers.is_global)
                         throw ERROR_THROW::FuncArgumentShadowsGlobal(start_callable, end_callable,
                             func->name, param->name);
 
                 }
 
-                call_memory.add_object_in_func(param->name, array_value, array_value.type,
+                call_memory->add_object_in_func(param->name, array_value, array_value.type,
                     param->is_const, param->is_static,
                     param->is_final, param->is_global);
             }
@@ -278,10 +279,8 @@ struct NodeCall : public Node { NO_EXEC
                 func->arguments.size(), args.size());
         }
 
-        // 5. Выполняем тело функции в её собственной call_memory
         try {
-
-            ((Node*)(func->body))->exec_from(&call_memory);
+            ((Node*)(func->body))->exec_from(call_memory);
             return NewNull();
         }
         catch (Error err) {
@@ -318,8 +317,8 @@ struct NodeCall : public Node { NO_EXEC
         Struct* struct_builder = any_cast<Struct*>(value.data);
 
         auto new_memory = new Memory();
-        _memory->link_objects(new_memory);
-        struct_builder->memory->copy_objects(*new_memory);
+        _memory->link_all_objects(new_memory);
+        struct_builder->memory->link_objects(new_memory);
         auto new_struct = NewStruct(new_memory, struct_builder->name);
         new_memory->add_object_in_struct("this", new_struct, false, false, false, true);
 
@@ -330,7 +329,7 @@ struct NodeCall : public Node { NO_EXEC
 
         if (new_memory->check_literal("__init__")) {
             auto &builder = new_memory->get_variable("__init__")->value;
-            return call_function(builder, _memory);
+            return call_function(builder, new_memory);
         }
 
         return new_struct;

@@ -17,6 +17,7 @@ struct NodeDelete : public Node { NO_EVAL
     void exec_from(Memory* _memory) override {
         if (target->NODE_TYPE != NodeTypes::NODE_LITERAL &&
             target->NODE_TYPE != NodeTypes::NODE_NAME_RESOLUTION &&
+            target->NODE_TYPE != NodeTypes::NODE_OBJECT_RESOLUTION &&
             target->NODE_TYPE != NodeTypes::NODE_DEREFERENCE) {
             ERROR::InvalidDeleteInstruction(start_token, end_token);
         }
@@ -35,8 +36,9 @@ struct NodeDelete : public Node { NO_EVAL
             if (!obj) {
                 ERROR::CanNotDeleteUndereferencedValue(start_token, end_token);
             }
-
+            
             auto val = obj->value;
+            
             if (IsStructure(val.type)) {
                 Struct* struct_object = any_cast<Struct*>(val.data);
                 if (struct_object->memory->check_literal("__del__")) {
@@ -48,18 +50,24 @@ struct NodeDelete : public Node { NO_EVAL
 
             // Если объект принадлежит какой-то памяти и имеет имя, удаляем через владельца
             if (obj->owner && !obj->var_name.empty()) {
+                
                 obj->owner->delete_variable(obj->var_name);
             } else {
                 // Безымянный объект (создан через new) – просто удаляем из глобальной памяти
+                
                 STATIC_MEMORY.unregister_object(address);
                 delete obj;
             }
             return;
         } else {
+
             // Удаление по имени (переменная или пространство имён) – остаётся без изменений
+            
             pair<Memory*, string> target_info = resolveTargetMemory(target, _memory, start_token, end_token);
+            
             Memory* target_memory = target_info.first;
             string target_name = target_info.second;
+            
             auto value = target->eval_from(_memory);
             if (IsStructure(value.type)) {
                 Struct* struct_object = any_cast<Struct*>(value.data);

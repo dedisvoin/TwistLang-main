@@ -120,6 +120,19 @@ struct Memory {
         }
     }
 
+    inline void link_all_objects(Memory* target_memory) {
+        for (auto& pair : string_pool) {
+            target_memory->string_pool[pair.first] = pair.second;
+        }
+    }
+
+    inline void link_shadow_objects(Memory* target_memory) {
+        for (auto& pair : string_pool) {
+            if (pair.second->modifiers.is_shadow) continue;
+            target_memory->string_pool[pair.first] = pair.second;
+        }
+    }
+
     inline void copy_objects(Memory& target_memory) {
         for (auto& pair : string_pool) {
             if (!pair.second->modifiers.is_global)

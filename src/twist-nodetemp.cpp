@@ -37,6 +37,7 @@
     _(NODE_DEREFERENCE) \
     _(NODE_LEFT_DEREFERENCE) \
     _(NODE_TYPEOF) \
+    _(NODE_TYPEIS) \
     _(NODE_SIZEOF) \
     _(NODE_DELETE) \
     _(NODE_IF_EXPRESSION) \

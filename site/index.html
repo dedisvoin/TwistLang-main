@@ -937,6 +937,71 @@
                 backface-visibility: hidden;
             }
         }
+
+        /* ─────────────────────────────────────────────────────────
+           🔹 НОВЫЕ СТИЛИ ДЛЯ ИЗОБРАЖЕНИЙ (увеличенное и единое скругление + обводка)
+           ───────────────────────────────────────────────────────── */
+        .custom-image-container,
+        .ide-screenshot-container {
+            border-radius: 1.5rem !important;          /* увеличенное и единое скругление */
+            overflow: hidden;
+            border: 1px solid var(--color-card-border) !important;
+            box-shadow: var(--color-card-shadow-md);
+            transition: all 0.2s ease;
+        }
+
+        .custom-image,
+        .ide-screenshot-container img {
+            display: block;
+            width: 100%;
+            border-radius: inherit;  /* наследует скругление родителя */
+        }
+
+        /* дополнительно для контейнера hero-изображения (для сохранения стиля) */
+        .hero-image .custom-image-container {
+            background: transparent;  /* убираем лишний фон, оставляем как есть */
+        }
+
+        /* ─────────────────────────────────────────────────────────
+           🔹 ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ ОБЛАСТЕЙ С ДАННЫМИ (таблицы, стат-блоки)
+           ───────────────────────────────────────────────────────── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--color-card-bg);
+            backdrop-filter: var(--backdrop-blur-sm);
+            border-radius: 1rem;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        .data-table th, .data-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--color-card-border);
+        }
+        .data-table th {
+            background: rgba(136, 57, 239, 0.1);
+            font-weight: 600;
+            color: var(--color-base-text-bright);
+        }
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        .benchmark-card {
+            background: var(--color-card-bg);
+            border-radius: 1rem;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .benchmark-number {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--gradient-logo-1), var(--gradient-logo-2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
     </style>
 </head>
 <body>
@@ -961,6 +1026,7 @@
         <div class="nav-links" id="navLinks">
             <a href="#features">Возможности</a>
             <a href="#examples">Примеры</a>
+            <a href="#specs">Спецификация</a>
             <a href="#ide">Lumen IDE</a>
             <a href="#download" class="btn btn-outline" style="padding:0.5rem 1.2rem">Скачать</a>
         </div>
@@ -986,7 +1052,7 @@
                         </div>
                     </div>
                     <div class="hero-image" style="flex: 1; min-width: 300px;">
-                        <div class="custom-image-container" style="border-radius: 1rem; overflow: hidden; box-shadow: var(--color-card-shadow-md); background: rgba(0,0,0,0.2); border: 1px solid var(--color-card-border);">
+                        <div class="custom-image-container">
                             <img class="custom-image" src="hero_image.png" alt="Lumen IDE Screenshot" style="width:100%; display: block;">
                         </div>
                     </div>
@@ -1197,6 +1263,128 @@ n = <span class="number">0</span>;
         </div>
     </section>
 
+    <!-- НОВАЯ СЕКЦИЯ: СПЕЦИФИКАЦИЯ ЯЗЫКА LUMEN (ОБЛАСТИ С ДАННЫМИ) -->
+    <section id="specs" class="reveal">
+        <div class="container">
+            <div class="section-card">
+                <h2><i class="fas fa-database"></i> Спецификация языка Lumen</h2>
+                <p style="margin-bottom: 2rem;">Все основные типы данных, операторы и показатели производительности.</p>
+                
+                <!-- Типы данных -->
+                <h3>📦 Система типов</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; margin: 1rem 0 2rem 0;">
+                    <div class="specs-card">
+                        <div class="specs-icon"><i class="fas fa-hashtag"></i></div>
+                        <div class="specs-content">
+                            <div class="specs-label">Целые числа</div>
+                            <div class="specs-value">Int (i32, i64)</div>
+                            <div class="specs-desc">Диапазон: -2⁶³…2⁶³-1</div>
+                        </div>
+                    </div>
+                    <div class="specs-card">
+                        <div class="specs-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="specs-content">
+                            <div class="specs-label">Числа с плавающей точкой</div>
+                            <div class="specs-value">Double (f64)</div>
+                            <div class="specs-desc">IEEE 754 двойной точности</div>
+                        </div>
+                    </div>
+                    <div class="specs-card">
+                        <div class="specs-icon"><i class="fas fa-font"></i></div>
+                        <div class="specs-content">
+                            <div class="specs-label">Строки</div>
+                            <div class="specs-value">String</div>
+                            <div class="specs-desc">UTF-8, изменяемые</div>
+                        </div>
+                    </div>
+                    <div class="specs-card">
+                        <div class="specs-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="specs-content">
+                            <div class="specs-label">Булевы значения</div>
+                            <div class="specs-value">Bool</div>
+                            <div class="specs-desc">true / false</div>
+                        </div>
+                    </div>
+                    <div class="specs-card">
+                        <div class="specs-icon"><i class="fas fa-layer-group"></i></div>
+                        <div class="specs-content">
+                            <div class="specs-label">Массивы</div>
+                            <div class="specs-value">[T, size] или {T...}</div>
+                            <div class="specs-desc">Гетерогенные/гомогенные</div>
+                        </div>
+                    </div>
+                    <div class="specs-card">
+                        <div class="specs-icon"><i class="fas fa-code"></i></div>
+                        <div class="specs-content">
+                            <div class="specs-label">Lambda / Func</div>
+                            <div class="specs-value">Функции первого класса</div>
+                            <div class="specs-desc">С замыканиями (global)</div>
+                        </div>
+                    </div>
+                    <div class="specs-card">
+                        <div class="specs-icon"><i class="fas fa-box"></i></div>
+                        <div class="specs-content">
+                            <div class="specs-label">Union-типы</div>
+                            <div class="specs-value">Int | Double | String</div>
+                            <div class="specs-desc">Динамическое приведение</div>
+                        </div>
+                    </div>
+                    <div class="specs-card">
+                        <div class="specs-icon"><i class="fas fa-memory"></i></div>
+                        <div class="specs-content">
+                            <div class="specs-label">Указатели</div>
+                            <div class="specs-value">ptr (безопасные)</div>
+                            <div class="specs-desc">*auto, *static, *move, *copy</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Операторы и приоритеты -->
+                <h3>⚙️ Операторы (в порядке убывания приоритета)</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Категория</th><th>Операторы</th><th>Ассоциативность</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Первичные</td><td><code>() [] . ::</code></td><td>→</td></tr>
+                        <tr><td>Унарные</td><td><code>+ - ! ~ * & new del</code></td><td>←</td></tr>
+                        <tr><td>Мультипликативные</td><td><code>* / %</code></td><td>→</td></tr>
+                        <tr><td>Аддитивные</td><td><code>+ -</code></td><td>→</td></tr>
+                        <tr><td>Сравнения</td><td><code>< <= > >= == !=</code></td><td>→</td></tr>
+                        <tr><td>Логические</td><td><code>&& ||</code></td><td>→</td></tr>
+                        <tr><td>Присваивание</td><td><code>= += -= *= /= %=</code></td><td>←</td></tr>
+                    </tbody>
+                </table>
+
+                <!-- Бенчмарки / производительность -->
+                <h3 style="margin-top: 2rem;">🚀 Сравнение производительности (условное)</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                    <div class="benchmark-card">
+                        <div class="benchmark-number">~35%</div>
+                        <div>быстрее CPython</div>
+                        <small>(численные расчёты)</small>
+                    </div>
+                    <div class="benchmark-card">
+                        <div class="benchmark-number">&lt; 100 мс</div>
+                        <div>компиляция кода</div>
+                        <small>(средний проект)</small>
+                    </div>
+                    <div class="benchmark-card">
+                        <div class="benchmark-number">0 GC</div>
+                        <div>утечек памяти</div>
+                        <small>(безопасные указатели)</small>
+                    </div>
+                    <div class="benchmark-card">
+                        <div class="benchmark-number">1.5x</div>
+                        <div>плотность кода</div>
+                        <small>(меньше строк, чем C++)</small>
+                    </div>
+                </div>
+                <p style="font-size: 0.8rem; margin-top: 1rem; color: var(--color-base-text-muted);">* Результаты приблизительны, зависят от сценария использования.</p>
+            </div>
+        </div>
+    </section>
+
     <!-- DOWNLOAD SECTION -->
     <section id="download" class="reveal">
         <div class="container">
@@ -1294,15 +1482,7 @@ n = <span class="number">0</span>;
                     
                     <!-- Правая колонка: изображение -->
                     <div class="ide-image" style="flex: 1; min-width: 300px; display: flex; align-items: flex-start;">
-                        <div class="ide-screenshot-container" style="
-                            width: 100%;
-                            border-radius: 0.2rem;
-                            overflow: hidden;
-                            box-shadow: var(--color-card-shadow-md);
-                            background: linear-gradient(135deg, var(--color-card-front-bg-1), var(--color-card-front-bg-2));
-                            border: 1px solid var(--color-card-front-border);
-                            position: relative;
-                        ">
+                        <div class="ide-screenshot-container">
                             <img src="img1.png" alt="Lumen IDE Interface" style="width:100%; display:block;">
                         </div>
                     </div>

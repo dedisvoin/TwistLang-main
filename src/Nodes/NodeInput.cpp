@@ -30,14 +30,14 @@ struct NodeInput : public Node { NO_EXEC
             getline(cin, _input);
 
             if (_input.empty()) 
-                return NewNull();
+                return NewString("null");
             
             auto value = NewString(_input);
             return NewString(_input);
             
         #else
             ERROR_THROW::InputWarning(start_token, end_token).Write();
-            return NewNull();
+            return NewString("null");
         #endif
 
     }

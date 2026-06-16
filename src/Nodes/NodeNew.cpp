@@ -28,7 +28,7 @@ struct NodeNew : public Node { NO_EXEC
                 throw ERROR_THROW::VariableStaticTypesMisMatch(start_type, end_type, any_cast<Type>(super_type_value.data), result.type);
             }
 
-            auto object = CreateMemoryObject(result, any_cast<Type>(result.type), nullptr, is_const, is_static, false, false, false, false);
+            auto object = CreateMemoryObject(result, any_cast<Type>(super_type_value.data), nullptr, is_const, is_static, false, false, false, false);
             auto addres = NewPointer(object->address, any_cast<Type>(result.type), true);
             STATIC_MEMORY.register_object(object);
             return addres;
